@@ -22,7 +22,7 @@ export function SyncKakaoButton() {
       }
 
       setMessage(
-        `발견 ${data.result.found}건 중 신규 ${data.result.inserted}건 등록, ${data.result.skipped}건 중복`
+        `격자 ${data.result.gridPoints}곳 검색, 발견 ${data.result.found}건 중 신규 ${data.result.inserted}건 등록, ${data.result.skipped}건 중복`
       );
       router.refresh();
     } catch {
