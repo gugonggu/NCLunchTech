@@ -11,6 +11,14 @@
 # testing / coverage
 /coverage
 
+# 테스트 데이터 정리 registry (런타임 산출물)
+/tests/.artifacts/
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/
+
 # misc
 .DS_Store
 *.pem

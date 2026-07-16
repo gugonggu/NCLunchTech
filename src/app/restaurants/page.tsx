@@ -35,7 +35,8 @@ export default async function RestaurantsPage({
 
   const { data: restaurants } = await supabase
     .from("restaurants")
-    .select("id, name, category, address, lat, lng, created_at");
+    .select("id, name, category, address, lat, lng, created_at")
+    .eq("is_active", true);
 
   let list = (restaurants ?? []).map((r) => ({
     ...r,

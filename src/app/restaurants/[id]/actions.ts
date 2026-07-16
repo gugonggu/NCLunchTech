@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { logChange } from "@/lib/restaurants/change-history";
+import { restaurantHoursSchema } from "@/lib/restaurants/hours-validation";
+import { getMenuItemInRestaurant } from "@/lib/restaurants/menu-items";
 import { menuItemSchema } from "@/lib/restaurants/menu-validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
@@ -60,17 +62,17 @@ export async function updateMenuPrice(menuItemId: string, restaurantId: string, 
     throw new Error(parsed.error.issues[0]?.message ?? "가격이 올바르지 않습니다.");
   }
 
-  const supabase = createServiceRoleClient();
-  const { data: before } = await supabase
-    .from("menu_items")
-    .select("*")
-    .eq("id", menuItemId)
-    .maybeSingle();
+  const before = await getMenuItemInRestaurant(restaurantId, menuItemId);
+  if (!before) {
+    throw new Error("해당 식당에 속한 메뉴가 아닙니다.");
+  }
 
+  const supabase = createServiceRoleClient();
   const { data: after, error } = await supabase
     .from("menu_items")
     .update({ price: parsed.data, updated_by: employee.id, updated_at: new Date().toISOString() })
     .eq("id", menuItemId)
+    .eq("restaurant_id", restaurantId)
     .select()
     .single();
 
@@ -96,17 +98,17 @@ export async function toggleMenuSoldOut(menuItemId: string, restaurantId: string
     throw new Error("로그인이 필요합니다.");
   }
 
-  const supabase = createServiceRoleClient();
-  const { data: before } = await supabase
-    .from("menu_items")
-    .select("*")
-    .eq("id", menuItemId)
-    .maybeSingle();
+  const before = await getMenuItemInRestaurant(restaurantId, menuItemId);
+  if (!before) {
+    throw new Error("해당 식당에 속한 메뉴가 아닙니다.");
+  }
 
+  const supabase = createServiceRoleClient();
   const { data: after, error } = await supabase
     .from("menu_items")
     .update({ is_sold_out: nextValue, updated_by: employee.id, updated_at: new Date().toISOString() })
     .eq("id", menuItemId)
+    .eq("restaurant_id", restaurantId)
     .select()
     .single();
 
@@ -132,6 +134,22 @@ export async function updateRestaurantHours(restaurantId: string, formData: Form
     throw new Error("로그인이 필요합니다.");
   }
 
+  const dayInputs = [];
+  for (let day = 0; day <= 6; day++) {
+    const isClosed = formData.get(`closed_${day}`) === "on";
+    dayInputs.push({
+      dayOfWeek: day,
+      isClosed,
+      openTime: isClosed ? null : (formData.get(`open_${day}`) as string) || null,
+      closeTime: isClosed ? null : (formData.get(`close_${day}`) as string) || null,
+    });
+  }
+
+  const parsedHours = restaurantHoursSchema.safeParse(dayInputs);
+  if (!parsedHours.success) {
+    throw new Error(parsedHours.error.issues[0]?.message ?? "영업시간이 올바르지 않습니다.");
+  }
+
   const supabase = createServiceRoleClient();
 
   const { data: before } = await supabase
@@ -141,23 +159,15 @@ export async function updateRestaurantHours(restaurantId: string, formData: Form
     .order("day_of_week");
 
   const now = new Date().toISOString();
-  const rows = [];
-
-  for (let day = 0; day <= 6; day++) {
-    const isClosed = formData.get(`closed_${day}`) === "on";
-    const openTime = (formData.get(`open_${day}`) as string) || null;
-    const closeTime = (formData.get(`close_${day}`) as string) || null;
-
-    rows.push({
-      restaurant_id: restaurantId,
-      day_of_week: day,
-      is_closed: isClosed,
-      open_time: isClosed ? null : openTime,
-      close_time: isClosed ? null : closeTime,
-      updated_by: employee.id,
-      updated_at: now,
-    });
-  }
+  const rows = parsedHours.data.map((day) => ({
+    restaurant_id: restaurantId,
+    day_of_week: day.dayOfWeek,
+    is_closed: day.isClosed,
+    open_time: day.openTime,
+    close_time: day.closeTime,
+    updated_by: employee.id,
+    updated_at: now,
+  }));
 
   const { data: after, error } = await supabase
     .from("restaurant_hours")

@@ -18,6 +18,7 @@ export default async function RestaurantDetailPage({
     .from("restaurants")
     .select("id, kakao_place_id, name, category, address, phone, lat, lng")
     .eq("id", id)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (!restaurant) {
