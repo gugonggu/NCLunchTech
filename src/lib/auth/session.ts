@@ -1,4 +1,5 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { generateSessionToken, hashSessionToken } from "@/lib/auth/session-token";
 
@@ -71,6 +72,18 @@ export async function findEmployeeBySessionToken(token: string): Promise<Session
     .eq("id", session.id);
 
   return { id: employee.id, nickname: employee.nickname };
+}
+
+/** Server Component에서 쿠키로 현재 로그인한 직원을 조회한다(쿠키 자체를 갱신하지는 않는다). */
+export async function getCurrentEmployee(): Promise<SessionEmployee | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  return findEmployeeBySessionToken(token);
 }
 
 export async function revokeSession(token: string): Promise<void> {
