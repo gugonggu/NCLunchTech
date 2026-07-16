@@ -89,16 +89,31 @@ npx supabase db push --db-url "<Session pooler 연결 문자열>" --workdir .
 
 ## 품질 검사
 
+아래 네 가지는 이 프로젝트의 필수 검증 절차입니다. `.env.test.local` 없이도 항상 정상 동작해야 합니다.
+
 ```bash
 npm run lint          # ESLint
 npm run typecheck     # tsc --noEmit
 npm run test          # 순수 유닛/컴포넌트 테스트 (외부 DB·네트워크 없음)
-npm run test:integration  # 테스트 전용 Supabase를 사용하는 DB 통합 테스트
-npm run test:e2e      # 테스트 전용 Supabase를 사용하는 Playwright E2E
 npm run build         # production build
 ```
 
-`test:integration`/`test:e2e`는 **개발용과 완전히 분리된 테스트 전용 Supabase 프로젝트**가 필요합니다. `.env.test.local.example`을 참고해 `.env.test.local`을 만드세요. 개발용 프로젝트와 같은 값을 넣으면 실행 시점에 자동으로 감지되어 즉시 실패합니다.
+### 통합/E2E 테스트 (선택 사항)
+
+```bash
+npm run test:integration  # 테스트 전용 Supabase를 사용하는 DB 통합 테스트
+npm run test:e2e          # 테스트 전용 Supabase를 사용하는 Playwright E2E
+```
+
+이 둘은 **선택 사항**이며, 필수 검증 절차에 포함되지 않습니다. 실행하려면 **개발용과 완전히 분리된 테스트 전용 Supabase 프로젝트**가 별도로 필요합니다:
+
+1. 새 Supabase 프로젝트를 만들고 `supabase/migrations/`의 `0001`~`0005`를 그 프로젝트에 적용
+2. `.env.test.local.example`을 참고해 `.env.test.local` 작성(`TEST_PROJECT_REF`, `ALLOW_TEST_DB_WRITES=true` 포함)
+3. `test:e2e`는 Playwright 브라우저 바이너리 설치가 추가로 필요합니다(`npx playwright install chromium`)
+
+테스트 전용 프로젝트 없이(`.env.test.local` 부재 상태) 실행하면, 개발용 프로젝트에 실수로 연결되는 것을 막기 위해 격리 가드가 즉시 실행을 중단시킵니다 — 이는 정상 동작입니다. 개발용 프로젝트와 같은 값을 넣어도 project ref 비교로 감지되어 즉시 실패합니다.
+
+관련 코드(`tests/`, `playwright.config.ts`, `vitest.integration.config.ts`)는 나중에 실제로 쓸 수 있도록 저장소에 유지하되, 지금은 개발·검증 절차에서 요구하지 않습니다.
 
 ## 현재 구현된 기능
 
