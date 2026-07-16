@@ -15,6 +15,9 @@
 .DS_Store
 *.pem
 
+# supabase CLI local cache
+/supabase/.temp/
+
 # env files
 .env
 .env*.local
