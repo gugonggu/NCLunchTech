@@ -1,7 +1,7 @@
 # 앤시점심기술
 
 앤시정보기술 직원이 KNN타워 주변 식당을 추천받고 동료와 점심 약속을 만드는 사내 웹서비스입니다.
-현재는 1차 MVP의 프로젝트 기반(0~1단계)까지만 구현되어 있습니다.
+현재는 프로젝트 기반, 직원 프로필·PIN·세션, 관리자 Supabase Auth·권한까지 구현되어 있습니다.
 
 ## 요구 사항
 
@@ -38,6 +38,17 @@ npm run dev
 
 `http://localhost:3000` 접속 시 로그인 전 진입 화면(빈 홈 화면)이 표시됩니다.
 
+### 자주 발생하는 에러: `SyntaxError: Unexpected token '??='`
+
+터미널에 잡혀 있는 Node가 20.19.0 미만(예: v14, v18)일 때 나는 에러입니다. `node -v`로 확인 후:
+
+```bash
+nvm install 22.23.1
+nvm use 22.23.1
+```
+
+Windows에서 `nvm`(nvm-windows)은 **관리자 권한 터미널**에서만 버전 설치/전환이 됩니다. 관리자 권한이 없다면 Node 22를 별도 폴더에 압축 해제해 그 터미널 세션에서만 PATH 앞에 추가해 임시로 쓸 수도 있습니다.
+
 ## 연결 확인 (헬스체크)
 
 ```bash
@@ -56,13 +67,14 @@ npm run test        # Vitest 유닛/컴포넌트 테스트
 npm run build       # production build
 ```
 
-## 현재 구현 범위 (1차 MVP 0~1단계)
+## 현재 구현 범위
 
 - Next.js App Router + TypeScript + Tailwind CSS 기본 설정
 - 모바일 우선 공통 레이아웃, 확정 색상 토큰(`brand`, `brand-dark`, `brand-bg`)
 - 서버 전용 환경변수 검증(`src/lib/env.ts`)
 - Supabase 서버(서비스 롤)/브라우저(anon key) 클라이언트 분리 구조
 - `/api/health` 연결 확인 라우트
-- 로그인 전 기본 진입 화면(빈 홈 화면)
+- 직원 가입/로그인/로그아웃(닉네임+PIN, bcrypt 해시, 5회 실패/10분 잠금, 세션 쿠키)
+- 관리자 로그인/로그아웃(Supabase Auth, `admins` 테이블 소속 여부 확인, 작업 로그)
 
-직원 프로필/PIN 로그인, 관리자 인증, Kakao API 연동, 식당/추천/방문 기능은 다음 단계에서 구현합니다.
+Kakao API 연동, 식당/추천/방문 기능은 다음 단계에서 구현합니다.
