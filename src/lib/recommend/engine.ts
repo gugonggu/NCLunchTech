@@ -17,7 +17,13 @@ export interface RecommendConditions {
   menuName?: string;
   category?: string;
   maxPriceWon?: number;
+  excludeRecentVisits?: boolean;
 }
+
+/** 최근 방문으로 간주하는 기간(일). 확정 기획에 수치가 없어 잡은 권장 기본값 — 조정 시 이 값만 바꾸면 된다. */
+export const RECENT_VISIT_WINDOW_DAYS = 14;
+/** 최근 방문 식당의 추천 가중치(1이 기본, 이 값이 낮을수록 덜 뽑힘). */
+export const RECENT_VISIT_WEIGHT = 0.2;
 
 export function filterByRadius(
   candidates: RecommendCandidate[],
@@ -26,9 +32,13 @@ export function filterByRadius(
   return candidates.filter((c) => c.distanceM <= radiusM);
 }
 
+/** restaurantId → 마지막 완료 방문이 며칠 전이었는지. 방문 기록이 없으면 값이 없다. */
+export type RecentVisitDaysMap = Map<string, number>;
+
 export function filterCandidates(
   candidates: RecommendCandidate[],
-  conditions: RecommendConditions
+  conditions: RecommendConditions,
+  recentVisitDays?: RecentVisitDaysMap
 ): RecommendCandidate[] {
   return candidates.filter((c) => {
     if (!c.isActive) {
@@ -57,6 +67,13 @@ export function filterCandidates(
       return false;
     }
 
+    if (conditions.excludeRecentVisits && recentVisitDays) {
+      const daysAgo = recentVisitDays.get(c.id);
+      if (daysAgo !== undefined && daysAgo < RECENT_VISIT_WINDOW_DAYS) {
+        return false;
+      }
+    }
+
     return true;
   });
 }
@@ -73,18 +90,34 @@ function dedupeById(candidates: RecommendCandidate[]): RecommendCandidate[] {
   return result;
 }
 
-function shuffle<T>(items: T[], random: () => number): T[] {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+function getWeight(candidateId: string, recentVisitDays?: RecentVisitDaysMap): number {
+  if (!recentVisitDays) {
+    return 1;
   }
-  return copy;
+  const daysAgo = recentVisitDays.get(candidateId);
+  if (daysAgo !== undefined && daysAgo < RECENT_VISIT_WINDOW_DAYS) {
+    return RECENT_VISIT_WEIGHT;
+  }
+  return 1;
+}
+
+/** 가중치 누적합에서 random()*총합이 떨어지는 위치의 인덱스를 고른다. */
+function weightedPickIndex(weights: number[], random: () => number): number {
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  let r = random() * total;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) {
+      return i;
+    }
+  }
+  return weights.length - 1;
 }
 
 export interface PickOptions {
   excludeIds?: string[];
   random?: () => number;
+  recentVisitDays?: RecentVisitDaysMap;
 }
 
 export interface RecommendResult {
@@ -94,7 +127,8 @@ export interface RecommendResult {
 }
 
 /**
- * 후보 풀에서 메인 1곳 + 대안 최대 2곳을 뽑는다.
+ * 후보 풀에서 메인 1곳 + 대안 최대 2곳을 가중치 기반 비복원추출로 뽑는다.
+ * 최근 방문 식당은 가중치가 낮아 덜 뽑히지만(0이 되지는 않음) 여전히 뽑힐 수 있다.
  * 제외 목록을 적용한 뒤 후보가 하나도 안 남으면(오늘 넘긴 곳뿐이면) 제외를 무시하고 전체 풀에서 다시 뽑는다.
  */
 export function pickRecommendation(
@@ -117,11 +151,21 @@ export function pickRecommendation(
     return { main: null, alternatives: [], wasExclusionReset: false };
   }
 
-  const shuffled = shuffle(pool, random);
+  const remaining = [...pool];
+  const weights = remaining.map((c) => getWeight(c.id, options.recentVisitDays));
+  const picks: RecommendCandidate[] = [];
+
+  const pickCount = Math.min(3, remaining.length);
+  for (let i = 0; i < pickCount; i++) {
+    const idx = weightedPickIndex(weights, random);
+    picks.push(remaining[idx]);
+    remaining.splice(idx, 1);
+    weights.splice(idx, 1);
+  }
 
   return {
-    main: shuffled[0],
-    alternatives: shuffled.slice(1, 3),
+    main: picks[0],
+    alternatives: picks.slice(1),
     wasExclusionReset,
   };
 }

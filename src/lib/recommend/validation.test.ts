@@ -18,6 +18,11 @@ describe("normalizeRecommendParams", () => {
       maxPriceWon: "8000",
     });
   });
+
+  it("체크박스가 켜져 있으면(on) excludeRecentVisits를 true로, 없으면 undefined로 바꾼다", () => {
+    expect(normalizeRecommendParams({ excludeRecentVisits: "on" }).excludeRecentVisits).toBe(true);
+    expect(normalizeRecommendParams({}).excludeRecentVisits).toBeUndefined();
+  });
 });
 
 describe("recommendConditionsSchema", () => {

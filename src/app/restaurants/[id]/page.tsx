@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { distanceInMeters } from "@/lib/geo";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { decideRestaurant } from "@/app/visits/actions";
 import { addMenuItem, toggleMenuSoldOut, updateMenuPrice, updateRestaurantHours } from "./actions";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -63,11 +64,20 @@ export default async function RestaurantDetailPage({
         {distanceM !== null && <p className="text-neutral-700">KNN타워에서 약 {distanceM}m</p>}
       </div>
 
+      <form action={decideRestaurant.bind(null, restaurant.id)}>
+        <button
+          type="submit"
+          className="w-full rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+        >
+          여기로 결정
+        </button>
+      </form>
+
       <a
         href={kakaoMapUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+        className="rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
       >
         카카오맵에서 보기
       </a>

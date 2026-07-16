@@ -78,6 +78,26 @@ describe("filterCandidates", () => {
     const list = [candidate({ id: "a", menuItems: [{ name: "가격미정", price: null }] })];
     expect(filterCandidates(list, { maxPriceWon: 5000 })).toEqual([]);
   });
+
+  it("excludeRecentVisits 체크 시 14일 이내 완료 방문 식당을 완전히 제외한다", () => {
+    const list = [candidate({ id: "a" }), candidate({ id: "b" })];
+    const recentVisitDays = new Map([["a", 3]]);
+    const result = filterCandidates(list, { excludeRecentVisits: true }, recentVisitDays);
+    expect(result.map((c) => c.id)).toEqual(["b"]);
+  });
+
+  it("excludeRecentVisits 체크가 없으면 최근 방문 식당도 후보에 남는다(감점만, 제외는 아님)", () => {
+    const list = [candidate({ id: "a" }), candidate({ id: "b" })];
+    const recentVisitDays = new Map([["a", 3]]);
+    const result = filterCandidates(list, {}, recentVisitDays);
+    expect(result.map((c) => c.id)).toEqual(["a", "b"]);
+  });
+
+  it("excludeRecentVisits로 후보가 모두 제외되면 빈 배열을 반환한다(임의로 조건을 무시하지 않음)", () => {
+    const list = [candidate({ id: "a" })];
+    const recentVisitDays = new Map([["a", 0]]);
+    expect(filterCandidates(list, { excludeRecentVisits: true }, recentVisitDays)).toEqual([]);
+  });
 });
 
 describe("pickRecommendation", () => {
@@ -102,10 +122,49 @@ describe("pickRecommendation", () => {
       candidate({ id: "c" }),
       candidate({ id: "d" }),
     ];
-    // random이 항상 같은 값을 반환하면 셔플 결과도 항상 같다(피셔-예이츠, random=0 고정).
+    // random이 항상 0을 반환하면 가중 추출도 항상 같은 순서를 고른다(가중치가 모두 같을 때는 원래 순서).
     const result = pickRecommendation(list, { random: () => 0 });
-    expect(result.main?.id).toBe("b");
-    expect(result.alternatives.map((c) => c.id)).toEqual(["c", "d"]);
+    expect(result.main?.id).toBe("a");
+    expect(result.alternatives.map((c) => c.id)).toEqual(["b", "c"]);
+  });
+
+  it("방문 기록이 없으면(recentVisitDays 없음) 가중치 없이 기존과 동일하게 동작한다", () => {
+    const list = [candidate({ id: "a" }), candidate({ id: "b" }), candidate({ id: "c" }), candidate({ id: "d" })];
+    const withRecency = pickRecommendation(list, { random: () => 0, recentVisitDays: new Map() });
+    const withoutRecency = pickRecommendation(list, { random: () => 0 });
+    expect(withRecency).toEqual(withoutRecency);
+  });
+
+  it("최근 방문 식당은 가중치가 낮아 같은 random 값에서도 메인으로 덜 뽑힌다", () => {
+    const list = [candidate({ id: "x" }), candidate({ id: "y" })];
+    const random = () => 0.7;
+
+    const withoutRecency = pickRecommendation(list, { random });
+    expect(withoutRecency.main?.id).toBe("y");
+
+    const recentVisitDays = new Map([["y", 2]]); // y를 2일 전에 방문(14일 이내)
+    const withRecency = pickRecommendation(list, { random, recentVisitDays });
+    expect(withRecency.main?.id).toBe("x");
+  });
+
+  it("14일을 초과한 방문은 감점하지 않는다(경계값 포함)", () => {
+    const list = [candidate({ id: "x" }), candidate({ id: "y" })];
+    const random = () => 0.7;
+    // 정확히 14일 전은 "14일 이내"가 아니므로 감점 대상이 아니다.
+    const recentVisitDays = new Map([["y", 14]]);
+    const result = pickRecommendation(list, { random, recentVisitDays });
+    expect(result.main?.id).toBe("y");
+  });
+
+  it("모든 후보가 최근 방문이어도 결과를 반환한다(가중치가 0이 되지 않음)", () => {
+    const list = [candidate({ id: "a" }), candidate({ id: "b" }), candidate({ id: "c" })];
+    const recentVisitDays = new Map([
+      ["a", 1],
+      ["b", 1],
+      ["c", 1],
+    ]);
+    const result = pickRecommendation(list, { random: () => 0.5, recentVisitDays });
+    expect(result.main).not.toBeNull();
   });
 
   it("제외 목록에 있는 식당은 메인/대안에서 빠진다", () => {

@@ -13,6 +13,7 @@ function buildRecommendUrl(conditions: RecommendConditionsInput): string {
   if (conditions.category) params.set("category", conditions.category);
   if (conditions.radius !== undefined) params.set("radius", String(conditions.radius));
   if (conditions.maxPriceWon !== undefined) params.set("maxPrice", String(conditions.maxPriceWon));
+  if (conditions.excludeRecentVisits) params.set("excludeRecent", "on");
 
   const qs = params.toString();
   return qs ? `/recommend?${qs}` : "/recommend";

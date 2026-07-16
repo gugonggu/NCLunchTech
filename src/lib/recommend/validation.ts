@@ -17,6 +17,7 @@ export const recommendConditionsSchema = z.object({
     .int("가격은 정수여야 합니다.")
     .min(0, "가격은 0 이상이어야 합니다.")
     .optional(),
+  excludeRecentVisits: z.boolean().optional(),
 });
 
 export type RecommendConditionsInput = z.infer<typeof recommendConditionsSchema>;
@@ -27,10 +28,20 @@ export interface RawRecommendParams {
   category?: string;
   radius?: string;
   maxPriceWon?: string;
+  excludeRecentVisits?: string;
+}
+
+export interface NormalizedRecommendParams {
+  restaurantName?: string;
+  menuName?: string;
+  category?: string;
+  radius?: string;
+  maxPriceWon?: string;
+  excludeRecentVisits?: boolean;
 }
 
 /** 빈 문자열은 "값 없음"으로 취급해 undefined로 바꾼다(숫자 필드가 0으로 잘못 강제 변환되는 것을 막는다). */
-export function normalizeRecommendParams(input: RawRecommendParams): RawRecommendParams {
+export function normalizeRecommendParams(input: RawRecommendParams): NormalizedRecommendParams {
   const clean = (v?: string) => (v !== undefined && v.trim() !== "" ? v : undefined);
   return {
     restaurantName: clean(input.restaurantName),
@@ -38,5 +49,6 @@ export function normalizeRecommendParams(input: RawRecommendParams): RawRecommen
     category: clean(input.category),
     radius: clean(input.radius),
     maxPriceWon: clean(input.maxPriceWon),
+    excludeRecentVisits: input.excludeRecentVisits === "on" ? true : undefined,
   };
 }

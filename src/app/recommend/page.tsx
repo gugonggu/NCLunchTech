@@ -1,16 +1,22 @@
 import Link from "next/link";
+import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
 import {
   buildRecommendReason,
   filterByRadius,
   filterCandidates,
   pickRecommendation,
+  RECENT_VISIT_WINDOW_DAYS,
+  type RecentVisitDaysMap,
   type RecommendCandidate,
 } from "@/lib/recommend/engine";
 import { getExclusionList, intersectWithCandidates } from "@/lib/recommend/exclusion-cookie";
 import { normalizeRecommendParams, recommendConditionsSchema } from "@/lib/recommend/validation";
 import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
+import { getRecentCompletedVisits } from "@/lib/visits/queries";
+import { decideRestaurant } from "@/app/visits/actions";
 import { rerollRecommendation, resetExclusions } from "./actions";
 
 interface RecommendSearchParams {
@@ -19,6 +25,7 @@ interface RecommendSearchParams {
   category?: string;
   radius?: string;
   maxPrice?: string;
+  excludeRecent?: string;
 }
 
 function RestaurantCard({
@@ -31,20 +38,29 @@ function RestaurantCard({
   reason?: string;
 }) {
   return (
-    <Link
-      href={`/restaurants/${restaurant.id}`}
+    <div
       className={
         highlight
-          ? "block rounded-2xl border-2 border-brand bg-brand-bg px-4 py-4"
-          : "block rounded-2xl border border-neutral-200 px-4 py-3"
+          ? "rounded-2xl border-2 border-brand bg-brand-bg px-4 py-4"
+          : "rounded-2xl border border-neutral-200 px-4 py-3"
       }
     >
-      <p className="font-semibold">{restaurant.name}</p>
-      <p className="text-sm text-neutral-500">
-        {restaurant.category} · {restaurant.distanceM}m
-      </p>
-      {reason && <p className="mt-1 text-sm text-brand-dark">{reason}</p>}
-    </Link>
+      <Link href={`/restaurants/${restaurant.id}`} className="block">
+        <p className="font-semibold">{restaurant.name}</p>
+        <p className="text-sm text-neutral-500">
+          {restaurant.category} · {restaurant.distanceM}m
+        </p>
+        {reason && <p className="mt-1 text-sm text-brand-dark">{reason}</p>}
+      </Link>
+      <form action={decideRestaurant.bind(null, restaurant.id)} className="mt-2">
+        <button
+          type="submit"
+          className="w-full rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white"
+        >
+          여기로 결정
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -61,6 +77,7 @@ export default async function RecommendPage({
     category: rawParams.category,
     radius: rawParams.radius,
     maxPriceWon: rawParams.maxPrice,
+    excludeRecentVisits: rawParams.excludeRecent,
   });
 
   const parsed = recommendConditionsSchema.safeParse(normalized);
@@ -114,8 +131,22 @@ export default async function RecommendPage({
 
   const hasMenuData = candidates.some((c) => c.menuItems.length > 0);
 
+  const employee = await getCurrentEmployee();
+  let recentVisitDays: RecentVisitDaysMap = new Map();
+  if (employee) {
+    const now = new Date();
+    const today = getSeoulDateString(now);
+    const sinceDate = getSeoulDateString(new Date(now.getTime() - RECENT_VISIT_WINDOW_DAYS * 24 * 60 * 60 * 1000));
+    const recentVisits = await getRecentCompletedVisits(employee.id, sinceDate);
+    for (const visit of recentVisits) {
+      if (!recentVisitDays.has(visit.restaurantId)) {
+        recentVisitDays.set(visit.restaurantId, daysBetweenDateStrings(today, visit.visitDate));
+      }
+    }
+  }
+
   const withinRadius = filterByRadius(candidates, radius);
-  const filtered = filterCandidates(withinRadius, conditions);
+  const filtered = filterCandidates(withinRadius, conditions, recentVisitDays);
 
   const excludedFromCookie = await getExclusionList();
   const activeExclusions = intersectWithCandidates(
@@ -123,13 +154,15 @@ export default async function RecommendPage({
     filtered.map((c) => c.id)
   );
 
-  const result = pickRecommendation(filtered, { excludeIds: activeExclusions });
+  const result = pickRecommendation(filtered, { excludeIds: activeExclusions, recentVisitDays });
 
   let emptyMessage: string | null = null;
   if (companyLat === null || companyLng === null) {
     emptyMessage = "회사 위치 설정이 없어 추천할 수 없습니다. 관리자에게 문의해주세요.";
   } else if (withinRadius.length === 0) {
     emptyMessage = "설정하신 반경 안에 등록된 식당이 없어요. 반경을 넓혀보세요.";
+  } else if (filtered.length === 0 && conditions.excludeRecentVisits) {
+    emptyMessage = "최근 방문 제외 조건 때문에 남은 식당이 없어요. 조건을 완화해보세요.";
   } else if (filtered.length === 0) {
     emptyMessage = "조건에 맞는 식당을 찾지 못했어요. 조건을 완화해보세요.";
   } else if (!result.main) {
@@ -209,6 +242,15 @@ export default async function RecommendPage({
             </p>
           )}
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            name="excludeRecent"
+            defaultChecked={conditions.excludeRecentVisits ?? false}
+          />
+          최근 방문 제외(최근 {RECENT_VISIT_WINDOW_DAYS}일 이내 다녀온 식당 완전히 제외)
+        </label>
 
         <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
           이 조건으로 추천받기
