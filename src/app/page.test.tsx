@@ -33,6 +33,7 @@ describe("HomePage", () => {
     render(ui);
 
     expect(screen.getByText("테스트닉네임님, 안녕하세요.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "오늘 뭐 먹지?" })).toHaveAttribute("href", "/recommend");
     expect(screen.getByRole("link", { name: "식당 찾기" })).toHaveAttribute("href", "/restaurants");
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "로그인" })).not.toBeInTheDocument();

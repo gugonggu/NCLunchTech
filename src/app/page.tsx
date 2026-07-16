@@ -36,8 +36,14 @@ export default async function HomePage() {
       <p className="text-neutral-700">{employee.nickname}님, 안녕하세요.</p>
       <div className="flex w-full flex-col gap-2">
         <Link
-          href="/restaurants"
+          href="/recommend"
           className="rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+        >
+          오늘 뭐 먹지?
+        </Link>
+        <Link
+          href="/restaurants"
+          className="rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
         >
           식당 찾기
         </Link>
