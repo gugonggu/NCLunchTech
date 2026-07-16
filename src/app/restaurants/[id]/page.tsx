@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { distanceInMeters } from "@/lib/geo";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { addMenuItem, toggleMenuSoldOut, updateMenuPrice, updateRestaurantHours } from "./actions";
+
+const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
 export default async function RestaurantDetailPage({
   params,
@@ -21,11 +24,15 @@ export default async function RestaurantDetailPage({
     notFound();
   }
 
-  const { data: settings } = await supabase
-    .from("app_settings")
-    .select("company_lat, company_lng")
-    .eq("id", 1)
-    .maybeSingle();
+  const [{ data: settings }, { data: menuItems }, { data: hoursRows }] = await Promise.all([
+    supabase.from("app_settings").select("company_lat, company_lng").eq("id", 1).maybeSingle(),
+    supabase
+      .from("menu_items")
+      .select("id, name, price, is_sold_out")
+      .eq("restaurant_id", id)
+      .order("created_at"),
+    supabase.from("restaurant_hours").select("*").eq("restaurant_id", id),
+  ]);
 
   const distanceM =
     settings?.company_lat && settings?.company_lng
@@ -39,16 +46,22 @@ export default async function RestaurantDetailPage({
 
   const kakaoMapUrl = `https://place.map.kakao.com/${restaurant.kakao_place_id}`;
 
+  const hoursByDay = new Map((hoursRows ?? []).map((h) => [h.day_of_week, h]));
+
   return (
-    <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+    <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <Link href="/restaurants" className="text-sm text-neutral-500">
         ← 목록으로
       </Link>
-      <h1 className="text-xl font-bold text-brand-dark">{restaurant.name}</h1>
-      <p className="text-neutral-700">{restaurant.category}</p>
-      <p className="text-neutral-700">{restaurant.address}</p>
-      {restaurant.phone && <p className="text-neutral-700">{restaurant.phone}</p>}
-      {distanceM !== null && <p className="text-neutral-700">KNN타워에서 약 {distanceM}m</p>}
+
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-bold text-brand-dark">{restaurant.name}</h1>
+        <p className="text-neutral-700">{restaurant.category}</p>
+        <p className="text-neutral-700">{restaurant.address}</p>
+        {restaurant.phone && <p className="text-neutral-700">{restaurant.phone}</p>}
+        {distanceM !== null && <p className="text-neutral-700">KNN타워에서 약 {distanceM}m</p>}
+      </div>
+
       <a
         href={kakaoMapUrl}
         target="_blank"
@@ -57,6 +70,99 @@ export default async function RestaurantDetailPage({
       >
         카카오맵에서 보기
       </a>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-bold text-brand-dark">메뉴</h2>
+        <ul className="flex flex-col gap-2">
+          {(menuItems ?? []).map((item) => (
+            <li key={item.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">{item.name}</span>
+                {item.is_sold_out && (
+                  <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs">품절</span>
+                )}
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <form action={updateMenuPrice.bind(null, item.id, id)} className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    name="price"
+                    min={0}
+                    defaultValue={item.price ?? ""}
+                    placeholder="가격 정보 없음"
+                    className="w-32 rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                  />
+                  <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                    가격 저장
+                  </button>
+                </form>
+                <form action={toggleMenuSoldOut.bind(null, item.id, id, !item.is_sold_out)}>
+                  <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                    {item.is_sold_out ? "품절 해제" : "품절 처리"}
+                  </button>
+                </form>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <form action={addMenuItem.bind(null, id)} className="flex flex-col gap-2">
+          <input
+            type="text"
+            name="name"
+            placeholder="메뉴 이름"
+            required
+            className="rounded-2xl border border-neutral-200 px-4 py-3"
+          />
+          <input
+            type="number"
+            name="price"
+            min={0}
+            placeholder="가격(선택)"
+            className="rounded-2xl border border-neutral-200 px-4 py-3"
+          />
+          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+            메뉴 추가
+          </button>
+        </form>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-bold text-brand-dark">영업시간</h2>
+        <form action={updateRestaurantHours.bind(null, id)} className="flex flex-col gap-2">
+          {DAY_LABELS.map((label, day) => {
+            const row = hoursByDay.get(day);
+            return (
+              <div
+                key={day}
+                className="flex items-center gap-2 rounded-2xl border border-neutral-200 px-4 py-3"
+              >
+                <span className="w-6 font-semibold">{label}</span>
+                <label className="flex items-center gap-1 text-sm">
+                  <input type="checkbox" name={`closed_${day}`} defaultChecked={row?.is_closed ?? false} />
+                  휴무
+                </label>
+                <input
+                  type="time"
+                  name={`open_${day}`}
+                  defaultValue={row?.open_time ?? ""}
+                  className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
+                />
+                <span>~</span>
+                <input
+                  type="time"
+                  name={`close_${day}`}
+                  defaultValue={row?.close_time ?? ""}
+                  className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
+                />
+              </div>
+            );
+          })}
+          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+            영업시간 저장
+          </button>
+        </form>
+      </section>
     </main>
   );
 }
