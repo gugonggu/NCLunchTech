@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   dedupeIds,
   getWinningOptionIds,
+  isClosingSoon,
   isPollStatusCode,
   isValidRestaurantPollBridge,
   sanitizeCustomLabels,
@@ -127,5 +128,25 @@ describe("isValidRestaurantPollBridge", () => {
 
   it("결정된 선택지에 식당 id가 없으면(메뉴 선택지 등) false", () => {
     expect(isValidRestaurantPollBridge({ ...base, decidedOptionRestaurantId: null })).toBe(false);
+  });
+});
+
+describe("isClosingSoon", () => {
+  const now = new Date("2026-07-20T03:00:00.000Z");
+
+  it("기본 임계값(30분) 이내로 마감이면 true", () => {
+    expect(isClosingSoon(new Date("2026-07-20T03:20:00.000Z"), now)).toBe(true);
+  });
+
+  it("30분보다 많이 남았으면 false", () => {
+    expect(isClosingSoon(new Date("2026-07-20T04:00:00.000Z"), now)).toBe(false);
+  });
+
+  it("이미 지난 마감시각은 마감 임박이 아니라 false", () => {
+    expect(isClosingSoon(new Date("2026-07-20T02:00:00.000Z"), now)).toBe(false);
+  });
+
+  it("커스텀 임계값을 지정할 수 있다", () => {
+    expect(isClosingSoon(new Date("2026-07-20T04:00:00.000Z"), now, 90)).toBe(true);
   });
 });

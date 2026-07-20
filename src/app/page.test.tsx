@@ -32,6 +32,10 @@ vi.mock("@/lib/meals/queries", () => ({
   getMealRecordForSource: vi.fn(),
 }));
 
+vi.mock("@/lib/polls/queries", () => ({
+  getRelevantPolls: vi.fn(),
+}));
+
 const { mockSettingsMaybeSingle } = vi.hoisted(() => ({
   mockSettingsMaybeSingle: vi.fn(),
 }));
@@ -53,11 +57,13 @@ import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getRelevantAppointments } from "@/lib/appointments/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
+import { getRelevantPolls } from "@/lib/polls/queries";
 import HomePage from "./page";
 
 function mockDefaults() {
   vi.mocked(getUnreadNotificationCount).mockResolvedValue(0);
   vi.mocked(getMealRecordForSource).mockResolvedValue(null);
+  vi.mocked(getRelevantPolls).mockResolvedValue([]);
   mockSettingsMaybeSingle.mockResolvedValue({
     data: { company_lat: 35.17, company_lng: 129.13, announcement: null },
   });

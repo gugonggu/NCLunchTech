@@ -158,3 +158,73 @@ export async function closeOpenPollsForAppointment(appointmentId: string): Promi
     .eq("appointment_id", appointmentId)
     .eq("status", "open");
 }
+
+export interface RelevantPoll {
+  id: string;
+  pollType: PollType;
+  label: string;
+  status: PollStatus;
+  closesAt: string;
+}
+
+type RawPollRow = {
+  id: string;
+  poll_type: string;
+  status: string;
+  closes_at: string;
+  restaurants: { name: string } | null;
+};
+
+function toRelevantPoll(row: RawPollRow): RelevantPoll {
+  return {
+    id: row.id,
+    pollType: row.poll_type as PollType,
+    label: row.poll_type === "menu" && row.restaurants ? `${row.restaurants.name} 메뉴 투표` : "식당 투표",
+    status: row.status as PollStatus,
+    closesAt: row.closes_at,
+  };
+}
+
+/**
+ * 홈 화면 "진행 중인 투표"에 표시할 목록: 내가 만든(아직 결과 확정 전인) 투표 +
+ * 내가 수락한 약속에 연결된, 다른 방장이 만든 열린 메뉴 투표(내가 투표해야 할 것들).
+ * 독립 투표에 투표만 하고 만들지는 않은 경우는 이번 범위에서 제외한다(공유 링크로 접근).
+ */
+export async function getRelevantPolls(employeeId: string): Promise<RelevantPoll[]> {
+  const supabase = createServiceRoleClient();
+
+  const { data: createdPolls } = await supabase
+    .from("polls")
+    .select("id, poll_type, status, closes_at, restaurants(name)")
+    .eq("created_by", employeeId)
+    .in("status", ["open", "closed"]);
+
+  const { data: acceptedParticipations } = await supabase
+    .from("appointment_participants")
+    .select("appointment_id")
+    .eq("employee_id", employeeId)
+    .eq("status", "accepted");
+  const appointmentIds = (acceptedParticipations ?? []).map((p) => p.appointment_id);
+
+  let votablePolls: RawPollRow[] = [];
+  if (appointmentIds.length > 0) {
+    const { data } = await supabase
+      .from("polls")
+      .select("id, poll_type, status, closes_at, restaurants(name)")
+      .in("appointment_id", appointmentIds)
+      .eq("status", "open")
+      .neq("created_by", employeeId);
+    votablePolls = (data ?? []) as unknown as RawPollRow[];
+  }
+
+  const merged = new Map<string, RelevantPoll>();
+  for (const row of [...((createdPolls ?? []) as unknown as RawPollRow[]), ...votablePolls]) {
+    if (!merged.has(row.id)) {
+      merged.set(row.id, toRelevantPoll(row));
+    }
+  }
+
+  return [...merged.values()].sort(
+    (a, b) => new Date(a.closesAt).getTime() - new Date(b.closesAt).getTime()
+  );
+}

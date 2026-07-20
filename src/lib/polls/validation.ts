@@ -81,6 +81,18 @@ export function sanitizeCustomLabels(raw: FormDataEntryValue[]): string[] {
   return result;
 }
 
+export const CLOSING_SOON_THRESHOLD_MINUTES = 30;
+
+/** 홈 화면에 "마감 임박" 표시를 할지 판단한다(이미 지난 것은 마감 임박이 아니라 그냥 마감된 것). */
+export function isClosingSoon(
+  closesAt: Date,
+  now: Date,
+  thresholdMinutes: number = CLOSING_SOON_THRESHOLD_MINUTES
+): boolean {
+  const diffMs = closesAt.getTime() - now.getTime();
+  return diffMs > 0 && diffMs <= thresholdMinutes * 60 * 1000;
+}
+
 /**
  * 결정된 독립 식당 투표의 결과로 약속을 만들어도 되는지 검증한다(2-2 브릿지).
  * 식당 투표이면서, 결과가 확정됐고, 아직 다른 약속에 연결되지 않았으며,

@@ -9,6 +9,8 @@ import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "
 import { getRelevantAppointments } from "@/lib/appointments/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
+import { getRelevantPolls } from "@/lib/polls/queries";
+import { isClosingSoon } from "@/lib/polls/validation";
 import { LogoutButton } from "./LogoutButton";
 
 const upcomingFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -69,6 +71,7 @@ export default async function HomePage({
       : null;
   const relevantAppointments = await getRelevantAppointments(employee.id, now);
   const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
+  const relevantPolls = await getRelevantPolls(employee.id);
 
   const soloNeedsConfirmation =
     todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
@@ -250,6 +253,25 @@ export default async function HomePage({
           >
             도감
           </Link>
+        </div>
+      )}
+
+      {relevantPolls.length > 0 && (
+        <div className="flex w-full flex-col gap-2 text-left">
+          <p className="text-sm font-semibold text-neutral-500">진행 중인 투표</p>
+          {relevantPolls.map((p) => (
+            <Link
+              key={p.id}
+              href={`/polls/${p.id}`}
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3"
+            >
+              <p className="font-semibold">{p.label}</p>
+              <p className="text-sm text-neutral-500">
+                {p.status === "open" ? "진행 중" : "마감됨 · 결과 확정 대기"}
+                {p.status === "open" && isClosingSoon(new Date(p.closesAt), now) && " · 마감 임박"}
+              </p>
+            </Link>
+          ))}
         </div>
       )}
 
