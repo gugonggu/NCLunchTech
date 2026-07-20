@@ -2,6 +2,18 @@ import { z } from "zod";
 
 export type RevisitIntent = "again" | "maybe" | "no";
 
+/** 리뷰 평가 태그 고정 목록(최대 6개). 자유 입력 대신 이 목록에서만 고를 수 있다. */
+export const REVIEW_TAGS = [
+  "빨리 나와요",
+  "가성비 좋아요",
+  "양이 많아요",
+  "혼밥하기 좋아요",
+  "여러 명이 가기 좋아요",
+  "다시 가고 싶어요",
+] as const;
+
+export type ReviewTag = (typeof REVIEW_TAGS)[number];
+
 const requiredRating = z.coerce.number().int().min(1, "1~5점 사이여야 합니다.").max(5, "1~5점 사이여야 합니다.");
 const optionalRating = z.coerce
   .number()
@@ -20,7 +32,7 @@ export const reviewSchema = z.object({
   crowdednessRating: optionalRating,
   groupFitRating: optionalRating,
   cleanlinessRating: optionalRating,
-  tags: z.array(z.string().trim().min(1)).optional(),
+  tags: z.array(z.enum(REVIEW_TAGS)).max(REVIEW_TAGS.length).optional(),
   oneLineReview: z
     .string()
     .trim()
@@ -31,13 +43,13 @@ export const reviewSchema = z.object({
 
 export type ReviewInput = z.infer<typeof reviewSchema>;
 
-/** 쉼표로 구분된 태그 입력을 정리한다(공백 제거, 빈 값·중복 제거). */
-export function parseTagList(raw: string): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const part of raw.split(",")) {
-    const tag = part.trim();
-    if (tag && !seen.has(tag)) {
+/** 체크박스로 전달된 태그 값을 고정 목록으로만 걸러 중복 없이 정리한다. */
+export function parseTagList(raw: FormDataEntryValue[]): ReviewTag[] {
+  const seen = new Set<ReviewTag>();
+  const result: ReviewTag[] = [];
+  for (const value of raw) {
+    const tag = String(value) as ReviewTag;
+    if ((REVIEW_TAGS as readonly string[]).includes(tag) && !seen.has(tag)) {
       seen.add(tag);
       result.push(tag);
     }
@@ -64,7 +76,7 @@ export function normalizeReviewFormData(formData: FormData) {
     crowdednessRating: cleanOptionalNumber(formData.get("crowdednessRating")),
     groupFitRating: cleanOptionalNumber(formData.get("groupFitRating")),
     cleanlinessRating: cleanOptionalNumber(formData.get("cleanlinessRating")),
-    tags: parseTagList(String(formData.get("tags") ?? "")),
+    tags: parseTagList(formData.getAll("tags")),
     oneLineReview: formData.get("oneLineReview"),
   };
 }

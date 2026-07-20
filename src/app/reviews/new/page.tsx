@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getMyReview, hasCompletedVisit } from "@/lib/reviews/queries";
-import { REVIEW_STATUS_MESSAGES, isReviewStatusCode } from "@/lib/reviews/validation";
+import { REVIEW_STATUS_MESSAGES, REVIEW_TAGS, isReviewStatusCode } from "@/lib/reviews/validation";
 import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/queries";
 import { MEAL_STATUS_MESSAGES, isMealStatusCode, mealSourceSchema } from "@/lib/meals/validation";
 import { upsertReview } from "./actions";
@@ -189,16 +189,15 @@ export default async function NewReviewPage({
           ))}
         </fieldset>
 
-        <label className="flex flex-col gap-1 text-sm text-neutral-600">
-          태그(쉼표로 구분, 선택)
-          <input
-            type="text"
-            name="tags"
-            defaultValue={existing?.tags?.join(", ") ?? ""}
-            placeholder="예: 혼밥, 조용함, 가성비"
-            className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
-          />
-        </label>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm text-neutral-600">태그(선택, 여러 개 가능)</legend>
+          {REVIEW_TAGS.map((tag) => (
+            <label key={tag} className="flex items-center gap-2 text-sm text-neutral-700">
+              <input type="checkbox" name="tags" value={tag} defaultChecked={existing?.tags?.includes(tag) ?? false} />
+              {tag}
+            </label>
+          ))}
+        </fieldset>
 
         <label className="flex flex-col gap-1 text-sm text-neutral-600">
           한 줄 후기(선택, 최대 200자)

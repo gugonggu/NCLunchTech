@@ -2,7 +2,8 @@ export type NotificationType =
   | "appointment_invited"
   | "appointment_updated"
   | "appointment_cancelled"
-  | "poll_invited";
+  | "poll_invited"
+  | "review_commented";
 
 export function buildAppointmentInvitedMessage(restaurantName: string): string {
   return `${restaurantName}에서의 약속에 초대되었어요.`;
@@ -18,4 +19,8 @@ export function buildAppointmentCancelledMessage(restaurantName: string): string
 
 export function buildPollInvitedMessage(restaurantName: string): string {
   return `${restaurantName} 약속에 메뉴 투표가 생겼어요.`;
+}
+
+export function buildReviewCommentedMessage(restaurantName: string): string {
+  return `${restaurantName} 리뷰에 댓글이 달렸어요.`;
 }

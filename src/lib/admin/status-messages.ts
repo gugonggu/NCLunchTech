@@ -12,6 +12,7 @@ export const REPORT_STATUS_MESSAGES = {
   target_not_found: "대기 중인 신고를 찾을 수 없어요.",
   dismissed: "신고를 기각했어요.",
   review_deleted: "신고된 리뷰를 삭제했어요.",
+  comment_deleted: "신고된 댓글을 삭제했어요.",
 } as const;
 
 export const RESTAURANT_ADMIN_STATUS_MESSAGES = {

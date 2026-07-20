@@ -9,6 +9,11 @@ import { menuItemSchema } from "@/lib/restaurants/menu-validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { submitReport } from "@/lib/status-reports/queries";
 import { isValidReportValue, type ReportType } from "@/lib/status-reports/validation";
+import { getCommentForOwnershipCheck } from "@/lib/review-comments/queries";
+import { commentContentSchema } from "@/lib/review-comments/validation";
+import { toggleReaction } from "@/lib/review-reactions/queries";
+import { createNotification } from "@/lib/notifications/queries";
+import { buildReviewCommentedMessage } from "@/lib/notifications/validation";
 
 export async function toggleFavorite(restaurantId: string) {
   const employee = await getCurrentEmployee();
@@ -235,5 +240,140 @@ export async function submitStatusReport(restaurantId: string, reportType: Repor
     now: new Date(),
   });
 
+  revalidatePath(`/restaurants/${restaurantId}`);
+}
+
+export async function createReviewComment(reviewId: string, restaurantId: string, formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const parsed = commentContentSchema.safeParse(formData.get("content"));
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "댓글 내용이 올바르지 않습니다.");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: review } = await supabase
+    .from("reviews")
+    .select("id, employee_id, restaurant_id")
+    .eq("id", reviewId)
+    .maybeSingle();
+
+  if (!review) {
+    throw new Error("존재하지 않는 리뷰입니다.");
+  }
+
+  const { error } = await supabase.from("review_comments").insert({
+    review_id: reviewId,
+    employee_id: employee.id,
+    content: parsed.data,
+  });
+
+  if (error) {
+    throw new Error("댓글 작성에 실패했습니다.");
+  }
+
+  if (review.employee_id !== employee.id) {
+    const { data: restaurant } = await supabase
+      .from("restaurants")
+      .select("name")
+      .eq("id", review.restaurant_id)
+      .maybeSingle();
+
+    await createNotification({
+      employeeId: review.employee_id,
+      type: "review_commented",
+      message: buildReviewCommentedMessage(restaurant?.name ?? "식당"),
+      relatedRestaurantId: review.restaurant_id,
+    });
+  }
+
+  revalidatePath(`/restaurants/${restaurantId}`);
+}
+
+export async function updateReviewComment(commentId: string, restaurantId: string, formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const comment = await getCommentForOwnershipCheck(commentId);
+  if (!comment) {
+    throw new Error("존재하지 않는 댓글입니다.");
+  }
+  if (comment.employeeId !== employee.id) {
+    throw new Error("본인이 작성한 댓글만 수정할 수 있습니다.");
+  }
+
+  const parsed = commentContentSchema.safeParse(formData.get("content"));
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "댓글 내용이 올바르지 않습니다.");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { error } = await supabase
+    .from("review_comments")
+    .update({ content: parsed.data, updated_at: new Date().toISOString() })
+    .eq("id", commentId)
+    .eq("employee_id", employee.id);
+
+  if (error) {
+    throw new Error("댓글 수정에 실패했습니다.");
+  }
+
+  revalidatePath(`/restaurants/${restaurantId}`);
+}
+
+export async function deleteReviewComment(commentId: string, restaurantId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const comment = await getCommentForOwnershipCheck(commentId);
+  if (!comment) {
+    throw new Error("존재하지 않는 댓글입니다.");
+  }
+  if (comment.employeeId !== employee.id) {
+    throw new Error("본인이 작성한 댓글만 삭제할 수 있습니다.");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { error } = await supabase
+    .from("review_comments")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", commentId)
+    .eq("employee_id", employee.id);
+
+  if (error) {
+    throw new Error("댓글 삭제에 실패했습니다.");
+  }
+
+  revalidatePath(`/restaurants/${restaurantId}`);
+}
+
+export async function toggleReviewHelpful(reviewId: string, restaurantId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: review } = await supabase
+    .from("reviews")
+    .select("employee_id")
+    .eq("id", reviewId)
+    .maybeSingle();
+
+  if (!review) {
+    throw new Error("존재하지 않는 리뷰입니다.");
+  }
+  if (review.employee_id === employee.id) {
+    throw new Error("본인 리뷰에는 도움돼요를 누를 수 없습니다.");
+  }
+
+  await toggleReaction(employee.id, reviewId);
   revalidatePath(`/restaurants/${restaurantId}`);
 }

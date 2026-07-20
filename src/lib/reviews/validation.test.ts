@@ -48,26 +48,30 @@ describe("reviewSchema", () => {
     expect(reviewSchema.safeParse({ ...validBase, oneLineReview: "맛있어요" }).success).toBe(true);
   });
 
-  it("태그 배열을 함께 받을 수 있다", () => {
-    const result = reviewSchema.safeParse({ ...validBase, tags: ["혼밥", "조용함"] });
+  it("고정 목록에 있는 태그 배열은 통과한다", () => {
+    const result = reviewSchema.safeParse({ ...validBase, tags: ["빨리 나와요", "가성비 좋아요"] });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.tags).toEqual(["혼밥", "조용함"]);
+      expect(result.data.tags).toEqual(["빨리 나와요", "가성비 좋아요"]);
     }
+  });
+
+  it("고정 목록에 없는 태그는 거부한다", () => {
+    expect(reviewSchema.safeParse({ ...validBase, tags: ["아무거나"] }).success).toBe(false);
   });
 });
 
 describe("parseTagList", () => {
-  it("쉼표로 구분된 태그를 공백 제거해 배열로 만든다", () => {
-    expect(parseTagList("혼밥, 조용함 ,  가성비")).toEqual(["혼밥", "조용함", "가성비"]);
+  it("고정 목록에 있는 값만 통과시킨다", () => {
+    expect(parseTagList(["빨리 나와요", "아무거나", "가성비 좋아요"])).toEqual(["빨리 나와요", "가성비 좋아요"]);
   });
 
-  it("빈 값과 중복은 제거한다", () => {
-    expect(parseTagList("혼밥,, 혼밥 ,")).toEqual(["혼밥"]);
+  it("중복은 제거한다", () => {
+    expect(parseTagList(["빨리 나와요", "빨리 나와요"])).toEqual(["빨리 나와요"]);
   });
 
-  it("빈 문자열은 빈 배열이다", () => {
-    expect(parseTagList("")).toEqual([]);
+  it("빈 배열은 빈 배열이다", () => {
+    expect(parseTagList([])).toEqual([]);
   });
 });
 

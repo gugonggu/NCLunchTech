@@ -3,19 +3,25 @@ import { notFound } from "next/navigation";
 import { distanceInMeters } from "@/lib/geo";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { getRestaurantReviewSummary, getReportableReviews, hasCompletedVisit } from "@/lib/reviews/queries";
+import { getRestaurantReviewSummary, getRecentReviews, hasCompletedVisit } from "@/lib/reviews/queries";
 import { isFavorite } from "@/lib/collection/queries";
 import { isReportStatusCode, REPORT_STATUS_MESSAGES } from "@/lib/reports/validation";
 import { getStatusSummary } from "@/lib/status-reports/queries";
 import { BUSINESS_STATUS_VALUES, CONGESTION_VALUES, formatMinutesAgo } from "@/lib/status-reports/validation";
+import { getComments } from "@/lib/review-comments/queries";
+import { getHelpfulCount, hasReacted } from "@/lib/review-reactions/queries";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
 import {
   addMenuItem,
+  createReviewComment,
+  deleteReviewComment,
   submitStatusReport,
   toggleFavorite,
   toggleMenuSoldOut,
+  toggleReviewHelpful,
   updateMenuPrice,
+  updateReviewComment,
   updateRestaurantHours,
 } from "./actions";
 
@@ -76,7 +82,17 @@ export default async function RestaurantDetailPage({
 
   const employee = await getCurrentEmployee();
   const reviewSummary = await getRestaurantReviewSummary(id);
-  const reportableReviews = await getReportableReviews(id);
+  const recentReviews = await getRecentReviews(id);
+  const reviewDetails = await Promise.all(
+    recentReviews.map(async (r) => {
+      const [comments, helpfulCount, iReacted] = await Promise.all([
+        getComments(r.id),
+        getHelpfulCount(r.id),
+        employee ? hasReacted(employee.id, r.id) : Promise.resolve(false),
+      ]);
+      return { review: r, comments, helpfulCount, iReacted };
+    })
+  );
   const canReview = employee ? await hasCompletedVisit(employee.id, id) : false;
   const isFavorited = employee ? await isFavorite(employee.id, id) : false;
   const reportFeedbackMessage = isReportStatusCode(reportStatus) ? REPORT_STATUS_MESSAGES[reportStatus] : null;
@@ -257,24 +273,110 @@ export default async function RestaurantDetailPage({
                   </li>
                 ))}
               </ul>
-              {reportableReviews.length > 0 && (
-                <ul className="flex flex-col gap-2">
-                  {reportableReviews.map((r) => (
-                    <li
-                      key={r.id}
-                      className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700"
-                    >
-                      <p>{r.oneLineReview}</p>
-                      <div className="mt-1 flex items-center justify-between text-xs text-neutral-400">
-                        <span>{r.employeeNickname}</span>
-                        {employee && employee.id !== r.employeeId && (
-                          <Link href={`/reports/new?reviewId=${r.id}`} className="underline">
-                            신고
-                          </Link>
+              {reviewDetails.length > 0 && (
+                <ul className="flex flex-col gap-3">
+                  {reviewDetails.map(({ review: r, comments, helpfulCount, iReacted }) => {
+                    const isOwnReview = employee?.id === r.employeeId;
+                    return (
+                      <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
+                        {r.oneLineReview && <p>{r.oneLineReview}</p>}
+                        {r.tags && r.tags.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {r.tags.map((tag) => (
+                              <span key={tag} className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                    </li>
-                  ))}
+                        <div className="mt-1 flex items-center justify-between text-xs text-neutral-400">
+                          <span>{r.employeeNickname}</span>
+                          {employee && !isOwnReview && (
+                            <Link href={`/reports/new?reviewId=${r.id}`} className="underline">
+                              신고
+                            </Link>
+                          )}
+                        </div>
+
+                        {employee && (
+                          <form action={toggleReviewHelpful.bind(null, r.id, id)} className="mt-2">
+                            {!isOwnReview && (
+                              <button
+                                type="submit"
+                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold ${
+                                  iReacted ? "bg-brand text-white" : "bg-neutral-100 text-neutral-700"
+                                }`}
+                              >
+                                도움돼요 {helpfulCount > 0 && helpfulCount}
+                              </button>
+                            )}
+                          </form>
+                        )}
+                        {!employee && helpfulCount > 0 && (
+                          <p className="mt-2 text-xs text-neutral-400">도움돼요 {helpfulCount}</p>
+                        )}
+
+                        {comments.length > 0 && (
+                          <ul className="mt-3 flex flex-col gap-2 border-t border-neutral-100 pt-2">
+                            {comments.map((c) => (
+                              <li key={c.id} className="text-xs text-neutral-600">
+                                {employee?.id === c.employeeId ? (
+                                  <form action={updateReviewComment.bind(null, c.id, id)} className="flex flex-col gap-1">
+                                    <textarea
+                                      name="content"
+                                      defaultValue={c.content}
+                                      maxLength={300}
+                                      rows={2}
+                                      className="rounded-xl border border-neutral-200 px-3 py-2 text-xs text-neutral-900"
+                                    />
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-neutral-400">{c.employeeNickname}</span>
+                                      <div className="flex gap-2">
+                                        <button type="submit" className="rounded-lg bg-neutral-100 px-2 py-1">
+                                          수정
+                                        </button>
+                                        <button
+                                          type="submit"
+                                          formAction={deleteReviewComment.bind(null, c.id, id)}
+                                          className="rounded-lg bg-white px-2 py-1 text-red-600 shadow-sm"
+                                        >
+                                          삭제
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </form>
+                                ) : (
+                                  <p>
+                                    <span className="font-semibold">{c.employeeNickname}</span> {c.content}
+                                    {employee && (
+                                      <Link href={`/reports/new?commentId=${c.id}`} className="ml-2 underline">
+                                        신고
+                                      </Link>
+                                    )}
+                                  </p>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {employee && (
+                          <form action={createReviewComment.bind(null, r.id, id)} className="mt-2 flex flex-col gap-1">
+                            <textarea
+                              name="content"
+                              maxLength={300}
+                              rows={2}
+                              placeholder="댓글 남기기"
+                              className="rounded-xl border border-neutral-200 px-3 py-2 text-xs text-neutral-900"
+                            />
+                            <button type="submit" className="self-end rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold">
+                              댓글 등록
+                            </button>
+                          </form>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </>

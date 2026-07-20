@@ -7,6 +7,7 @@ export interface Notification {
   type: NotificationType;
   message: string;
   relatedAppointmentId: string | null;
+  relatedRestaurantId: string | null;
   readAt: string | null;
   createdAt: string;
 }
@@ -26,7 +27,7 @@ export async function getNotifications(employeeId: string): Promise<Notification
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("notifications")
-    .select("id, type, message, related_appointment_id, read_at, created_at")
+    .select("id, type, message, related_appointment_id, related_restaurant_id, read_at, created_at")
     .eq("employee_id", employeeId)
     .order("created_at", { ascending: false })
     .limit(50);
@@ -36,6 +37,7 @@ export async function getNotifications(employeeId: string): Promise<Notification
     type: n.type as NotificationType,
     message: n.message,
     relatedAppointmentId: n.related_appointment_id,
+    relatedRestaurantId: n.related_restaurant_id,
     readAt: n.read_at,
     createdAt: n.created_at,
   }));
@@ -55,6 +57,7 @@ export async function createNotification(params: {
   type: NotificationType;
   message: string;
   relatedAppointmentId?: string;
+  relatedRestaurantId?: string;
 }): Promise<void> {
   const supabase = createServiceRoleClient();
   await supabase.from("notifications").insert({
@@ -62,6 +65,7 @@ export async function createNotification(params: {
     type: params.type,
     message: params.message,
     related_appointment_id: params.relatedAppointmentId ?? null,
+    related_restaurant_id: params.relatedRestaurantId ?? null,
   });
 }
 

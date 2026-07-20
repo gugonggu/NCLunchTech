@@ -34,8 +34,15 @@ export default async function NotificationsPage() {
         <ul className="flex flex-col gap-2">
           {notifications.map((n) => (
             <li key={n.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
-              {n.relatedAppointmentId ? (
-                <Link href={`/appointments/${n.relatedAppointmentId}`} className="block">
+              {n.relatedAppointmentId || n.relatedRestaurantId ? (
+                <Link
+                  href={
+                    n.relatedAppointmentId
+                      ? `/appointments/${n.relatedAppointmentId}`
+                      : `/restaurants/${n.relatedRestaurantId}`
+                  }
+                  className="block"
+                >
                   <p className="text-sm text-neutral-700">{n.message}</p>
                   <p className="mt-1 text-xs text-neutral-400">{displayFormatter.format(new Date(n.createdAt))}</p>
                 </Link>

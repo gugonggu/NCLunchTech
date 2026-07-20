@@ -101,35 +101,34 @@ export async function getReviewCounts(restaurantIds: string[]): Promise<Map<stri
   return counts;
 }
 
-export interface ReportableReview {
+export interface RecentReview {
   id: string;
   employeeId: string;
   employeeNickname: string;
-  oneLineReview: string;
+  oneLineReview: string | null;
+  tags: string[] | null;
 }
 
-/** 신고 링크를 붙이기 위해 작성자 정보가 포함된 한 줄 후기 목록(있는 것만). */
-export async function getReportableReviews(restaurantId: string): Promise<ReportableReview[]> {
+/** 식당 상세에 개별 카드로 보여줄 최근 리뷰 목록(신고·댓글·도움돼요는 이 목록 단위로 붙는다). */
+export async function getRecentReviews(restaurantId: string): Promise<RecentReview[]> {
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("reviews")
-    .select("id, employee_id, one_line_review, employees(nickname)")
+    .select("id, employee_id, one_line_review, tags, employees(nickname)")
     .eq("restaurant_id", restaurantId)
-    .not("one_line_review", "is", null)
     .order("created_at", { ascending: false })
     .limit(10);
 
-  return (data ?? [])
-    .filter((r): r is typeof r & { one_line_review: string } => !!r.one_line_review)
-    .map((r) => {
-      const employee = r.employees as unknown as { nickname: string } | null;
-      return {
-        id: r.id,
-        employeeId: r.employee_id,
-        employeeNickname: employee?.nickname ?? "(알 수 없음)",
-        oneLineReview: r.one_line_review,
-      };
-    });
+  return (data ?? []).map((r) => {
+    const employee = r.employees as unknown as { nickname: string } | null;
+    return {
+      id: r.id,
+      employeeId: r.employee_id,
+      employeeNickname: employee?.nickname ?? "(알 수 없음)",
+      oneLineReview: r.one_line_review,
+      tags: r.tags,
+    };
+  });
 }
 
 /** 리뷰를 남기려면 그 식당에 완료된 방문(개인 또는 약속 참여/방장 확인) 이력이 있어야 한다. */

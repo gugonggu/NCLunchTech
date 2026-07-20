@@ -51,3 +51,26 @@ export async function deleteReportedReview(reportId: string) {
   const status = parseAdminRpcObjectStatus(data, ["review_deleted", "target_not_found"]);
   redirect(`/admin/reports?status=${status}`);
 }
+
+export async function deleteReportedComment(reportId: string) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    redirect("/admin/login");
+  }
+
+  if (!adminUuidSchema.safeParse(reportId).success) {
+    redirect("/admin/reports?status=invalid_target");
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const { data, error } = await supabase.rpc("admin_delete_reported_comment", {
+    p_admin_id: admin.id,
+    p_report_id: reportId,
+  });
+  if (error) {
+    throw new Error("댓글 삭제에 실패했습니다.");
+  }
+  const status = parseAdminRpcObjectStatus(data, ["comment_deleted", "target_not_found"]);
+  redirect(`/admin/reports?status=${status}`);
+}
