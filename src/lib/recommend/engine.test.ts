@@ -15,6 +15,8 @@ function candidate(overrides: Partial<RecommendCandidate>): RecommendCandidate {
     distanceM: 100,
     isActive: true,
     menuItems: [],
+    lat: 35.17,
+    lng: 129.13,
     ...overrides,
   };
 }

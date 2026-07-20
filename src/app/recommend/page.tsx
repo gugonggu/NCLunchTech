@@ -13,6 +13,7 @@ import {
 import { getExclusionList, intersectWithCandidates } from "@/lib/recommend/exclusion-cookie";
 import { normalizeRecommendParams, recommendConditionsSchema } from "@/lib/recommend/validation";
 import { getExcludingBusinessStatusMap, getFreshCongestedRestaurantIds } from "@/lib/status-reports/queries";
+import { RecommendMapView, type RecommendMapPoint } from "./RecommendMapView";
 import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
@@ -148,6 +149,8 @@ export default async function RecommendPage({
     menuItems: (r.menu_items ?? [])
       .filter((m: { is_sold_out: boolean }) => !m.is_sold_out)
       .map((m: { name: string; price: number | null }) => ({ name: m.name, price: m.price })),
+    lat: r.lat,
+    lng: r.lng,
   }));
 
   const hasMenuData = candidates.some((c) => c.menuItems.length > 0);
@@ -338,6 +341,13 @@ export default async function RecommendPage({
                 ))}
               </div>
             )}
+
+            <RecommendMapView
+              points={[result.main, ...result.alternatives].map(
+                (r): RecommendMapPoint => ({ id: r.id, name: r.name, lat: r.lat, lng: r.lng })
+              )}
+              companyLocation={companyLat !== null && companyLng !== null ? { lat: companyLat, lng: companyLng } : null}
+            />
 
             <div className="flex gap-2">
               <form action={rerollRecommendation.bind(null, result.main.id, conditions)} className="flex-1">

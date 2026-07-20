@@ -10,6 +10,8 @@ export interface RecommendCandidate {
   distanceM: number;
   isActive: boolean;
   menuItems: CandidateMenuItem[];
+  lat: number;
+  lng: number;
   /** 신선한 최신 영업 상태가 "완전 제외 대상"(조기 마감·재료 소진·임시 휴무)이면 그 값, 없으면 null. */
   excludingBusinessStatus?: string | null;
   /** 신선한 최신 혼잡도가 '혼잡'이면 true. */

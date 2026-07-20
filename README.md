@@ -150,4 +150,4 @@ npm run test:e2e          # 테스트 전용 Supabase를 사용하는 Playwright
 
 ## 아직 미구현인 기능
 
-사진, 상태 제보, Kakao Map 지도 임베드.
+(2차 진행 중 — 최신 현황은 커밋 로그 참고)
