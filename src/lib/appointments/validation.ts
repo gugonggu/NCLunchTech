@@ -130,7 +130,7 @@ export const APPOINTMENT_STATUS_MESSAGES = {
   not_host: "방장만 할 수 있는 작업이에요.",
   already_responded: "이미 응답한 약속이에요.",
   already_confirmed: "이미 방문 확인을 마쳤어요.",
-  too_early: "약속 예정 시각이 지난 뒤에 방문을 확인할 수 있어요.",
+  too_early: "약속 예정 시각에서 1시간 후에 방문을 확인할 수 있어요.",
 } as const;
 
 export type AppointmentStatusCode = keyof typeof APPOINTMENT_STATUS_MESSAGES;

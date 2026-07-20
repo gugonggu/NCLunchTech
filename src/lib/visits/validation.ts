@@ -42,6 +42,8 @@ export const VISIT_STATUS_MESSAGES = {
   inactive_restaurant: "운영하지 않는 식당이라 결정할 수 없어요.",
   not_found: "존재하지 않는 식당이에요.",
   invalid_id: "식당 정보가 올바르지 않아요.",
+  too_early: "결정한 시각에서 1시간 후에 방문을 확인할 수 있어요.",
+  no_show: "가지 않았어요로 기록했어요.",
 } as const;
 
 export type VisitFeedbackCode = keyof typeof VISIT_STATUS_MESSAGES;

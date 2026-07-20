@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { hasAppointmentStarted } from "@/lib/confirmation-window";
+import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getAppointmentDetail, getMyParticipant, getParticipants } from "@/lib/appointments/queries";
 import {
   APPOINTMENT_STATUS_MESSAGES,
@@ -13,6 +13,7 @@ import {
   confirmAttendance,
   confirmHostAttendance,
   markHostNoShow,
+  markParticipantNoShow,
   respondToInvite,
   updateAppointmentSchedule,
   withdrawParticipation,
@@ -61,7 +62,7 @@ export default async function AppointmentDetailPage({
   const isExpired = scheduledAt <= now;
   const isCancelled = appointment.status === "cancelled";
   const isOpen = !isCancelled && !isExpired;
-  const needsConfirmation = !isCancelled && hasAppointmentStarted(scheduledAt, now);
+  const needsConfirmation = !isCancelled && isPastConfirmationWindow(scheduledAt, now);
 
   const myParticipant = isHost ? null : await getMyParticipant(id, employee.id);
   const participants = isHost ? await getParticipants(id) : [];
@@ -244,7 +245,7 @@ export default async function AppointmentDetailPage({
                 다녀왔어요
               </button>
             </form>
-            <form action={withdrawParticipation.bind(null, id)} className="flex-1">
+            <form action={markParticipantNoShow.bind(null, id)} className="flex-1">
               <button
                 type="submit"
                 className="w-full rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-600 shadow-sm"

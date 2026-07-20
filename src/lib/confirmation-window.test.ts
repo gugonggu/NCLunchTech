@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { hasAppointmentStarted } from "./confirmation-window";
+import { isPastConfirmationWindow } from "./confirmation-window";
 
-describe("hasAppointmentStarted", () => {
+describe("isPastConfirmationWindow", () => {
   const reference = new Date("2026-07-20T03:00:00.000Z");
 
-  it("예정 시각 직전이면 false", () => {
-    const now = new Date("2026-07-20T02:59:59.999Z");
-    expect(hasAppointmentStarted(reference, now)).toBe(false);
+  it("확인 가능 시점 1ms 전이면 false", () => {
+    const now = new Date("2026-07-20T03:59:59.999Z");
+    expect(isPastConfirmationWindow(reference, now)).toBe(false);
   });
 
-  it("정확히 예정 시각이면 true(경계 포함)", () => {
-    expect(hasAppointmentStarted(reference, reference)).toBe(true);
+  it("정확히 1시간 후면 true", () => {
+    expect(isPastConfirmationWindow(reference, new Date("2026-07-20T04:00:00.000Z"))).toBe(true);
   });
 
-  it("예정 시각이 지났으면 true", () => {
-    const now = new Date("2026-07-20T05:00:00.000Z");
-    expect(hasAppointmentStarted(reference, now)).toBe(true);
+  it("확인 가능 시점 1ms 후면 true", () => {
+    const now = new Date("2026-07-20T04:00:00.001Z");
+    expect(isPastConfirmationWindow(reference, now)).toBe(true);
   });
 });

@@ -6,6 +6,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { decideOutcome } from "@/lib/visits/decision";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { UUID_PATTERN, getSeoulDateString, type VisitFeedbackCode } from "@/lib/visits/validation";
+import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 
 function redirectWithStatus(status: VisitFeedbackCode): never {
   redirect(`/?visitStatus=${status}`);
@@ -156,18 +157,69 @@ export async function completeTodayVisit() {
     redirectWithStatus("already_completed");
   }
 
+  const currentTime = new Date();
+  if (!isPastConfirmationWindow(new Date(active.updatedAt), currentTime)) {
+    redirectWithStatus("too_early");
+  }
+
   const supabase = createServiceRoleClient();
-  const now = new Date().toISOString();
-  const { error } = await supabase
+  const now = currentTime.toISOString();
+  const { data, error } = await supabase
     .from("visits")
     .update({ status: "completed", completed_at: now, updated_at: now })
     .eq("id", active.id)
     .eq("employee_id", employee.id)
-    .eq("status", "planned");
+    .eq("status", "planned")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("방문 완료 처리에 실패했습니다.");
   }
+  if (!data) {
+    redirectWithStatus("already_completed");
+  }
 
   redirectWithStatus("completed");
+}
+
+export async function markTodayVisitNoShow() {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect("/login");
+  }
+
+  const today = getSeoulDateString(new Date());
+  const active = await getActiveVisitToday(employee.id, today);
+  if (!active) {
+    redirectWithStatus("no_active_visit");
+  }
+  if (active.status === "completed") {
+    redirectWithStatus("already_completed");
+  }
+
+  const currentTime = new Date();
+  if (!isPastConfirmationWindow(new Date(active.updatedAt), currentTime)) {
+    redirectWithStatus("too_early");
+  }
+
+  const now = currentTime.toISOString();
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase
+    .from("visits")
+    .update({ status: "cancelled", cancelled_at: now, updated_at: now })
+    .eq("id", active.id)
+    .eq("employee_id", employee.id)
+    .eq("status", "planned")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus("no_active_visit");
+  }
+
+  redirectWithStatus("no_show");
 }

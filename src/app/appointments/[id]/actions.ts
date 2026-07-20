@@ -120,6 +120,48 @@ export async function withdrawParticipation(appointmentId: string) {
   redirectWithStatus(appointmentId, "withdrawn");
 }
 
+export async function markParticipantNoShow(appointmentId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  const appointment = await getAppointmentDetail(appointmentId);
+  if (!appointment) {
+    redirectWithStatus(appointmentId, "not_found");
+  }
+  if (appointment.status === "cancelled") {
+    redirectWithStatus(appointmentId, "cancelled_appointment");
+  }
+  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
+    redirectWithStatus(appointmentId, "too_early");
+  }
+
+  const existing = await getMyParticipant(appointmentId, employee.id);
+  if (!existing || !canParticipantTransition(existing.status, "cancelled")) {
+    redirectWithStatus(appointmentId, "already_responded");
+  }
+
+  const now = new Date().toISOString();
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase
+    .from("appointment_participants")
+    .update({ status: "cancelled", updated_at: now })
+    .eq("id", existing.id)
+    .eq("status", "accepted")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "already_responded");
+  }
+
+  redirectWithStatus(appointmentId, "no_show");
+}
+
 export async function cancelAppointment(appointmentId: string) {
   const employee = await getCurrentEmployee();
   if (!employee) {

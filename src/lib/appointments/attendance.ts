@@ -1,4 +1,4 @@
-import { hasAppointmentStarted } from "@/lib/confirmation-window";
+import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 
 export type AttendanceTiming = "allowed" | "too_early";
 
@@ -7,5 +7,5 @@ export function getAttendanceTiming(scheduledAt: string, now: Date): AttendanceT
   if (Number.isNaN(scheduled.getTime())) {
     return "too_early";
   }
-  return hasAppointmentStarted(scheduled, now) ? "allowed" : "too_early";
+  return isPastConfirmationWindow(scheduled, now) ? "allowed" : "too_early";
 }

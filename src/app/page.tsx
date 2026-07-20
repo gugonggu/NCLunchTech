@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { cancelTodayVisit, completeTodayVisit } from "@/app/visits/actions";
+import { isPastConfirmationWindow } from "@/lib/confirmation-window";
+import { cancelTodayVisit, completeTodayVisit, markTodayVisitNoShow } from "@/app/visits/actions";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
 import { getRelevantAppointments } from "@/lib/appointments/queries";
@@ -64,7 +65,8 @@ export default async function HomePage({
   const relevantAppointments = await getRelevantAppointments(employee.id, now);
   const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
 
-  const soloNeedsConfirmation = todayVisit?.status === "planned";
+  const soloNeedsConfirmation =
+    todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
   const appointmentsNeedingConfirmation = relevantAppointments.filter((a) => a.needsConfirmation);
   const upcomingAppointments = relevantAppointments.filter((a) => !a.needsConfirmation);
   const hasAnyConfirmation = soloNeedsConfirmation || appointmentsNeedingConfirmation.length > 0;
@@ -130,7 +132,7 @@ export default async function HomePage({
                     다녀왔어요
                   </button>
                 </form>
-                <form action={cancelTodayVisit} className="flex-1">
+                <form action={markTodayVisitNoShow} className="flex-1">
                   <button
                     type="submit"
                     className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold text-neutral-600"

@@ -1,4 +1,6 @@
-/** 약속 예정 시각에 도달했거나 지났으면 방문 확인이 가능하다. */
-export function hasAppointmentStarted(scheduledAt: Date, now: Date): boolean {
-  return now.getTime() >= scheduledAt.getTime();
+const CONFIRMATION_DELAY_MS = 60 * 60 * 1000;
+
+/** 개인 방문 결정 시각 또는 약속 예정 시각에서 1시간이 지난 뒤 방문 확인을 허용한다. */
+export function isPastConfirmationWindow(referenceTime: Date, now: Date): boolean {
+  return now.getTime() - referenceTime.getTime() >= CONFIRMATION_DELAY_MS;
 }
