@@ -69,7 +69,7 @@ curl http://localhost:3000/api/health
 
 ## Supabase 마이그레이션 적용 방법
 
-`supabase/migrations/`에 순서대로 번호가 매겨진 SQL 파일이 있습니다(`0001`~`0009`). 아래 중 한 가지 방법으로 적용합니다.
+`supabase/migrations/`에 순서대로 번호가 매겨진 SQL 파일이 있습니다(`0001`~`0010`). 아래 중 한 가지 방법으로 적용합니다.
 
 **방법 1 — Supabase 대시보드 SQL Editor (권장, 별도 도구 설치 불필요)**
 각 마이그레이션 파일 내용을 순서대로 복사해 SQL Editor에서 실행합니다.
@@ -81,7 +81,7 @@ npx supabase db push --db-url "<Session pooler 연결 문자열>" --workdir .
 - Direct connection(`db.<ref>.supabase.co`)은 IPv6 전용이라 일부 네트워크에서 연결이 안 될 수 있습니다. 이 경우 Project Settings → Database → Connection string에서 **Session pooler**(IPv4) URI를 사용하세요.
 - `supabase link`로 프로젝트를 미리 연결해두는 방식 대신, 매번 `--db-url`을 명시적으로 지정하는 것을 권장합니다(어떤 프로젝트에 적용되는지 항상 명확하게 하기 위함).
 
-적용 후 `app_settings` 테이블에 초대코드와 회사 좌표(KNN타워)를 등록해야 가입·식당 조회 기능이 정상 동작합니다(관리자 화면이 아직 없어 SQL로 직접 등록).
+`0010_admin_extensions.sql`은 식당의 추천 제외 플래그, 홈 공지 설정, 관리자 CSV 검증 batch 테이블을 추가합니다. 적용 후 `app_settings`의 초대코드와 회사 좌표(KNN타워)는 관리자 설정 화면에서 관리할 수 있습니다.
 
 ## Kakao 식당 동기화
 
@@ -107,7 +107,7 @@ npm run test:e2e          # 테스트 전용 Supabase를 사용하는 Playwright
 
 이 둘은 **선택 사항**이며, 필수 검증 절차에 포함되지 않습니다. 실행하려면 **개발용과 완전히 분리된 테스트 전용 Supabase 프로젝트**가 별도로 필요합니다:
 
-1. 새 Supabase 프로젝트를 만들고 `supabase/migrations/`의 `0001`~`0009`를 그 프로젝트에 적용
+1. 새 Supabase 프로젝트를 만들고 `supabase/migrations/`의 `0001`~`0010`을 그 프로젝트에 적용
 2. `.env.test.local.example`을 참고해 `.env.test.local` 작성(`TEST_PROJECT_REF`, `ALLOW_TEST_DB_WRITES=true` 포함)
 3. `test:e2e`는 Playwright 브라우저 바이너리 설치가 추가로 필요합니다(`npx playwright install chromium`)
 
@@ -120,6 +120,9 @@ npm run test:e2e          # 테스트 전용 Supabase를 사용하는 Playwright
 - Next.js App Router + TypeScript + Tailwind CSS, 모바일 우선 레이아웃
 - 직원 가입/로그인/로그아웃(닉네임+PIN, bcrypt 해시, 5회 실패/10분 잠금, 세션 쿠키), 로그인 상태에 따른 홈 화면 분기
 - 관리자 로그인/로그아웃(Supabase Auth, `admins` 소속 확인, 작업 로그)
+- 관리자 직원 관리(목록, 활성화·비활성화, PIN 초기화), 식당 관리(검색, 활성화·비활성화, 추천 제외, 상세, 변경 이력 복원)
+- 관리자 CSV 검증·미리보기·적용(메뉴·가격, 영업시간), 리뷰 신고 처리, 초대코드·회사 좌표·기본 반경·홈 공지 설정, 관리자 작업 로그 조회
+- 홈 공지 표시와 추천 제외 식당 필터링
 - Kakao 식당 동기화(관리자), 식당 목록/검색/필터/정렬/상세(직원, 활성 식당만 노출)
 - 메뉴 추가·가격 수정·품절 처리(식당 소속 검증 포함), 영업시간 등록(서버 검증 포함), 모든 변경 이력 기록
 - 즉시/조건 추천(`/recommend`): 반경·카테고리·식당명·메뉴명·가격 조건, 당일 넘긴 식당 쿠키 기반 제외(DB 테이블 없음), 다시 추천, 제외 목록 초기화. 메뉴·가격 데이터가 없으면 메뉴명·가격 조건은 자동으로 비활성화됨
@@ -130,8 +133,10 @@ npm run test:e2e          # 테스트 전용 Supabase를 사용하는 Playwright
 - 즐겨찾기(`favorites` 테이블): 식당 상세·도감에서 토글
 - 도감(`/collection`): 분류별 방문 현황, 즐겨찾기 목록, 전체 식당 목록(방문 여부 배지, 분류·방문·즐겨찾기 필터)
 - 내부 알림(`notifications` 테이블, 앱 안에서만 — 이메일·문자 없음): 약속 초대·정보 변경·전체 취소 시 생성, 홈 화면에 안 읽은 개수 배지, `/notifications`에서 확인 시 전체 읽음 처리
-- 신고(`reports` 테이블, 리뷰 대상, 접수까지만): 식당 상세의 각 리뷰에 신고 링크(본인 리뷰 제외), 중복 신고 방지. 신고 처리(승인/기각) 관리자 화면은 다음 단계(CSV·관리자) 범위
+- 신고(`reports` 테이블, 리뷰 대상): 식당 상세의 각 리뷰에 신고 링크(본인 리뷰 제외), 중복 신고 방지, 관리자 화면에서 신고 기각 또는 신고된 리뷰 삭제
+
+관리자 기능은 현재 화면·Server Action·DB가 연결된 초기 구현입니다. CSV 적용, 신고 처리, 직원 보안 작업의 트랜잭션 원자성과 입력 검증·오류 전파 강화는 후속 13-B·13-C 범위입니다.
 
 ## 아직 미구현인 기능
 
-먹은 메뉴 실제 가격 개인 기록(현재는 기존 공동 편집 메뉴 화면 재사용으로 대체), 사진, 상태 제보, 하단 내비게이션과 "내 정보" 화면, CSV 업로드, 관리자 사용자·식당 활성화 관리 화면·신고 처리, Kakao Map 지도 임베드.
+먹은 메뉴 실제 가격 개인 기록(현재는 기존 공동 편집 메뉴 화면 재사용으로 대체), 사진, 상태 제보, 하단 내비게이션과 "내 정보" 화면, Kakao Map 지도 임베드.

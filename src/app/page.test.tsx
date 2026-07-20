@@ -27,12 +27,16 @@ vi.mock("@/lib/notifications/queries", () => ({
   getUnreadNotificationCount: vi.fn(),
 }));
 
+const { mockSettingsMaybeSingle } = vi.hoisted(() => ({
+  mockSettingsMaybeSingle: vi.fn(),
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   createServiceRoleClient: vi.fn(() => ({
     from: () => ({
       select: () => ({
         eq: () => ({
-          maybeSingle: () => Promise.resolve({ data: { company_lat: 35.17, company_lng: 129.13 } }),
+          maybeSingle: mockSettingsMaybeSingle,
         }),
       }),
     }),
@@ -47,6 +51,9 @@ import HomePage from "./page";
 
 function mockDefaults() {
   vi.mocked(getUnreadNotificationCount).mockResolvedValue(0);
+  mockSettingsMaybeSingle.mockResolvedValue({
+    data: { company_lat: 35.17, company_lng: 129.13, announcement: null },
+  });
 }
 
 function renderHome(searchParams: Record<string, string> = {}) {
@@ -248,6 +255,7 @@ describe("HomePage", () => {
 
   it("안 읽은 알림이 있으면 배지를 보여주고, 없으면 숨긴다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
     vi.mocked(getUnreadNotificationCount).mockResolvedValue(3);
@@ -268,5 +276,32 @@ describe("HomePage", () => {
     render(ui);
 
     expect(screen.queryByRole("link", { name: /알림/ })).not.toBeInTheDocument();
+  });
+
+  it("공지사항이 있으면 배너로 보여주고, 없으면 숨긴다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(getUnreadNotificationCount).mockResolvedValue(0);
+    mockSettingsMaybeSingle.mockResolvedValue({
+      data: { company_lat: 35.17, company_lng: 129.13, announcement: "이번 주 금요일은 회식입니다." },
+    });
+
+    const ui = await renderHome();
+    render(ui);
+
+    expect(screen.getByText("이번 주 금요일은 회식입니다.")).toBeInTheDocument();
+  });
+
+  it("공지사항이 없으면 배너를 숨긴다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+
+    const ui = await renderHome();
+    render(ui);
+
+    expect(screen.queryByText(/회식/)).not.toBeInTheDocument();
   });
 });

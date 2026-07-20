@@ -71,28 +71,32 @@ export default async function HomePage({
   const upcomingAppointments = relevantAppointments.filter((a) => !a.needsConfirmation);
   const hasAnyConfirmation = soloNeedsConfirmation || appointmentsNeedingConfirmation.length > 0;
 
-  let todayVisitDistanceM: number | null = null;
-  if (todayVisit) {
-    const supabase = createServiceRoleClient();
-    const { data: settings } = await supabase
-      .from("app_settings")
-      .select("company_lat, company_lng")
-      .eq("id", 1)
-      .maybeSingle();
+  const supabase = createServiceRoleClient();
+  const { data: settings } = await supabase
+    .from("app_settings")
+    .select("company_lat, company_lng, announcement")
+    .eq("id", 1)
+    .maybeSingle();
 
-    if (settings?.company_lat && settings?.company_lng) {
-      todayVisitDistanceM = Math.round(
-        distanceInMeters(
-          { lat: settings.company_lat, lng: settings.company_lng },
-          { lat: todayVisit.restaurantLat, lng: todayVisit.restaurantLng }
-        )
-      );
-    }
+  let todayVisitDistanceM: number | null = null;
+  if (todayVisit && settings?.company_lat && settings?.company_lng) {
+    todayVisitDistanceM = Math.round(
+      distanceInMeters(
+        { lat: settings.company_lat, lng: settings.company_lng },
+        { lat: todayVisit.restaurantLat, lng: todayVisit.restaurantLng }
+      )
+    );
   }
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 bg-brand-bg px-6 py-12 text-center">
       <h1 className="text-2xl font-bold text-brand-dark">앤시점심기술</h1>
+
+      {settings?.announcement && (
+        <p className="w-full rounded-2xl bg-white px-4 py-3 text-sm text-neutral-700 shadow-sm">
+          {settings.announcement}
+        </p>
+      )}
 
       {unreadNotificationCount > 0 && (
         <Link

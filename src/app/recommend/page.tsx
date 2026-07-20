@@ -129,6 +129,7 @@ export default async function RecommendPage({
       .from("restaurants")
       .select("id, name, category, lat, lng, menu_items(name, price, is_sold_out)")
       .eq("is_active", true)
+      .eq("excluded_from_recommend", false)
       .range(from, to)
   );
 
