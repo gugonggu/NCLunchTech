@@ -109,6 +109,13 @@ export default async function MePage() {
         알림 보기
       </Link>
 
+      <Link
+        href="/leaderboard"
+        className="rounded-2xl bg-white px-4 py-4 font-semibold text-brand-dark shadow-sm"
+      >
+        월간 배지·리더보드
+      </Link>
+
       <LogoutButton />
     </main>
   );
