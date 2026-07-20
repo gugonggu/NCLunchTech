@@ -1,6 +1,8 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import type { AppointmentStatus, ParticipantStatus } from "./validation";
+import { isPastConfirmationWindow } from "@/lib/confirmation-window";
+import { getSeoulDateString } from "@/lib/visits/validation";
+import type { AppointmentStatus, HostAttendanceStatus, ParticipantStatus } from "./validation";
 
 export interface AppointmentDetail {
   id: string;
@@ -11,13 +13,16 @@ export interface AppointmentDetail {
   scheduledAt: string;
   memo: string | null;
   status: AppointmentStatus;
+  hostAttendanceStatus: HostAttendanceStatus | null;
 }
 
 export async function getAppointmentDetail(appointmentId: string): Promise<AppointmentDetail | null> {
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("appointments")
-    .select("id, host_employee_id, restaurant_id, scheduled_at, memo, status, restaurants(name, category)")
+    .select(
+      "id, host_employee_id, restaurant_id, scheduled_at, memo, status, host_attendance_status, restaurants(name, category)"
+    )
     .eq("id", appointmentId)
     .maybeSingle();
 
@@ -39,6 +44,7 @@ export async function getAppointmentDetail(appointmentId: string): Promise<Appoi
     scheduledAt: data.scheduled_at,
     memo: data.memo,
     status: data.status as AppointmentStatus,
+    hostAttendanceStatus: data.host_attendance_status as HostAttendanceStatus | null,
   };
 }
 
@@ -107,53 +113,58 @@ export async function resolveEmployeesByNickname(
   return (data ?? []).filter((e) => e.id !== excludeEmployeeId);
 }
 
-export interface UpcomingAppointment {
+export interface RelevantAppointment {
   id: string;
   restaurantName: string;
   scheduledAt: string;
   role: "host" | "participant";
-  myStatus: ParticipantStatus | null;
+  participantStatus: ParticipantStatus | null;
+  needsConfirmation: boolean;
 }
 
-/** 홈 화면 "다가오는 약속": 내가 방장이거나 대기/확정 상태로 참여 중이며 아직 시작 전인 약속. */
-export async function getUpcomingAppointments(
+/**
+ * 홈 화면에 보여줄 약속: 내가 방장이며 아직 방문 확인 전이거나, 대기/확정 상태로 참여 중인 약속.
+ * needsConfirmation이 true면 "방문 확인" 섹션에, false면 "다가오는 약속"에 사용한다.
+ */
+export async function getRelevantAppointments(
   employeeId: string,
   now: Date
-): Promise<UpcomingAppointment[]> {
+): Promise<RelevantAppointment[]> {
   const supabase = createServiceRoleClient();
 
   const [{ data: hosted }, { data: participantRows }] = await Promise.all([
     supabase
       .from("appointments")
-      .select("id, scheduled_at, status, restaurants(name)")
+      .select("id, scheduled_at, host_attendance_status, restaurants(name)")
       .eq("host_employee_id", employeeId)
+      .eq("status", "active")
+      .is("host_attendance_status", null)
       .order("scheduled_at"),
     supabase
       .from("appointment_participants")
       .select("status, appointments(id, scheduled_at, status, restaurants(name))")
-      .eq("employee_id", employeeId),
+      .eq("employee_id", employeeId)
+      .in("status", ["pending", "accepted"]),
   ]);
 
-  const results: UpcomingAppointment[] = [];
+  const results: RelevantAppointment[] = [];
 
   for (const a of hosted ?? []) {
     const restaurant = a.restaurants as unknown as { name: string } | null;
-    if (a.status === "active" && restaurant && new Date(a.scheduled_at) >= now) {
-      results.push({
-        id: a.id,
-        restaurantName: restaurant.name,
-        scheduledAt: a.scheduled_at,
-        role: "host",
-        myStatus: null,
-      });
+    if (!restaurant) {
+      continue;
     }
+    results.push({
+      id: a.id,
+      restaurantName: restaurant.name,
+      scheduledAt: a.scheduled_at,
+      role: "host",
+      participantStatus: null,
+      needsConfirmation: isPastConfirmationWindow(new Date(a.scheduled_at), now),
+    });
   }
 
   for (const p of participantRows ?? []) {
-    if (p.status !== "pending" && p.status !== "accepted") {
-      continue;
-    }
-
     const appt = p.appointments as unknown as {
       id: string;
       scheduled_at: string;
@@ -164,7 +175,11 @@ export async function getUpcomingAppointments(
     if (!appt || appt.status !== "active" || !appt.restaurants) {
       continue;
     }
-    if (new Date(appt.scheduled_at) < now) {
+
+    const scheduledAt = new Date(appt.scheduled_at);
+
+    if (p.status === "pending" && scheduledAt < now) {
+      // 응답하지 않은 채 이미 지난 초대는 더 이상 노출하지 않는다(응답 자체가 의미 없어짐).
       continue;
     }
 
@@ -173,10 +188,59 @@ export async function getUpcomingAppointments(
       restaurantName: appt.restaurants.name,
       scheduledAt: appt.scheduled_at,
       role: "participant",
-      myStatus: p.status as ParticipantStatus,
+      participantStatus: p.status as ParticipantStatus,
+      needsConfirmation: p.status === "accepted" && isPastConfirmationWindow(scheduledAt, now),
     });
   }
 
   results.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  return results;
+}
+
+export interface AttendedAppointment {
+  restaurantId: string;
+  visitDate: string;
+}
+
+/** 추천 엔진의 최근 방문 감점용: sinceDate(YYYY-MM-DD) 이후 방문 확인(다녀왔어요) 완료한 약속(방장+참여자). */
+export async function getRecentAttendedAppointments(
+  employeeId: string,
+  sinceDate: string
+): Promise<AttendedAppointment[]> {
+  const supabase = createServiceRoleClient();
+
+  const [{ data: hosted }, { data: participantRows }] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("restaurant_id, scheduled_at")
+      .eq("host_employee_id", employeeId)
+      .eq("host_attendance_status", "completed"),
+    supabase
+      .from("appointment_participants")
+      .select("appointments(restaurant_id, scheduled_at)")
+      .eq("employee_id", employeeId)
+      .eq("status", "completed"),
+  ]);
+
+  const results: AttendedAppointment[] = [];
+
+  for (const a of hosted ?? []) {
+    const visitDate = getSeoulDateString(new Date(a.scheduled_at));
+    if (visitDate >= sinceDate) {
+      results.push({ restaurantId: a.restaurant_id, visitDate });
+    }
+  }
+
+  for (const p of participantRows ?? []) {
+    const appt = p.appointments as unknown as { restaurant_id: string; scheduled_at: string } | null;
+    if (!appt) {
+      continue;
+    }
+    const visitDate = getSeoulDateString(new Date(appt.scheduled_at));
+    if (visitDate >= sinceDate) {
+      results.push({ restaurantId: appt.restaurant_id, visitDate });
+    }
+  }
+
   return results;
 }

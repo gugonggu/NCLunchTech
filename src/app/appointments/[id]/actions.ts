@@ -172,6 +172,108 @@ export async function updateAppointmentSchedule(appointmentId: string, formData:
   redirectWithStatus(appointmentId, "updated");
 }
 
+/** 참여자 본인의 방문 확인(다녀왔어요). accepted 상태에서만 가능하며, 시각 제한은 없다(늦게 확인해도 허용). */
+export async function confirmAttendance(appointmentId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  const appointment = await getAppointmentDetail(appointmentId);
+  if (!appointment) {
+    redirectWithStatus(appointmentId, "not_found");
+  }
+  if (appointment.status === "cancelled") {
+    redirectWithStatus(appointmentId, "cancelled_appointment");
+  }
+
+  const existing = await getMyParticipant(appointmentId, employee.id);
+  if (!existing || !canParticipantTransition(existing.status, "completed")) {
+    redirectWithStatus(appointmentId, "already_responded");
+  }
+
+  const supabase = createServiceRoleClient();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("appointment_participants")
+    .update({ status: "completed", updated_at: now })
+    .eq("id", existing.id)
+    .eq("status", "accepted");
+
+  if (error) {
+    throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+
+  redirectWithStatus(appointmentId, "attended");
+}
+
+async function requireHostAttendancePending(appointmentId: string, employeeId: string) {
+  const appointment = await getAppointmentDetail(appointmentId);
+  if (!appointment) {
+    redirectWithStatus(appointmentId, "not_found");
+  }
+  if (appointment.hostEmployeeId !== employeeId) {
+    redirectWithStatus(appointmentId, "not_host");
+  }
+  if (appointment.status === "cancelled") {
+    redirectWithStatus(appointmentId, "cancelled_appointment");
+  }
+  if (appointment.hostAttendanceStatus !== null) {
+    redirectWithStatus(appointmentId, "already_confirmed");
+  }
+  return appointment;
+}
+
+/** 방장 본인의 방문 확인(다녀왔어요). 참여자 테이블에 방장 행이 없으므로 appointments 컬럼으로 관리한다. */
+export async function confirmHostAttendance(appointmentId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  await requireHostAttendancePending(appointmentId, employee.id);
+
+  const supabase = createServiceRoleClient();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("appointments")
+    .update({ host_attendance_status: "completed", host_attendance_confirmed_at: now, updated_at: now })
+    .eq("id", appointmentId)
+    .eq("host_employee_id", employee.id)
+    .is("host_attendance_status", null);
+
+  if (error) {
+    throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+
+  redirectWithStatus(appointmentId, "attended");
+}
+
+/** 방장 본인의 방문 확인(가지 않았어요). */
+export async function markHostNoShow(appointmentId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  await requireHostAttendancePending(appointmentId, employee.id);
+
+  const supabase = createServiceRoleClient();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("appointments")
+    .update({ host_attendance_status: "cancelled", host_attendance_confirmed_at: now, updated_at: now })
+    .eq("id", appointmentId)
+    .eq("host_employee_id", employee.id)
+    .is("host_attendance_status", null);
+
+  if (error) {
+    throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+
+  redirectWithStatus(appointmentId, "no_show");
+}
+
 export async function changeAppointmentRestaurant(appointmentId: string, restaurantId: string) {
   const employee = await getCurrentEmployee();
   if (!employee) {

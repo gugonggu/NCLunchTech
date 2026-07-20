@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export type AppointmentStatus = "active" | "cancelled";
-export type ParticipantStatus = "pending" | "accepted" | "declined" | "cancelled";
+export type ParticipantStatus = "pending" | "accepted" | "declined" | "cancelled" | "completed";
+export type HostAttendanceStatus = "completed" | "cancelled";
 
 const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -68,9 +69,10 @@ export const memoSchema = z
 
 const PARTICIPANT_TRANSITIONS: Record<ParticipantStatus, ParticipantStatus[]> = {
   pending: ["accepted", "declined"],
-  accepted: ["cancelled"],
+  accepted: ["cancelled", "completed"],
   declined: [],
   cancelled: [],
+  completed: [],
 };
 
 export function canParticipantTransition(from: ParticipantStatus, to: ParticipantStatus): boolean {
@@ -116,6 +118,8 @@ export const APPOINTMENT_STATUS_MESSAGES = {
   accepted: "참여를 수락했어요.",
   declined: "참여를 거절했어요.",
   withdrawn: "참여를 취소했어요.",
+  attended: "다녀왔어요로 기록했어요.",
+  no_show: "가지 않았어요로 기록했어요.",
   invalid_time: "약속 시각은 현재보다 미래여야 해요.",
   invalid_memo: "메모는 100자 이하로 입력해주세요.",
   inactive_restaurant: "운영하지 않는 식당이라 약속을 만들 수 없어요.",
@@ -124,6 +128,7 @@ export const APPOINTMENT_STATUS_MESSAGES = {
   cancelled_appointment: "취소된 약속이에요.",
   not_host: "방장만 할 수 있는 작업이에요.",
   already_responded: "이미 응답한 약속이에요.",
+  already_confirmed: "이미 방문 확인을 마쳤어요.",
 } as const;
 
 export type AppointmentStatusCode = keyof typeof APPOINTMENT_STATUS_MESSAGES;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { distanceInMeters } from "@/lib/geo";
 import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getReviewCounts } from "@/lib/reviews/queries";
 
 const RESULT_LIMIT = 60;
 
@@ -33,7 +34,7 @@ export default async function RestaurantsPage({
   const radius = Number(params.radius) || settings?.default_radius_m || DEFAULT_RADIUS_M;
   const query = params.q?.trim() ?? "";
   const category = params.category ?? "";
-  const sort = params.sort === "new" ? "new" : "distance";
+  const sort = params.sort === "new" ? "new" : params.sort === "reviews" ? "reviews" : "distance";
 
   const { data: restaurants } = await supabase
     .from("restaurants")
@@ -60,8 +61,13 @@ export default async function RestaurantsPage({
     list = list.filter((r) => r.name.includes(query));
   }
 
+  const reviewCounts =
+    sort === "reviews" ? await getReviewCounts(list.map((r) => r.id)) : new Map<string, number>();
+
   if (sort === "new") {
     list.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  } else if (sort === "reviews") {
+    list.sort((a, b) => (reviewCounts.get(b.id) ?? 0) - (reviewCounts.get(a.id) ?? 0));
   } else {
     list.sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity));
   }
@@ -118,6 +124,7 @@ export default async function RestaurantsPage({
         >
           <option value="distance">가까운순</option>
           <option value="new">신규순</option>
+          <option value="reviews">리뷰 많은순</option>
         </select>
         <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
           검색
@@ -144,6 +151,7 @@ export default async function RestaurantsPage({
               <p className="text-sm text-neutral-500">
                 {r.category} · {r.address}
                 {r.distanceM !== null && ` · ${r.distanceM}m`}
+                {sort === "reviews" && ` · 리뷰 ${reviewCounts.get(r.id) ?? 0}개`}
               </p>
             </Link>
           </li>

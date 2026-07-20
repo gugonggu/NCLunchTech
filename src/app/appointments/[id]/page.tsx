@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
+import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getAppointmentDetail, getMyParticipant, getParticipants } from "@/lib/appointments/queries";
 import {
   APPOINTMENT_STATUS_MESSAGES,
@@ -9,6 +10,9 @@ import {
 } from "@/lib/appointments/validation";
 import {
   cancelAppointment,
+  confirmAttendance,
+  confirmHostAttendance,
+  markHostNoShow,
   respondToInvite,
   updateAppointmentSchedule,
   withdrawParticipation,
@@ -27,6 +31,7 @@ const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
   accepted: "확정",
   declined: "거절",
   cancelled: "불참",
+  completed: "다녀왔어요",
 };
 
 export default async function AppointmentDetailPage({
@@ -49,14 +54,22 @@ export default async function AppointmentDetailPage({
     notFound();
   }
 
+  const now = new Date();
+  const scheduledAt = new Date(appointment.scheduledAt);
   const feedbackMessage = isAppointmentStatusCode(status) ? APPOINTMENT_STATUS_MESSAGES[status] : null;
   const isHost = appointment.hostEmployeeId === employee.id;
-  const isExpired = new Date(appointment.scheduledAt) <= new Date();
+  const isExpired = scheduledAt <= now;
   const isCancelled = appointment.status === "cancelled";
   const isOpen = !isCancelled && !isExpired;
+  const needsConfirmation = !isCancelled && isPastConfirmationWindow(scheduledAt, now);
 
   const myParticipant = isHost ? null : await getMyParticipant(id, employee.id);
   const participants = isHost ? await getParticipants(id) : [];
+
+  const hostNeedsConfirmation =
+    isHost && needsConfirmation && appointment.hostAttendanceStatus === null;
+  const participantNeedsConfirmation =
+    !isHost && needsConfirmation && myParticipant?.status === "accepted";
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
@@ -75,7 +88,7 @@ export default async function AppointmentDetailPage({
           이 약속은 취소되었습니다.
         </p>
       )}
-      {!isCancelled && isExpired && (
+      {!isCancelled && isExpired && !needsConfirmation && (
         <p className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
           이미 지난 약속입니다.
         </p>
@@ -86,9 +99,42 @@ export default async function AppointmentDetailPage({
           {appointment.restaurantName}
         </Link>
         <p className="text-sm text-neutral-500">{appointment.restaurantCategory}</p>
-        <p className="mt-2 text-sm text-neutral-700">{displayFormatter.format(new Date(appointment.scheduledAt))}</p>
+        <p className="mt-2 text-sm text-neutral-700">{displayFormatter.format(scheduledAt)}</p>
         {appointment.memo && <p className="mt-2 text-sm text-neutral-700">{appointment.memo}</p>}
       </div>
+
+      {hostNeedsConfirmation && (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-neutral-600">방문을 확인해주세요.</p>
+          <div className="flex gap-2">
+            <form action={confirmHostAttendance.bind(null, id)} className="flex-1">
+              <button type="submit" className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+                다녀왔어요
+              </button>
+            </form>
+            <form action={markHostNoShow.bind(null, id)} className="flex-1">
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-600 shadow-sm"
+              >
+                가지 않았어요
+              </button>
+            </form>
+          </div>
+          <Link href="/" className="text-center text-sm text-neutral-400">
+            나중에 할게요
+          </Link>
+        </div>
+      )}
+
+      {isHost && appointment.hostAttendanceStatus === "completed" && (
+        <Link
+          href={`/reviews/new?restaurantId=${appointment.restaurantId}`}
+          className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+        >
+          리뷰 남기기
+        </Link>
+      )}
 
       {isHost && (
         <section className="flex flex-col gap-3">
@@ -119,7 +165,7 @@ export default async function AppointmentDetailPage({
                   <input
                     type="datetime-local"
                     name="scheduledAt"
-                    defaultValue={formatSeoulDateTimeLocal(new Date(appointment.scheduledAt))}
+                    defaultValue={formatSeoulDateTimeLocal(scheduledAt)}
                     required
                     className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
                   />
@@ -189,7 +235,31 @@ export default async function AppointmentDetailPage({
         </div>
       )}
 
-      {!isHost && isOpen && myParticipant?.status === "accepted" && (
+      {participantNeedsConfirmation && (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-neutral-600">방문을 확인해주세요.</p>
+          <div className="flex gap-2">
+            <form action={confirmAttendance.bind(null, id)} className="flex-1">
+              <button type="submit" className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+                다녀왔어요
+              </button>
+            </form>
+            <form action={withdrawParticipation.bind(null, id)} className="flex-1">
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-600 shadow-sm"
+              >
+                가지 않았어요
+              </button>
+            </form>
+          </div>
+          <Link href="/" className="text-center text-sm text-neutral-400">
+            나중에 할게요
+          </Link>
+        </div>
+      )}
+
+      {!isHost && isOpen && !needsConfirmation && myParticipant?.status === "accepted" && (
         <form action={withdrawParticipation.bind(null, id)}>
           <button
             type="submit"
@@ -198,6 +268,15 @@ export default async function AppointmentDetailPage({
             불참(참여 취소)
           </button>
         </form>
+      )}
+
+      {!isHost && myParticipant?.status === "completed" && (
+        <Link
+          href={`/reviews/new?restaurantId=${appointment.restaurantId}`}
+          className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+        >
+          리뷰 남기기
+        </Link>
       )}
 
       {!isHost && myParticipant?.status === "declined" && (

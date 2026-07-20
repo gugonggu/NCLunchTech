@@ -77,13 +77,18 @@ describe("canParticipantTransition", () => {
     expect(canParticipantTransition("pending", "declined")).toBe(true);
   });
 
-  it("accepted에서 cancelled(불참)로 전이할 수 있다", () => {
+  it("accepted에서 cancelled(불참/가지 않았어요)로 전이할 수 있다", () => {
     expect(canParticipantTransition("accepted", "cancelled")).toBe(true);
   });
 
-  it("declined/cancelled는 종결 상태라 더 이상 전이할 수 없다", () => {
+  it("accepted에서 completed(다녀왔어요)로 전이할 수 있다", () => {
+    expect(canParticipantTransition("accepted", "completed")).toBe(true);
+  });
+
+  it("declined/cancelled/completed는 종결 상태라 더 이상 전이할 수 없다", () => {
     expect(canParticipantTransition("declined", "accepted")).toBe(false);
     expect(canParticipantTransition("cancelled", "accepted")).toBe(false);
+    expect(canParticipantTransition("completed", "cancelled")).toBe(false);
   });
 
   it("accepted에서 declined로는 갈 수 없다(거절은 최초 응답에서만)", () => {

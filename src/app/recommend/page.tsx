@@ -16,6 +16,8 @@ import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
 import { getRecentCompletedVisits } from "@/lib/visits/queries";
+import { getRecentAttendedAppointments } from "@/lib/appointments/queries";
+import { getReviewCounts } from "@/lib/reviews/queries";
 import { decideRestaurant } from "@/app/visits/actions";
 import { rerollRecommendation, resetExclusions } from "./actions";
 
@@ -32,10 +34,12 @@ function RestaurantCard({
   restaurant,
   highlight,
   reason,
+  reviewCount,
 }: {
   restaurant: RecommendCandidate;
   highlight: boolean;
   reason?: string;
+  reviewCount: number;
 }) {
   return (
     <div
@@ -49,6 +53,7 @@ function RestaurantCard({
         <p className="font-semibold">{restaurant.name}</p>
         <p className="text-sm text-neutral-500">
           {restaurant.category} · {restaurant.distanceM}m
+          {reviewCount > 0 && ` · 리뷰 ${reviewCount}개`}
         </p>
         {reason && <p className="mt-1 text-sm text-brand-dark">{reason}</p>}
       </Link>
@@ -145,10 +150,18 @@ export default async function RecommendPage({
     const now = new Date();
     const today = getSeoulDateString(now);
     const sinceDate = getSeoulDateString(new Date(now.getTime() - RECENT_VISIT_WINDOW_DAYS * 24 * 60 * 60 * 1000));
-    const recentVisits = await getRecentCompletedVisits(employee.id, sinceDate);
-    for (const visit of recentVisits) {
-      if (!recentVisitDays.has(visit.restaurantId)) {
-        recentVisitDays.set(visit.restaurantId, daysBetweenDateStrings(today, visit.visitDate));
+
+    // 개인 방문(visits)과 약속 참여/방장 확인(appointments) 완료 기록을 합쳐 "가장 최근" 하루만 반영한다.
+    const [recentVisits, recentAttendedAppointments] = await Promise.all([
+      getRecentCompletedVisits(employee.id, sinceDate),
+      getRecentAttendedAppointments(employee.id, sinceDate),
+    ]);
+
+    for (const visit of [...recentVisits, ...recentAttendedAppointments]) {
+      const daysAgo = daysBetweenDateStrings(today, visit.visitDate);
+      const existing = recentVisitDays.get(visit.restaurantId);
+      if (existing === undefined || daysAgo < existing) {
+        recentVisitDays.set(visit.restaurantId, daysAgo);
       }
     }
   }
@@ -178,6 +191,9 @@ export default async function RecommendPage({
   }
 
   const showResetButton = excludedFromCookie.length > 0;
+
+  const displayedIds = result.main ? [result.main.id, ...result.alternatives.map((a) => a.id)] : [];
+  const reviewCounts = await getReviewCounts(displayedIds);
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
@@ -280,13 +296,19 @@ export default async function RecommendPage({
               restaurant={result.main}
               highlight
               reason={buildRecommendReason(result.main, conditions)}
+              reviewCount={reviewCounts.get(result.main.id) ?? 0}
             />
 
             {result.alternatives.length > 0 && (
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-semibold text-neutral-500">다른 후보</p>
                 {result.alternatives.map((alt) => (
-                  <RestaurantCard key={alt.id} restaurant={alt} highlight={false} />
+                  <RestaurantCard
+                    key={alt.id}
+                    restaurant={alt}
+                    highlight={false}
+                    reviewCount={reviewCounts.get(alt.id) ?? 0}
+                  />
                 ))}
               </div>
             )}

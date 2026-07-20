@@ -2,10 +2,11 @@ import Link from "next/link";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { cancelTodayVisit, completeTodayVisit } from "@/app/visits/actions";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
-import { getUpcomingAppointments } from "@/lib/appointments/queries";
+import { getRelevantAppointments } from "@/lib/appointments/queries";
 import { LogoutButton } from "./LogoutButton";
 
 const upcomingFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -57,9 +58,16 @@ export default async function HomePage({
     ? VISIT_STATUS_MESSAGES[rawParams.visitStatus]
     : null;
 
-  const today = getSeoulDateString(new Date());
+  const now = new Date();
+  const today = getSeoulDateString(now);
   const todayVisit = await getActiveVisitToday(employee.id, today);
-  const upcomingAppointments = await getUpcomingAppointments(employee.id, new Date());
+  const relevantAppointments = await getRelevantAppointments(employee.id, now);
+
+  const soloNeedsConfirmation =
+    todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
+  const appointmentsNeedingConfirmation = relevantAppointments.filter((a) => a.needsConfirmation);
+  const upcomingAppointments = relevantAppointments.filter((a) => !a.needsConfirmation);
+  const hasAnyConfirmation = soloNeedsConfirmation || appointmentsNeedingConfirmation.length > 0;
 
   let todayVisitDistanceM: number | null = null;
   if (todayVisit) {
@@ -91,7 +99,51 @@ export default async function HomePage({
         </p>
       )}
 
-      {todayVisit?.status === "planned" && (
+      {hasAnyConfirmation && (
+        <div className="flex w-full flex-col gap-2 text-left">
+          <p className="text-sm font-semibold text-neutral-500">방문 확인</p>
+
+          {soloNeedsConfirmation && todayVisit && (
+            <div className="rounded-2xl border-2 border-brand bg-white px-4 py-4">
+              <p className="font-semibold">{todayVisit.restaurantName}</p>
+              <p className="text-sm text-neutral-500">{todayVisit.restaurantCategory}</p>
+              <div className="mt-3 flex gap-2">
+                <form action={completeTodayVisit} className="flex-1">
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white"
+                  >
+                    다녀왔어요
+                  </button>
+                </form>
+                <form action={cancelTodayVisit} className="flex-1">
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold text-neutral-600"
+                  >
+                    가지 않았어요
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {appointmentsNeedingConfirmation.map((a) => (
+            <Link
+              key={a.id}
+              href={`/appointments/${a.id}`}
+              className="rounded-2xl border-2 border-brand bg-white px-4 py-3"
+            >
+              <p className="font-semibold">{a.restaurantName}</p>
+              <p className="text-sm text-neutral-500">
+                {upcomingFormatter.format(new Date(a.scheduledAt))} · 방문 확인하기
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {todayVisit?.status === "planned" && !soloNeedsConfirmation && (
         <div className="w-full rounded-2xl border-2 border-brand bg-white px-4 py-4 text-left">
           <p className="text-sm text-neutral-500">오늘의 점심</p>
           <p className="text-lg font-bold text-brand-dark">{todayVisit.restaurantName}</p>
@@ -143,6 +195,12 @@ export default async function HomePage({
             {todayVisitDistanceM !== null && ` · ${todayVisitDistanceM}m`}
           </p>
           <p className="mt-2 text-sm text-brand-dark">방문 완료</p>
+          <Link
+            href={`/reviews/new?restaurantId=${todayVisit.restaurantId}`}
+            className="mt-3 block rounded-xl bg-neutral-100 px-3 py-2 text-center text-sm font-semibold"
+          >
+            리뷰 남기기
+          </Link>
         </div>
       )}
 
@@ -175,7 +233,11 @@ export default async function HomePage({
               <p className="font-semibold">{a.restaurantName}</p>
               <p className="text-sm text-neutral-500">
                 {upcomingFormatter.format(new Date(a.scheduledAt))}
-                {a.role === "host" ? " · 내가 만든 약속" : a.myStatus === "pending" ? " · 응답 대기 중" : " · 참여 확정"}
+                {a.role === "host"
+                  ? " · 내가 만든 약속"
+                  : a.participantStatus === "pending"
+                    ? " · 응답 대기 중"
+                    : " · 참여 확정"}
               </p>
             </Link>
           ))}

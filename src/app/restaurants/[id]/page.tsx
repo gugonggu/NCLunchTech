@@ -2,9 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { distanceInMeters } from "@/lib/geo";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getCurrentEmployee } from "@/lib/auth/session";
+import { getRestaurantReviewSummary, hasCompletedVisit } from "@/lib/reviews/queries";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
 import { addMenuItem, toggleMenuSoldOut, updateMenuPrice, updateRestaurantHours } from "./actions";
+
+const RATING_LABELS: { key: "avgTaste" | "avgSpeed" | "avgPrice" | "avgSoloFit"; label: string }[] = [
+  { key: "avgTaste", label: "맛" },
+  { key: "avgSpeed", label: "제공 속도" },
+  { key: "avgPrice", label: "가격 만족도" },
+  { key: "avgSoloFit", label: "혼밥 적합성" },
+];
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -53,6 +62,10 @@ export default async function RestaurantDetailPage({
   const kakaoMapUrl = `https://place.map.kakao.com/${restaurant.kakao_place_id}`;
 
   const hoursByDay = new Map((hoursRows ?? []).map((h) => [h.day_of_week, h]));
+
+  const employee = await getCurrentEmployee();
+  const reviewSummary = await getRestaurantReviewSummary(id);
+  const canReview = employee ? await hasCompletedVisit(employee.id, id) : false;
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
@@ -197,6 +210,49 @@ export default async function RestaurantDetailPage({
           </button>
         </form>
       </section>
+
+      {(reviewSummary || canReview) && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-bold text-brand-dark">평가·리뷰</h2>
+
+          {reviewSummary ? (
+            <>
+              <p className="text-sm text-neutral-500">리뷰 {reviewSummary.count}개</p>
+              <ul className="flex flex-col gap-1">
+                {RATING_LABELS.map(({ key, label }) => (
+                  <li key={key} className="flex items-center justify-between text-sm text-neutral-700">
+                    <span>{label}</span>
+                    <span>{reviewSummary[key].toFixed(1)}점</span>
+                  </li>
+                ))}
+              </ul>
+              {reviewSummary.recentOneLineReviews.length > 0 && (
+                <ul className="flex flex-col gap-2">
+                  {reviewSummary.recentOneLineReviews.map((text, i) => (
+                    <li
+                      key={i}
+                      className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700"
+                    >
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-neutral-500">아직 등록된 리뷰가 없어요.</p>
+          )}
+
+          {canReview && (
+            <Link
+              href={`/reviews/new?restaurantId=${id}`}
+              className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+            >
+              리뷰 남기기
+            </Link>
+          )}
+        </section>
+      )}
     </main>
   );
 }
