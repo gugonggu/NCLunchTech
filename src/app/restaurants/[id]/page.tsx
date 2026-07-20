@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { distanceInMeters } from "@/lib/geo";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { getRestaurantReviewSummary, hasCompletedVisit } from "@/lib/reviews/queries";
+import { getRestaurantReviewSummary, getReportableReviews, hasCompletedVisit } from "@/lib/reviews/queries";
+import { isFavorite } from "@/lib/collection/queries";
+import { isReportStatusCode, REPORT_STATUS_MESSAGES } from "@/lib/reports/validation";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
-import { addMenuItem, toggleMenuSoldOut, updateMenuPrice, updateRestaurantHours } from "./actions";
+import { addMenuItem, toggleFavorite, toggleMenuSoldOut, updateMenuPrice, updateRestaurantHours } from "./actions";
 
 const RATING_LABELS: { key: "avgTaste" | "avgSpeed" | "avgPrice" | "avgSoloFit"; label: string }[] = [
   { key: "avgTaste", label: "맛" },
@@ -22,10 +24,10 @@ export default async function RestaurantDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ forAppointment?: string }>;
+  searchParams: Promise<{ forAppointment?: string; reportStatus?: string }>;
 }) {
   const { id } = await params;
-  const { forAppointment } = await searchParams;
+  const { forAppointment, reportStatus } = await searchParams;
   const supabase = createServiceRoleClient();
 
   const { data: restaurant } = await supabase
@@ -65,7 +67,10 @@ export default async function RestaurantDetailPage({
 
   const employee = await getCurrentEmployee();
   const reviewSummary = await getRestaurantReviewSummary(id);
+  const reportableReviews = await getReportableReviews(id);
   const canReview = employee ? await hasCompletedVisit(employee.id, id) : false;
+  const isFavorited = employee ? await isFavorite(employee.id, id) : false;
+  const reportFeedbackMessage = isReportStatusCode(reportStatus) ? REPORT_STATUS_MESSAGES[reportStatus] : null;
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
@@ -73,8 +78,23 @@ export default async function RestaurantDetailPage({
         ← 목록으로
       </Link>
 
+      {reportFeedbackMessage && (
+        <p className="rounded-2xl bg-white px-4 py-3 text-sm text-brand-dark shadow-sm">
+          {reportFeedbackMessage}
+        </p>
+      )}
+
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold text-brand-dark">{restaurant.name}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-brand-dark">{restaurant.name}</h1>
+          {employee && (
+            <form action={toggleFavorite.bind(null, restaurant.id)}>
+              <button type="submit" className="text-2xl" aria-label={isFavorited ? "즐겨찾기 해제" : "즐겨찾기 추가"}>
+                {isFavorited ? "★" : "☆"}
+              </button>
+            </form>
+          )}
+        </div>
         <p className="text-neutral-700">{restaurant.category}</p>
         <p className="text-neutral-700">{restaurant.address}</p>
         {restaurant.phone && <p className="text-neutral-700">{restaurant.phone}</p>}
@@ -226,14 +246,22 @@ export default async function RestaurantDetailPage({
                   </li>
                 ))}
               </ul>
-              {reviewSummary.recentOneLineReviews.length > 0 && (
+              {reportableReviews.length > 0 && (
                 <ul className="flex flex-col gap-2">
-                  {reviewSummary.recentOneLineReviews.map((text, i) => (
+                  {reportableReviews.map((r) => (
                     <li
-                      key={i}
+                      key={r.id}
                       className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700"
                     >
-                      {text}
+                      <p>{r.oneLineReview}</p>
+                      <div className="mt-1 flex items-center justify-between text-xs text-neutral-400">
+                        <span>{r.employeeNickname}</span>
+                        {employee && employee.id !== r.employeeId && (
+                          <Link href={`/reports/new?reviewId=${r.id}`} className="underline">
+                            신고
+                          </Link>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

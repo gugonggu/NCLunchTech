@@ -5,6 +5,8 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { resolveEmployeesByNickname } from "@/lib/appointments/queries";
 import { memoSchema, parseNicknameList, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
+import { createNotification } from "@/lib/notifications/queries";
+import { buildAppointmentInvitedMessage } from "@/lib/notifications/validation";
 
 function redirectToNewForm(restaurantId: string, status: string): never {
   redirect(`/appointments/new?restaurantId=${restaurantId}&status=${status}`);
@@ -20,7 +22,7 @@ export async function createAppointment(restaurantId: string, formData: FormData
 
   const { data: restaurant } = await supabase
     .from("restaurants")
-    .select("id, is_active")
+    .select("id, name, is_active")
     .eq("id", restaurantId)
     .maybeSingle();
 
@@ -66,6 +68,18 @@ export async function createAppointment(restaurantId: string, formData: FormData
           employee_id: e.id,
           status: "pending",
         }))
+      );
+
+      const message = buildAppointmentInvitedMessage(restaurant.name);
+      await Promise.all(
+        matchedEmployees.map((e) =>
+          createNotification({
+            employeeId: e.id,
+            type: "appointment_invited",
+            message,
+            relatedAppointmentId: appointment.id,
+          })
+        )
       );
     }
   }

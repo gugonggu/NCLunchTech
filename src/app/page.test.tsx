@@ -23,6 +23,10 @@ vi.mock("@/lib/appointments/queries", () => ({
   getRelevantAppointments: vi.fn(),
 }));
 
+vi.mock("@/lib/notifications/queries", () => ({
+  getUnreadNotificationCount: vi.fn(),
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   createServiceRoleClient: vi.fn(() => ({
     from: () => ({
@@ -38,7 +42,12 @@ vi.mock("@/lib/supabase/server", () => ({
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getRelevantAppointments } from "@/lib/appointments/queries";
+import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import HomePage from "./page";
+
+function mockDefaults() {
+  vi.mocked(getUnreadNotificationCount).mockResolvedValue(0);
+}
 
 function renderHome(searchParams: Record<string, string> = {}) {
   return HomePage({ searchParams: Promise.resolve(searchParams) });
@@ -59,6 +68,7 @@ describe("HomePage", () => {
 
   it("오늘의 결정이 없으면 오늘 뭐 먹지?/식당 찾기 버튼을 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
 
@@ -74,6 +84,7 @@ describe("HomePage", () => {
 
   it("planned 방문이 있으면 오늘의 점심 카드와 변경·취소·완료 동작을 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue({
       id: "visit-1",
       restaurantId: "r-1",
@@ -99,6 +110,7 @@ describe("HomePage", () => {
 
   it("completed 방문이 있으면 완료 표시만 보여주고 재완료 버튼은 없다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue({
       id: "visit-1",
       restaurantId: "r-1",
@@ -126,6 +138,7 @@ describe("HomePage", () => {
 
   it("허용 목록에 있는 visitStatus만 안내 문구로 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
 
@@ -137,6 +150,7 @@ describe("HomePage", () => {
 
   it("허용 목록에 없는 visitStatus 값은 그대로 표시하지 않는다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
 
@@ -148,6 +162,7 @@ describe("HomePage", () => {
 
   it("다가오는 약속이 있으면 목록으로 보여주고, 없으면 섹션 자체를 숨긴다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
     vi.mocked(getRelevantAppointments).mockResolvedValue([
       {
@@ -172,6 +187,7 @@ describe("HomePage", () => {
 
   it("다가오는 약속이 없으면 섹션을 숨긴다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
 
@@ -183,6 +199,7 @@ describe("HomePage", () => {
 
   it("개인 방문이 확인 대기 상태(결정 후 1시간 경과)면 방문 확인 섹션을 우선 노출한다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue({
       id: "visit-1",
       restaurantId: "r-1",
@@ -206,6 +223,7 @@ describe("HomePage", () => {
 
   it("확인 대기 중인 약속이 있으면 방문 확인 섹션에 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
     vi.mocked(getRelevantAppointments).mockResolvedValue([
       {
@@ -226,5 +244,29 @@ describe("HomePage", () => {
       "href",
       "/appointments/appt-2"
     );
+  });
+
+  it("안 읽은 알림이 있으면 배지를 보여주고, 없으면 숨긴다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(getUnreadNotificationCount).mockResolvedValue(3);
+
+    const ui = await renderHome();
+    render(ui);
+
+    expect(screen.getByRole("link", { name: "알림 3건" })).toHaveAttribute("href", "/notifications");
+  });
+
+  it("안 읽은 알림이 0건이면 배지를 숨긴다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+
+    const ui = await renderHome();
+    render(ui);
+
+    expect(screen.queryByRole("link", { name: /알림/ })).not.toBeInTheDocument();
   });
 });

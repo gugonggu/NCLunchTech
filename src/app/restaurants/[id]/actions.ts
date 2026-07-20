@@ -8,6 +8,30 @@ import { getMenuItemInRestaurant } from "@/lib/restaurants/menu-items";
 import { menuItemSchema } from "@/lib/restaurants/menu-validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
+export async function toggleFavorite(restaurantId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: existing } = await supabase
+    .from("favorites")
+    .select("id")
+    .eq("employee_id", employee.id)
+    .eq("restaurant_id", restaurantId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("favorites").delete().eq("id", existing.id);
+  } else {
+    await supabase.from("favorites").insert({ employee_id: employee.id, restaurant_id: restaurantId });
+  }
+
+  revalidatePath(`/restaurants/${restaurantId}`);
+  revalidatePath("/collection");
+}
+
 export async function addMenuItem(restaurantId: string, formData: FormData) {
   const employee = await getCurrentEmployee();
   if (!employee) {

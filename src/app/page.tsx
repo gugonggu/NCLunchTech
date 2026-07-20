@@ -7,6 +7,7 @@ import { cancelTodayVisit, completeTodayVisit } from "@/app/visits/actions";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
 import { getRelevantAppointments } from "@/lib/appointments/queries";
+import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { LogoutButton } from "./LogoutButton";
 
 const upcomingFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -62,6 +63,7 @@ export default async function HomePage({
   const today = getSeoulDateString(now);
   const todayVisit = await getActiveVisitToday(employee.id, today);
   const relevantAppointments = await getRelevantAppointments(employee.id, now);
+  const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
 
   const soloNeedsConfirmation =
     todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
@@ -91,6 +93,16 @@ export default async function HomePage({
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 bg-brand-bg px-6 py-12 text-center">
       <h1 className="text-2xl font-bold text-brand-dark">앤시점심기술</h1>
+
+      {unreadNotificationCount > 0 && (
+        <Link
+          href="/notifications"
+          className="w-full rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+        >
+          알림 {unreadNotificationCount}건
+        </Link>
+      )}
+
       <p className="text-neutral-700">{employee.nickname}님, 안녕하세요.</p>
 
       {feedbackMessage && (
@@ -218,6 +230,12 @@ export default async function HomePage({
           >
             식당 찾기
           </Link>
+          <Link
+            href="/collection"
+            className="rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
+          >
+            도감
+          </Link>
         </div>
       )}
 
@@ -245,12 +263,20 @@ export default async function HomePage({
       )}
 
       {todayVisit && (
-        <Link
-          href="/restaurants"
-          className="w-full rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
-        >
-          식당 찾기
-        </Link>
+        <>
+          <Link
+            href="/restaurants"
+            className="w-full rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
+          >
+            식당 찾기
+          </Link>
+          <Link
+            href="/collection"
+            className="w-full rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
+          >
+            도감
+          </Link>
+        </>
       )}
 
       <LogoutButton />

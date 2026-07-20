@@ -3,11 +3,31 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getActiveParticipantEmployeeIds, createNotification } from "@/lib/notifications/queries";
+import { buildAppointmentCancelledMessage, buildAppointmentUpdatedMessage } from "@/lib/notifications/validation";
 import { getAppointmentDetail, getMyParticipant } from "@/lib/appointments/queries";
 import { canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
 
 function redirectWithStatus(appointmentId: string, status: string): never {
   redirect(`/appointments/${appointmentId}?status=${status}`);
+}
+
+async function notifyActiveParticipants(
+  appointmentId: string,
+  restaurantName: string,
+  type: "appointment_updated" | "appointment_cancelled"
+) {
+  const participantIds = await getActiveParticipantEmployeeIds(appointmentId);
+  const message =
+    type === "appointment_updated"
+      ? buildAppointmentUpdatedMessage(restaurantName)
+      : buildAppointmentCancelledMessage(restaurantName);
+
+  await Promise.all(
+    participantIds.map((employeeId) =>
+      createNotification({ employeeId, type, message, relatedAppointmentId: appointmentId })
+    )
+  );
 }
 
 async function requireOpenAppointment(appointmentId: string) {
@@ -129,6 +149,8 @@ export async function cancelAppointment(appointmentId: string) {
     throw new Error("약속 취소에 실패했습니다.");
   }
 
+  await notifyActiveParticipants(appointmentId, appointment.restaurantName, "appointment_cancelled");
+
   redirectWithStatus(appointmentId, "cancelled");
 }
 
@@ -168,6 +190,8 @@ export async function updateAppointmentSchedule(appointmentId: string, formData:
   if (error) {
     throw new Error("약속 정보 변경에 실패했습니다.");
   }
+
+  await notifyActiveParticipants(appointmentId, appointment.restaurantName, "appointment_updated");
 
   redirectWithStatus(appointmentId, "updated");
 }
@@ -288,7 +312,7 @@ export async function changeAppointmentRestaurant(appointmentId: string, restaur
   const supabase = createServiceRoleClient();
   const { data: restaurant } = await supabase
     .from("restaurants")
-    .select("id, is_active")
+    .select("id, name, is_active")
     .eq("id", restaurantId)
     .maybeSingle();
 
@@ -306,6 +330,8 @@ export async function changeAppointmentRestaurant(appointmentId: string, restaur
   if (error) {
     throw new Error("식당 변경에 실패했습니다.");
   }
+
+  await notifyActiveParticipants(appointmentId, restaurant.name, "appointment_updated");
 
   redirectWithStatus(appointmentId, "updated");
 }
