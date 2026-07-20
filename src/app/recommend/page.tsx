@@ -14,6 +14,7 @@ import { getExclusionList, intersectWithCandidates } from "@/lib/recommend/exclu
 import { normalizeRecommendParams, recommendConditionsSchema } from "@/lib/recommend/validation";
 import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
 import { getRecentCompletedVisits } from "@/lib/visits/queries";
 import { getRecentAttendedAppointments } from "@/lib/appointments/queries";
@@ -123,12 +124,15 @@ export default async function RecommendPage({
   const companyLng: number | null = settings?.company_lng ?? null;
   const radius = conditions.radius ?? settings?.default_radius_m ?? DEFAULT_RADIUS_M;
 
-  const { data: restaurants } = await supabase
-    .from("restaurants")
-    .select("id, name, category, lat, lng, menu_items(name, price, is_sold_out)")
-    .eq("is_active", true);
+  const restaurants = await fetchAllRows((from, to) =>
+    supabase
+      .from("restaurants")
+      .select("id, name, category, lat, lng, menu_items(name, price, is_sold_out)")
+      .eq("is_active", true)
+      .range(from, to)
+  );
 
-  const candidates: RecommendCandidate[] = (restaurants ?? []).map((r) => ({
+  const candidates: RecommendCandidate[] = restaurants.map((r) => ({
     id: r.id,
     name: r.name,
     category: r.category,

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { distanceInMeters } from "@/lib/geo";
 import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { getReviewCounts } from "@/lib/reviews/queries";
 
 const RESULT_LIMIT = 60;
@@ -36,12 +37,15 @@ export default async function RestaurantsPage({
   const category = params.category ?? "";
   const sort = params.sort === "new" ? "new" : params.sort === "reviews" ? "reviews" : "distance";
 
-  const { data: restaurants } = await supabase
-    .from("restaurants")
-    .select("id, name, category, address, lat, lng, created_at")
-    .eq("is_active", true);
+  const restaurants = await fetchAllRows((from, to) =>
+    supabase
+      .from("restaurants")
+      .select("id, name, category, address, lat, lng, created_at")
+      .eq("is_active", true)
+      .range(from, to)
+  );
 
-  let list = (restaurants ?? []).map((r) => ({
+  let list = restaurants.map((r) => ({
     ...r,
     distanceM:
       companyLat !== null && companyLng !== null

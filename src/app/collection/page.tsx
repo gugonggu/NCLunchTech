@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { buildCategoryBreakdown, getFavoriteRestaurantIds, getVisitedRestaurantIds } from "@/lib/collection/queries";
 import { RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { toggleFavorite } from "@/app/restaurants/[id]/actions";
@@ -30,12 +31,9 @@ export default async function CollectionPage({
   const favoritesOnly = params.favoritesOnly === "on";
 
   const supabase = createServiceRoleClient();
-  const { data: restaurants } = await supabase
-    .from("restaurants")
-    .select("id, name, category")
-    .eq("is_active", true);
-
-  const allRestaurants = restaurants ?? [];
+  const allRestaurants = await fetchAllRows((from, to) =>
+    supabase.from("restaurants").select("id, name, category").eq("is_active", true).range(from, to)
+  );
 
   const [visitedIds, favoriteIds] = await Promise.all([
     getVisitedRestaurantIds(employee.id),
