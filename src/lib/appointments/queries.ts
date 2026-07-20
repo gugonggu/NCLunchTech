@@ -1,6 +1,6 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { isPastConfirmationWindow } from "@/lib/confirmation-window";
+import { hasAppointmentStarted } from "@/lib/confirmation-window";
 import { getSeoulDateString } from "@/lib/visits/validation";
 import type { AppointmentStatus, HostAttendanceStatus, ParticipantStatus } from "./validation";
 
@@ -160,7 +160,7 @@ export async function getRelevantAppointments(
       scheduledAt: a.scheduled_at,
       role: "host",
       participantStatus: null,
-      needsConfirmation: isPastConfirmationWindow(new Date(a.scheduled_at), now),
+      needsConfirmation: hasAppointmentStarted(new Date(a.scheduled_at), now),
     });
   }
 
@@ -189,7 +189,7 @@ export async function getRelevantAppointments(
       scheduledAt: appt.scheduled_at,
       role: "participant",
       participantStatus: p.status as ParticipantStatus,
-      needsConfirmation: p.status === "accepted" && isPastConfirmationWindow(scheduledAt, now),
+      needsConfirmation: p.status === "accepted" && hasAppointmentStarted(scheduledAt, now),
     });
   }
 

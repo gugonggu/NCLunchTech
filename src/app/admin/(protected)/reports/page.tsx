@@ -3,21 +3,29 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { deleteReportedReview, dismissReport } from "./actions";
+import { getAdminStatusMessage, REPORT_STATUS_MESSAGES } from "@/lib/admin/status-messages";
 
-export default async function AdminReportsPage() {
+export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) {
     redirect("/admin/login");
   }
 
+  const { status } = await searchParams;
+  const feedbackMessage = getAdminStatusMessage(REPORT_STATUS_MESSAGES, status);
+
   const supabase = createServiceRoleClient();
-  const { data: reports } = await supabase
+  const { data: reports, error } = await supabase
     .from("reports")
     .select(
       "id, reason, created_at, employees(nickname), reviews(id, one_line_review, restaurants(id, name))"
     )
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error("신고 목록을 불러오지 못했습니다.");
+  }
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">
@@ -26,6 +34,8 @@ export default async function AdminReportsPage() {
       </Link>
 
       <h1 className="text-xl font-bold text-brand-dark">신고 처리</h1>
+
+      {feedbackMessage && <p className="text-sm text-brand-dark">{feedbackMessage}</p>}
 
       {(!reports || reports.length === 0) && <p className="text-sm text-neutral-500">대기 중인 신고가 없어요.</p>}
 
@@ -55,7 +65,7 @@ export default async function AdminReportsPage() {
                     기각
                   </button>
                 </form>
-                <form action={deleteReportedReview.bind(null, r.id, review.id)} className="flex-1">
+                <form action={deleteReportedReview.bind(null, r.id)} className="flex-1">
                   <button type="submit" className="w-full rounded-xl bg-white px-3 py-2 text-sm text-red-600 shadow-sm">
                     리뷰 삭제
                   </button>

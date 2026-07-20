@@ -18,11 +18,15 @@ export default async function AdminLogsPage() {
   }
 
   const supabase = createServiceRoleClient();
-  const { data: logs } = await supabase
+  const { data: logs, error } = await supabase
     .from("admin_logs")
     .select("id, action, target_type, target_id, created_at, admins(display_name)")
     .order("created_at", { ascending: false })
     .limit(200);
+
+  if (error) {
+    throw new Error("관리자 로그를 불러오지 못했습니다.");
+  }
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">

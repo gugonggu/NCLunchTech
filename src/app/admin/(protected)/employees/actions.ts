@@ -1,21 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { parseAdminRpcStatus } from "@/lib/admin/rpc-result";
+import { adminUuidSchema } from "@/lib/admin/validation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
-import { logAdminAction } from "@/lib/auth/admin-log";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { hashPin } from "@/lib/auth/pin";
 import { pinSchema } from "@/lib/auth/validation";
-
-async function revokeAllSessions(employeeId: string) {
-  const supabase = createServiceRoleClient();
-  await supabase
-    .from("employee_sessions")
-    .update({ revoked_at: new Date().toISOString() })
-    .eq("employee_id", employeeId)
-    .is("revoked_at", null);
-}
 
 export async function resetEmployeePin(employeeId: string, formData: FormData) {
   const admin = await getCurrentAdmin();
@@ -23,27 +14,29 @@ export async function resetEmployeePin(employeeId: string, formData: FormData) {
     redirect("/admin/login");
   }
 
+  if (!adminUuidSchema.safeParse(employeeId).success) {
+    redirect("/admin/employees?status=invalid_target");
+  }
+
   const parsed = pinSchema.safeParse(formData.get("newPin"));
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "PIN이 올바르지 않습니다.");
+    redirect("/admin/employees?status=pin_invalid");
   }
 
   const supabase = createServiceRoleClient();
   const pinHash = await hashPin(parsed.data);
 
-  const { error } = await supabase
-    .from("employees")
-    .update({ pin_hash: pinHash, failed_login_count: 0, locked_until: null })
-    .eq("id", employeeId);
+  const { data, error } = await supabase.rpc("admin_reset_employee_pin", {
+    p_admin_id: admin.id,
+    p_employee_id: employeeId,
+    p_pin_hash: pinHash,
+  });
 
   if (error) {
     throw new Error("PIN 초기화에 실패했습니다.");
   }
-
-  await revokeAllSessions(employeeId);
-  await logAdminAction(admin.id, "reset_employee_pin", { targetType: "employee", targetId: employeeId });
-
-  revalidatePath("/admin/employees");
+  const status = parseAdminRpcStatus(data, ["pin_reset", "target_not_found"]);
+  redirect(`/admin/employees?status=${status}`);
 }
 
 export async function setEmployeeActive(employeeId: string, isActive: boolean) {
@@ -52,27 +45,20 @@ export async function setEmployeeActive(employeeId: string, isActive: boolean) {
     redirect("/admin/login");
   }
 
+  if (!adminUuidSchema.safeParse(employeeId).success || typeof isActive !== "boolean") {
+    redirect("/admin/employees?status=invalid_target");
+  }
+
   const supabase = createServiceRoleClient();
-  const { error } = await supabase
-    .from("employees")
-    .update({
-      is_active: isActive,
-      deactivated_at: isActive ? null : new Date().toISOString(),
-    })
-    .eq("id", employeeId);
+  const { data, error } = await supabase.rpc("admin_set_employee_active", {
+    p_admin_id: admin.id,
+    p_employee_id: employeeId,
+    p_is_active: isActive,
+  });
 
   if (error) {
     throw new Error("상태 변경에 실패했습니다.");
   }
-
-  if (!isActive) {
-    await revokeAllSessions(employeeId);
-  }
-
-  await logAdminAction(admin.id, isActive ? "reactivate_employee" : "deactivate_employee", {
-    targetType: "employee",
-    targetId: employeeId,
-  });
-
-  revalidatePath("/admin/employees");
+  const status = parseAdminRpcStatus(data, ["reactivated", "deactivated", "target_not_found"]);
+  redirect(`/admin/employees?status=${status}`);
 }

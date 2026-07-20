@@ -10,7 +10,6 @@ export interface ActiveVisit {
   restaurantCategory: string;
   restaurantLat: number;
   restaurantLng: number;
-  updatedAt: string;
 }
 
 /** 오늘의 활성(planned 또는 completed) 방문을 식당 정보와 함께 조회한다. 없으면 null. */
@@ -21,7 +20,7 @@ export async function getActiveVisitToday(
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("visits")
-    .select("id, restaurant_id, status, updated_at, restaurants(name, category, lat, lng)")
+    .select("id, restaurant_id, status, restaurants(name, category, lat, lng)")
     .eq("employee_id", employeeId)
     .eq("visit_date", visitDate)
     .in("status", ["planned", "completed"])
@@ -50,7 +49,6 @@ export async function getActiveVisitToday(
     restaurantCategory: restaurant.category,
     restaurantLat: restaurant.lat,
     restaurantLng: restaurant.lng,
-    updatedAt: data.updated_at,
   };
 }
 

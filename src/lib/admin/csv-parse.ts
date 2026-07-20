@@ -58,6 +58,10 @@ export function parseCsvRows(text: string): string[][] {
     i++;
   }
 
+  if (inQuotes) {
+    throw new Error("CSV 따옴표가 닫히지 않았습니다.");
+  }
+
   if (field.length > 0 || row.length > 0) {
     pushRow();
   }

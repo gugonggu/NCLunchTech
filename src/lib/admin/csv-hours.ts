@@ -45,7 +45,7 @@ export function parseHoursCsv(
   }
 
   const header = raw[0].map((h) => h.trim().toLowerCase());
-  const headerValid = EXPECTED_HEADER.every((h, i) => header[i] === h);
+  const headerValid = header.length === EXPECTED_HEADER.length && EXPECTED_HEADER.every((h, i) => header[i] === h);
   if (!headerValid) {
     return { rows: [], headerValid: false };
   }
@@ -62,6 +62,10 @@ export function parseHoursCsv(
     const openTimeRaw = (cells[3] ?? "").trim();
     const closeTimeRaw = (cells[4] ?? "").trim();
     const errors: string[] = [];
+
+    if (cells.length !== EXPECTED_HEADER.length) {
+      errors.push("열 개수가 올바르지 않습니다(5개 필요).");
+    }
 
     if (!kakaoPlaceId) {
       errors.push("kakao_place_id가 비어 있습니다.");

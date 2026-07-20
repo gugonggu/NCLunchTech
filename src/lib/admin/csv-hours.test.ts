@@ -66,4 +66,22 @@ describe("parseHoursCsv", () => {
     const result = parseHoursCsv(csv, restaurants, []);
     expect(result.rows[1].errors).toContain("파일 내 중복된 식당·요일 조합입니다.");
   });
+
+  it("헤더에 예상하지 않은 열이 있으면 거부한다", () => {
+    const result = parseHoursCsv(
+      "kakao_place_id,day_of_week,is_closed,open_time,close_time,extra\nkakao-1,1,false,09:00,18:00,x",
+      restaurants,
+      []
+    );
+    expect(result.headerValid).toBe(false);
+  });
+
+  it("데이터 행의 열 개수가 다르면 해당 행을 오류로 표시한다", () => {
+    const result = parseHoursCsv(
+      "kakao_place_id,day_of_week,is_closed,open_time,close_time\nkakao-1,1,false,09:00,18:00,extra",
+      restaurants,
+      []
+    );
+    expect(result.rows[0].errors).toContain("열 개수가 올바르지 않습니다(5개 필요).");
+  });
 });

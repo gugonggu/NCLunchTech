@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
-import { getCsvBatch } from "@/lib/admin/csv-batches";
+import { getCsvBatch, InvalidCsvBatchError } from "@/lib/admin/csv-batches";
 import { CSV_IMPORT_STATUS_MESSAGES, isCsvImportStatusCode } from "@/lib/admin/csv-messages";
 import type { MenuCsvRow } from "@/lib/admin/csv-menu";
 import type { HoursCsvRow } from "@/lib/admin/csv-hours";
@@ -21,7 +21,15 @@ export default async function CsvBatchPreviewPage({
 
   const { batchId } = await params;
   const { status } = await searchParams;
-  const batch = await getCsvBatch(batchId);
+  let batch: Awaited<ReturnType<typeof getCsvBatch>>;
+  try {
+    batch = await getCsvBatch(batchId);
+  } catch (error) {
+    if (error instanceof InvalidCsvBatchError) {
+      redirect(`/admin/restaurants/import?status=batch_invalid`);
+    }
+    throw error;
+  }
 
   if (!batch) {
     notFound();

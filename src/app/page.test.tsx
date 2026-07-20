@@ -89,7 +89,7 @@ describe("HomePage", () => {
     expect(screen.queryByRole("link", { name: "로그인" })).not.toBeInTheDocument();
   });
 
-  it("planned 방문이 있으면 오늘의 점심 카드와 변경·취소·완료 동작을 보여준다", async () => {
+  it("planned 방문이 만들어지면 즉시 방문 확인 동작을 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
     mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue({
@@ -100,18 +100,17 @@ describe("HomePage", () => {
       restaurantCategory: "한식",
       restaurantLat: 35.171,
       restaurantLng: 129.131,
-      updatedAt: new Date().toISOString(),
     });
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
 
     const ui = await renderHome();
     render(ui);
 
-    expect(screen.getByText("오늘의 점심")).toBeInTheDocument();
+    expect(screen.getByText("방문 확인")).toBeInTheDocument();
     expect(screen.getByText("테스트식당")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "변경하기" })).toHaveAttribute("href", "/recommend");
-    expect(screen.getByRole("button", { name: "결정 취소" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "방문 완료" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "다녀왔어요" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "가지 않았어요" })).toBeInTheDocument();
+    expect(screen.queryByText("오늘의 점심")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "오늘 뭐 먹지?" })).not.toBeInTheDocument();
   });
 
@@ -126,7 +125,6 @@ describe("HomePage", () => {
       restaurantCategory: "한식",
       restaurantLat: 35.171,
       restaurantLng: 129.131,
-      updatedAt: new Date().toISOString(),
     });
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
 
@@ -202,30 +200,6 @@ describe("HomePage", () => {
     render(ui);
 
     expect(screen.queryByText("다가오는 약속")).not.toBeInTheDocument();
-  });
-
-  it("개인 방문이 확인 대기 상태(결정 후 1시간 경과)면 방문 확인 섹션을 우선 노출한다", async () => {
-    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
-    mockDefaults();
-    vi.mocked(getActiveVisitToday).mockResolvedValue({
-      id: "visit-1",
-      restaurantId: "r-1",
-      status: "planned",
-      restaurantName: "테스트식당",
-      restaurantCategory: "한식",
-      restaurantLat: 35.171,
-      restaurantLng: 129.131,
-      updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    });
-    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
-
-    const ui = await renderHome();
-    render(ui);
-
-    expect(screen.getByText("방문 확인")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "다녀왔어요" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "가지 않았어요" })).toBeInTheDocument();
-    expect(screen.queryByText("오늘의 점심")).not.toBeInTheDocument();
   });
 
   it("확인 대기 중인 약속이 있으면 방문 확인 섹션에 보여준다", async () => {

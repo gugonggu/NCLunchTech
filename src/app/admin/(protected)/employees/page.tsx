@@ -4,12 +4,16 @@ import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { resetEmployeePin, setEmployeeActive } from "./actions";
+import { EMPLOYEE_STATUS_MESSAGES, getAdminStatusMessage } from "@/lib/admin/status-messages";
 
-export default async function AdminEmployeesPage() {
+export default async function AdminEmployeesPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) {
     redirect("/admin/login");
   }
+
+  const { status } = await searchParams;
+  const feedbackMessage = getAdminStatusMessage(EMPLOYEE_STATUS_MESSAGES, status);
 
   const supabase = createServiceRoleClient();
   const employees = await fetchAllRows((from, to) =>
@@ -28,6 +32,8 @@ export default async function AdminEmployeesPage() {
 
       <h1 className="text-xl font-bold text-brand-dark">직원 관리</h1>
 
+      {feedbackMessage && <p className="text-sm text-brand-dark">{feedbackMessage}</p>}
+
       <ul className="flex flex-col gap-3">
         {employees.map((e) => (
           <li key={e.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
@@ -45,6 +51,7 @@ export default async function AdminEmployeesPage() {
                 name="newPin"
                 inputMode="numeric"
                 maxLength={4}
+                pattern="[0-9]{4}"
                 placeholder="새 PIN 4자리"
                 required
                 className="w-24 rounded-xl border border-neutral-200 px-3 py-2 text-sm"

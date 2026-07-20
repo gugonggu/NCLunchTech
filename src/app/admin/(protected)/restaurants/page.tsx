@@ -2,16 +2,18 @@ import Link from "next/link";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { SyncKakaoButton } from "./SyncKakaoButton";
+import { getAdminStatusMessage, RESTAURANT_ADMIN_STATUS_MESSAGES } from "@/lib/admin/status-messages";
 
 const RESULT_LIMIT = 60;
 
 export default async function AdminRestaurantsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; status?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, status } = await searchParams;
   const query = q?.trim() ?? "";
+  const feedbackMessage = getAdminStatusMessage(RESTAURANT_ADMIN_STATUS_MESSAGES, status);
 
   const supabase = createServiceRoleClient();
   const restaurants = await fetchAllRows((from, to) =>
@@ -32,6 +34,8 @@ export default async function AdminRestaurantsPage({
       </Link>
 
       <h1 className="text-xl font-bold text-brand-dark">식당 관리</h1>
+
+      {feedbackMessage && <p className="text-sm text-brand-dark">{feedbackMessage}</p>}
 
       <div className="flex gap-2">
         <SyncKakaoButton />

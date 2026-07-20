@@ -34,4 +34,8 @@ describe("parseCsvRows", () => {
       ["1", "2"],
     ]);
   });
+
+  it("닫히지 않은 따옴표를 거부한다", () => {
+    expect(() => parseCsvRows('a,"unterminated')).toThrow("CSV 따옴표가 닫히지 않았습니다.");
+  });
 });

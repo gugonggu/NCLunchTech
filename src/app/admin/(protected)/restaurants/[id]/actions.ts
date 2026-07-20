@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { adminUuidSchema, hoursHistorySnapshotSchema, menuHistorySnapshotSchema } from "@/lib/admin/validation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { logAdminAction } from "@/lib/auth/admin-log";
 import { createServiceRoleClient } from "@/lib/supabase/server";
@@ -12,14 +12,23 @@ export async function setRestaurantActive(restaurantId: string, isActive: boolea
     redirect("/admin/login");
   }
 
+  if (!adminUuidSchema.safeParse(restaurantId).success || typeof isActive !== "boolean") {
+    redirect("/admin/restaurants?status=invalid_target");
+  }
+
   const supabase = createServiceRoleClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("restaurants")
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
-    .eq("id", restaurantId);
+    .eq("id", restaurantId)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("상태 변경에 실패했습니다.");
+  }
+  if (!data) {
+    redirect(`/admin/restaurants/${restaurantId}?status=target_not_found`);
   }
 
   await logAdminAction(admin.id, isActive ? "activate_restaurant" : "deactivate_restaurant", {
@@ -27,7 +36,7 @@ export async function setRestaurantActive(restaurantId: string, isActive: boolea
     targetId: restaurantId,
   });
 
-  revalidatePath(`/admin/restaurants/${restaurantId}`);
+  redirect(`/admin/restaurants/${restaurantId}?status=updated`);
 }
 
 export async function setExcludedFromRecommend(restaurantId: string, excluded: boolean) {
@@ -36,14 +45,23 @@ export async function setExcludedFromRecommend(restaurantId: string, excluded: b
     redirect("/admin/login");
   }
 
+  if (!adminUuidSchema.safeParse(restaurantId).success || typeof excluded !== "boolean") {
+    redirect("/admin/restaurants?status=invalid_target");
+  }
+
   const supabase = createServiceRoleClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("restaurants")
     .update({ excluded_from_recommend: excluded, updated_at: new Date().toISOString() })
-    .eq("id", restaurantId);
+    .eq("id", restaurantId)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("추천 제외 설정 변경에 실패했습니다.");
+  }
+  if (!data) {
+    redirect(`/admin/restaurants/${restaurantId}?status=target_not_found`);
   }
 
   await logAdminAction(admin.id, excluded ? "exclude_from_recommend" : "include_in_recommend", {
@@ -51,7 +69,7 @@ export async function setExcludedFromRecommend(restaurantId: string, excluded: b
     targetId: restaurantId,
   });
 
-  revalidatePath(`/admin/restaurants/${restaurantId}`);
+  redirect(`/admin/restaurants/${restaurantId}?status=updated`);
 }
 
 export async function restoreMenuItem(restaurantId: string, menuItemId: string) {
@@ -60,8 +78,12 @@ export async function restoreMenuItem(restaurantId: string, menuItemId: string) 
     redirect("/admin/login");
   }
 
+  if (!adminUuidSchema.safeParse(restaurantId).success || !adminUuidSchema.safeParse(menuItemId).success) {
+    redirect("/admin/restaurants?status=invalid_target");
+  }
+
   const supabase = createServiceRoleClient();
-  const { data: historyRow } = await supabase
+  const { data: historyRow, error: historyError } = await supabase
     .from("change_history")
     .select("before")
     .eq("entity_type", "menu_item")
@@ -70,19 +92,32 @@ export async function restoreMenuItem(restaurantId: string, menuItemId: string) 
     .limit(1)
     .maybeSingle();
 
-  const before = historyRow?.before as { price: number | null; is_sold_out: boolean } | null;
-  if (!before) {
-    redirect(`/admin/restaurants/${restaurantId}?status=no_history`);
+  if (historyError) {
+    throw new Error("변경 이력 조회에 실패했습니다.");
   }
 
-  const { error } = await supabase
+  if (!historyRow) {
+    redirect(`/admin/restaurants/${restaurantId}?status=no_history`);
+  }
+  const beforeResult = menuHistorySnapshotSchema.safeParse(historyRow.before);
+  if (!beforeResult.success) {
+    redirect(`/admin/restaurants/${restaurantId}?status=invalid_history`);
+  }
+  const before = beforeResult.data;
+
+  const { data, error } = await supabase
     .from("menu_items")
     .update({ price: before.price, is_sold_out: before.is_sold_out, updated_at: new Date().toISOString() })
     .eq("id", menuItemId)
-    .eq("restaurant_id", restaurantId);
+    .eq("restaurant_id", restaurantId)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("복구에 실패했습니다.");
+  }
+  if (!data) {
+    redirect(`/admin/restaurants/${restaurantId}?status=target_not_found`);
   }
 
   await logAdminAction(admin.id, "restore_menu_item", {
@@ -101,7 +136,11 @@ export async function restoreRestaurantHours(restaurantId: string) {
   }
 
   const supabase = createServiceRoleClient();
-  const { data: historyRow } = await supabase
+  if (!adminUuidSchema.safeParse(restaurantId).success) {
+    redirect("/admin/restaurants?status=invalid_target");
+  }
+
+  const { data: historyRow, error: historyError } = await supabase
     .from("change_history")
     .select("before")
     .eq("entity_type", "restaurant_hours")
@@ -110,16 +149,24 @@ export async function restoreRestaurantHours(restaurantId: string) {
     .limit(1)
     .maybeSingle();
 
-  const before = historyRow?.before as
-    | { day_of_week: number; is_closed: boolean; open_time: string | null; close_time: string | null }[]
-    | null;
+  if (historyError) {
+    throw new Error("변경 이력 조회에 실패했습니다.");
+  }
 
-  if (!before || before.length === 0) {
+  if (!historyRow) {
+    redirect(`/admin/restaurants/${restaurantId}?status=no_history`);
+  }
+  const beforeResult = hoursHistorySnapshotSchema.safeParse(historyRow.before);
+  if (!beforeResult.success) {
+    redirect(`/admin/restaurants/${restaurantId}?status=invalid_history`);
+  }
+  const before = beforeResult.data;
+  if (before.length === 0) {
     redirect(`/admin/restaurants/${restaurantId}?status=no_history`);
   }
 
   const now = new Date().toISOString();
-  const { error } = await supabase.from("restaurant_hours").upsert(
+  const { data, error } = await supabase.from("restaurant_hours").upsert(
     before.map((row) => ({
       restaurant_id: restaurantId,
       day_of_week: row.day_of_week,
@@ -129,10 +176,13 @@ export async function restoreRestaurantHours(restaurantId: string) {
       updated_at: now,
     })),
     { onConflict: "restaurant_id,day_of_week" }
-  );
+  ).select("id");
 
   if (error) {
     throw new Error("복구에 실패했습니다.");
+  }
+  if (!data || data.length !== before.length) {
+    throw new Error("영업시간 복구 결과를 확인할 수 없습니다.");
   }
 
   await logAdminAction(admin.id, "restore_restaurant_hours", {

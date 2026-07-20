@@ -46,7 +46,8 @@ export function parseSeoulDateTimeLocal(value: string): Date | null {
     0,
     0
   );
-  return new Date(seoulInstant - SEOUL_OFFSET_MS);
+  const result = new Date(seoulInstant - SEOUL_OFFSET_MS);
+  return formatSeoulDateTimeLocal(result) === value ? result : null;
 }
 
 /** Date를 datetime-local 입력의 기본값 문자열("YYYY-MM-DDTHH:mm", Asia/Seoul 벽시계 기준)로 바꾼다. */
@@ -129,6 +130,7 @@ export const APPOINTMENT_STATUS_MESSAGES = {
   not_host: "방장만 할 수 있는 작업이에요.",
   already_responded: "이미 응답한 약속이에요.",
   already_confirmed: "이미 방문 확인을 마쳤어요.",
+  too_early: "약속 예정 시각이 지난 뒤에 방문을 확인할 수 있어요.",
 } as const;
 
 export type AppointmentStatusCode = keyof typeof APPOINTMENT_STATUS_MESSAGES;

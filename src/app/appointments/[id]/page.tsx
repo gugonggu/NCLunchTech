@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { isPastConfirmationWindow } from "@/lib/confirmation-window";
+import { hasAppointmentStarted } from "@/lib/confirmation-window";
 import { getAppointmentDetail, getMyParticipant, getParticipants } from "@/lib/appointments/queries";
 import {
   APPOINTMENT_STATUS_MESSAGES,
@@ -61,7 +61,7 @@ export default async function AppointmentDetailPage({
   const isExpired = scheduledAt <= now;
   const isCancelled = appointment.status === "cancelled";
   const isOpen = !isCancelled && !isExpired;
-  const needsConfirmation = !isCancelled && isPastConfirmationWindow(scheduledAt, now);
+  const needsConfirmation = !isCancelled && hasAppointmentStarted(scheduledAt, now);
 
   const myParticipant = isHost ? null : await getMyParticipant(id, employee.id);
   const participants = isHost ? await getParticipants(id) : [];

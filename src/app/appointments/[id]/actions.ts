@@ -7,6 +7,7 @@ import { getActiveParticipantEmployeeIds, createNotification } from "@/lib/notif
 import { buildAppointmentCancelledMessage, buildAppointmentUpdatedMessage } from "@/lib/notifications/validation";
 import { getAppointmentDetail, getMyParticipant } from "@/lib/appointments/queries";
 import { canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
+import { getAttendanceTiming } from "@/lib/appointments/attendance";
 
 function redirectWithStatus(appointmentId: string, status: string): never {
   redirect(`/appointments/${appointmentId}?status=${status}`);
@@ -196,7 +197,7 @@ export async function updateAppointmentSchedule(appointmentId: string, formData:
   redirectWithStatus(appointmentId, "updated");
 }
 
-/** 참여자 본인의 방문 확인(다녀왔어요). accepted 상태에서만 가능하며, 시각 제한은 없다(늦게 확인해도 허용). */
+/** 참여자 본인의 방문 확인(다녀왔어요). accepted 상태이며 예정 시각이 지난 뒤에만 가능하다. */
 export async function confirmAttendance(appointmentId: string) {
   const employee = await getCurrentEmployee();
   if (!employee) {
@@ -210,6 +211,9 @@ export async function confirmAttendance(appointmentId: string) {
   if (appointment.status === "cancelled") {
     redirectWithStatus(appointmentId, "cancelled_appointment");
   }
+  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
+    redirectWithStatus(appointmentId, "too_early");
+  }
 
   const existing = await getMyParticipant(appointmentId, employee.id);
   if (!existing || !canParticipantTransition(existing.status, "completed")) {
@@ -218,14 +222,19 @@ export async function confirmAttendance(appointmentId: string) {
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointment_participants")
     .update({ status: "completed", updated_at: now })
     .eq("id", existing.id)
-    .eq("status", "accepted");
+    .eq("status", "accepted")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "already_responded");
   }
 
   redirectWithStatus(appointmentId, "attended");
@@ -255,19 +264,27 @@ export async function confirmHostAttendance(appointmentId: string) {
     redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
   }
 
-  await requireHostAttendancePending(appointmentId, employee.id);
+  const appointment = await requireHostAttendancePending(appointmentId, employee.id);
+  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
+    redirectWithStatus(appointmentId, "too_early");
+  }
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .update({ host_attendance_status: "completed", host_attendance_confirmed_at: now, updated_at: now })
     .eq("id", appointmentId)
     .eq("host_employee_id", employee.id)
-    .is("host_attendance_status", null);
+    .is("host_attendance_status", null)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "already_confirmed");
   }
 
   redirectWithStatus(appointmentId, "attended");
@@ -280,19 +297,27 @@ export async function markHostNoShow(appointmentId: string) {
     redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
   }
 
-  await requireHostAttendancePending(appointmentId, employee.id);
+  const appointment = await requireHostAttendancePending(appointmentId, employee.id);
+  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
+    redirectWithStatus(appointmentId, "too_early");
+  }
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .update({ host_attendance_status: "cancelled", host_attendance_confirmed_at: now, updated_at: now })
     .eq("id", appointmentId)
     .eq("host_employee_id", employee.id)
-    .is("host_attendance_status", null);
+    .is("host_attendance_status", null)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("방문 확인 처리에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "already_confirmed");
   }
 
   redirectWithStatus(appointmentId, "no_show");

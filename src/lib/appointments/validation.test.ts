@@ -45,6 +45,17 @@ describe("parseSeoulDateTimeLocal / formatSeoulDateTimeLocal", () => {
     expect(parseSeoulDateTimeLocal("2026-07-16")).toBeNull();
   });
 
+  it("달력에 존재하지 않는 날짜는 자동 이월하지 않고 거부한다", () => {
+    expect(parseSeoulDateTimeLocal("2026-02-29T12:30")).toBeNull();
+    expect(parseSeoulDateTimeLocal("2026-02-31T12:30")).toBeNull();
+    expect(parseSeoulDateTimeLocal("2026-13-01T12:30")).toBeNull();
+  });
+
+  it("시와 분의 허용 범위를 벗어나면 거부한다", () => {
+    expect(parseSeoulDateTimeLocal("2026-07-20T24:00")).toBeNull();
+    expect(parseSeoulDateTimeLocal("2026-07-20T12:60")).toBeNull();
+  });
+
   it("Date와 datetime-local 문자열 사이를 왕복 변환해도 값이 유지된다", () => {
     const original = "2026-07-16T09:05";
     const date = parseSeoulDateTimeLocal(original);

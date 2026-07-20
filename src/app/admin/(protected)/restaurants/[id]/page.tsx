@@ -3,13 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { restoreMenuItem, restoreRestaurantHours, setExcludedFromRecommend, setRestaurantActive } from "./actions";
+import { getAdminStatusMessage, RESTAURANT_ADMIN_STATUS_MESSAGES } from "@/lib/admin/status-messages";
+import { adminUuidSchema } from "@/lib/admin/validation";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
-
-const STATUS_MESSAGES: Record<string, string> = {
-  restored: "복구했어요.",
-  no_history: "복구할 이전 이력이 없어요.",
-};
 
 export default async function AdminRestaurantDetailPage({
   params,
@@ -24,24 +21,37 @@ export default async function AdminRestaurantDetailPage({
   }
 
   const { id } = await params;
+  if (!adminUuidSchema.safeParse(id).success) {
+    notFound();
+  }
   const { status } = await searchParams;
-  const feedbackMessage = status && STATUS_MESSAGES[status] ? STATUS_MESSAGES[status] : null;
+  const feedbackMessage = getAdminStatusMessage(RESTAURANT_ADMIN_STATUS_MESSAGES, status);
 
   const supabase = createServiceRoleClient();
-  const { data: restaurant } = await supabase
+  const { data: restaurant, error: restaurantError } = await supabase
     .from("restaurants")
     .select("id, name, category, address, kakao_place_id, is_active, excluded_from_recommend")
     .eq("id", id)
     .maybeSingle();
 
+  if (restaurantError) {
+    throw new Error("식당 정보를 불러오지 못했습니다.");
+  }
+
   if (!restaurant) {
     notFound();
   }
 
-  const [{ data: menuItems }, { data: hoursRows }] = await Promise.all([
+  const [menuResult, hoursResult] = await Promise.all([
     supabase.from("menu_items").select("id, name, price, is_sold_out").eq("restaurant_id", id).order("created_at"),
     supabase.from("restaurant_hours").select("*").eq("restaurant_id", id),
   ]);
+
+  if (menuResult.error || hoursResult.error) {
+    throw new Error("식당 관리 데이터를 불러오지 못했습니다.");
+  }
+  const menuItems = menuResult.data;
+  const hoursRows = hoursResult.data;
 
   const hoursByDay = new Map((hoursRows ?? []).map((h) => [h.day_of_week, h]));
 

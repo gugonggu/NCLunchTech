@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
-import { logAdminAction } from "@/lib/auth/admin-log";
 import { parseMenuCsv, type RestaurantLookup } from "@/lib/admin/csv-menu";
 import { parseHoursCsv } from "@/lib/admin/csv-hours";
-import { createCsvBatch, getCsvBatch, markCsvBatchApplied } from "@/lib/admin/csv-batches";
+import { createCsvBatch, getCsvBatch, InvalidCsvBatchError } from "@/lib/admin/csv-batches";
+import { adminUuidSchema, validateCsvUpload } from "@/lib/admin/validation";
+import { parseCsvApplyRpcResult } from "@/lib/admin/rpc-result";
 
 function redirectToUpload(status: string): never {
   redirect(`/admin/restaurants/import?status=${status}`);
@@ -27,12 +28,12 @@ export async function uploadMenuCsv(formData: FormData) {
     redirect("/admin/login");
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    redirectToUpload("no_file");
+  const upload = await validateCsvUpload(formData.get("file"));
+  if (!upload.ok) {
+    redirectToUpload(upload.status);
   }
 
-  const text = await file.text();
+  const text = upload.text;
   const restaurants = await getRestaurantLookup();
 
   const supabase = createServiceRoleClient();
@@ -60,12 +61,12 @@ export async function uploadHoursCsv(formData: FormData) {
     redirect("/admin/login");
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    redirectToUpload("no_file");
+  const upload = await validateCsvUpload(formData.get("file"));
+  if (!upload.ok) {
+    redirectToUpload(upload.status);
   }
 
-  const text = await file.text();
+  const text = upload.text;
   const restaurants = await getRestaurantLookup();
 
   const supabase = createServiceRoleClient();
@@ -93,7 +94,19 @@ export async function applyCsvBatch(batchId: string) {
     redirect("/admin/login");
   }
 
-  const batch = await getCsvBatch(batchId);
+  if (!adminUuidSchema.safeParse(batchId).success) {
+    redirect("/admin/restaurants/import?status=batch_not_found");
+  }
+
+  let batch: Awaited<ReturnType<typeof getCsvBatch>>;
+  try {
+    batch = await getCsvBatch(batchId);
+  } catch (error) {
+    if (error instanceof InvalidCsvBatchError) {
+      redirect(`/admin/restaurants/import/${batchId}?status=batch_invalid`);
+    }
+    throw error;
+  }
   if (!batch) {
     redirect("/admin/restaurants/import?status=batch_not_found");
   }
@@ -102,70 +115,43 @@ export async function applyCsvBatch(batchId: string) {
   }
 
   const supabase = createServiceRoleClient();
-
-  if (batch.type === "menu") {
-    const validRows = (batch.rows as import("@/lib/admin/csv-menu").MenuCsvRow[]).filter(
-      (r) => r.errors.length === 0 && r.restaurantId
-    );
-
-    for (const row of validRows) {
-      const { data: existing } = await supabase
-        .from("menu_items")
-        .select("id")
-        .eq("restaurant_id", row.restaurantId as string)
-        .eq("name", row.name)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from("menu_items")
-          .update({ price: row.price, updated_at: new Date().toISOString() })
-          .eq("id", existing.id);
-      } else {
-        await supabase.from("menu_items").insert({
-          restaurant_id: row.restaurantId,
-          name: row.name,
-          price: row.price,
-        });
-      }
-    }
-
-    await markCsvBatchApplied(batchId);
-    await logAdminAction(admin.id, "apply_csv_batch", {
-      targetType: "csv_import_batch",
-      targetId: batchId,
-      detail: { type: "menu", appliedCount: validRows.length },
-    });
-  } else {
-    const validRows = (batch.rows as import("@/lib/admin/csv-hours").HoursCsvRow[]).filter(
-      (r) => r.errors.length === 0 && r.restaurantId && r.dayOfWeek !== null
-    );
-
-    if (validRows.length > 0) {
-      const { error } = await supabase.from("restaurant_hours").upsert(
-        validRows.map((row) => ({
-          restaurant_id: row.restaurantId,
-          day_of_week: row.dayOfWeek,
-          is_closed: row.isClosed,
-          open_time: row.openTime,
-          close_time: row.closeTime,
-          updated_at: new Date().toISOString(),
-        })),
-        { onConflict: "restaurant_id,day_of_week" }
-      );
-
-      if (error) {
-        throw new Error("영업시간 반영에 실패했습니다.");
-      }
-    }
-
-    await markCsvBatchApplied(batchId);
-    await logAdminAction(admin.id, "apply_csv_batch", {
-      targetType: "csv_import_batch",
-      targetId: batchId,
-      detail: { type: "hours", appliedCount: validRows.length },
-    });
+  const validMenuRows = batch.type === "menu"
+    ? (batch.rows as import("@/lib/admin/csv-menu").MenuCsvRow[]).filter(
+        (row) => row.errors.length === 0 && row.restaurantId
+      )
+    : [];
+  const validHoursRows = batch.type === "hours"
+    ? (batch.rows as import("@/lib/admin/csv-hours").HoursCsvRow[]).filter(
+        (row) => row.errors.length === 0 && row.restaurantId && row.dayOfWeek !== null
+      )
+    : [];
+  if ((batch.type === "menu" ? validMenuRows : validHoursRows).length === 0) {
+    redirect(`/admin/restaurants/import/${batchId}?status=no_valid_rows`);
   }
 
+  const { data, error } = await supabase.rpc("admin_apply_csv_batch", {
+    p_admin_id: admin.id,
+    p_batch_id: batchId,
+  });
+  if (error) {
+    redirect(`/admin/restaurants/import/${batchId}?status=apply_failed`);
+  }
+
+  let result: ReturnType<typeof parseCsvApplyRpcResult>;
+  try {
+    result = parseCsvApplyRpcResult(data);
+  } catch {
+    redirect(`/admin/restaurants/import/${batchId}?status=apply_failed`);
+  }
+
+  if (result.status === "batch_not_found") {
+    redirect("/admin/restaurants/import?status=batch_not_found");
+  }
+  if (result.status === "already_applied") {
+    redirect(`/admin/restaurants/import/${batchId}?status=already_applied`);
+  }
+  if (result.status === "no_valid_rows") {
+    redirect(`/admin/restaurants/import/${batchId}?status=no_valid_rows`);
+  }
   redirect(`/admin/restaurants/import/${batchId}?status=applied`);
 }

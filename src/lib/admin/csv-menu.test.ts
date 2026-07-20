@@ -64,4 +64,14 @@ describe("parseMenuCsv", () => {
     expect(result.rows[0].errors).toEqual([]);
     expect(result.rows[1].errors).toContain("파일 내 중복된 식당·메뉴명입니다.");
   });
+
+  it("헤더에 예상하지 않은 열이 있으면 거부한다", () => {
+    const result = parseMenuCsv("kakao_place_id,name,price,extra\nkakao-1,메뉴,1000,x", restaurants, []);
+    expect(result.headerValid).toBe(false);
+  });
+
+  it("데이터 행의 열 개수가 다르면 해당 행을 오류로 표시한다", () => {
+    const result = parseMenuCsv("kakao_place_id,name,price\nkakao-1,메뉴,1000,extra", restaurants, []);
+    expect(result.rows[0].errors).toContain("열 개수가 올바르지 않습니다(3개 필요).");
+  });
 });

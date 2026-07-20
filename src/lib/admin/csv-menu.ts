@@ -40,7 +40,7 @@ export function parseMenuCsv(
   }
 
   const header = raw[0].map((h) => h.trim().toLowerCase());
-  const headerValid = EXPECTED_HEADER.every((h, i) => header[i] === h);
+  const headerValid = header.length === EXPECTED_HEADER.length && EXPECTED_HEADER.every((h, i) => header[i] === h);
   if (!headerValid) {
     return { rows: [], headerValid: false };
   }
@@ -55,6 +55,10 @@ export function parseMenuCsv(
     const name = (cells[1] ?? "").trim();
     const priceRaw = (cells[2] ?? "").trim();
     const errors: string[] = [];
+
+    if (cells.length !== EXPECTED_HEADER.length) {
+      errors.push("열 개수가 올바르지 않습니다(3개 필요).");
+    }
 
     if (!kakaoPlaceId) {
       errors.push("kakao_place_id가 비어 있습니다.");

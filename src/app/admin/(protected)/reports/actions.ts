@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { adminUuidSchema } from "@/lib/admin/validation";
+import { parseAdminRpcObjectStatus, parseAdminRpcStatus } from "@/lib/admin/rpc-result";
 import { getCurrentAdmin } from "@/lib/auth/admin";
-import { logAdminAction } from "@/lib/auth/admin-log";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export async function dismissReport(reportId: string) {
@@ -12,50 +12,42 @@ export async function dismissReport(reportId: string) {
     redirect("/admin/login");
   }
 
+  if (!adminUuidSchema.safeParse(reportId).success) {
+    redirect("/admin/reports?status=invalid_target");
+  }
+
   const supabase = createServiceRoleClient();
-  const { error } = await supabase
-    .from("reports")
-    .update({ status: "resolved" })
-    .eq("id", reportId)
-    .eq("status", "pending");
+  const { data, error } = await supabase.rpc("admin_dismiss_report", {
+    p_admin_id: admin.id,
+    p_report_id: reportId,
+  });
 
   if (error) {
     throw new Error("신고 처리에 실패했습니다.");
   }
-
-  await logAdminAction(admin.id, "dismiss_report", { targetType: "report", targetId: reportId });
-  revalidatePath("/admin/reports");
+  const status = parseAdminRpcStatus(data, ["dismissed", "target_not_found"]);
+  redirect(`/admin/reports?status=${status}`);
 }
 
-export async function deleteReportedReview(reportId: string, reviewId: string) {
+export async function deleteReportedReview(reportId: string) {
   const admin = await getCurrentAdmin();
   if (!admin) {
     redirect("/admin/login");
   }
 
+  if (!adminUuidSchema.safeParse(reportId).success) {
+    redirect("/admin/reports?status=invalid_target");
+  }
+
   const supabase = createServiceRoleClient();
 
-  const { data: review } = await supabase.from("reviews").select("*").eq("id", reviewId).maybeSingle();
-  if (!review) {
-    throw new Error("존재하지 않는 리뷰입니다.");
-  }
-
-  // reports.review_id가 reviews(id)를 참조하므로, 리뷰 삭제 전 관련 신고부터 정리한다.
-  const { error: reportsError } = await supabase.from("reports").delete().eq("review_id", reviewId);
-  if (reportsError) {
-    throw new Error("신고 정리에 실패했습니다.");
-  }
-
-  const { error: reviewError } = await supabase.from("reviews").delete().eq("id", reviewId);
-  if (reviewError) {
+  const { data, error } = await supabase.rpc("admin_delete_reported_review", {
+    p_admin_id: admin.id,
+    p_report_id: reportId,
+  });
+  if (error) {
     throw new Error("리뷰 삭제에 실패했습니다.");
   }
-
-  await logAdminAction(admin.id, "delete_reported_review", {
-    targetType: "review",
-    targetId: reviewId,
-    detail: { deletedReview: review, viaReportId: reportId },
-  });
-
-  revalidatePath("/admin/reports");
+  const status = parseAdminRpcObjectStatus(data, ["review_deleted", "target_not_found"]);
+  redirect(`/admin/reports?status=${status}`);
 }
