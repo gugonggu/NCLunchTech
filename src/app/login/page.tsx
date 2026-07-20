@@ -1,11 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, type FormEvent, useState } from "react";
+import { sanitizeReturnTo } from "@/lib/appointments/validation";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
   const [nickname, setNickname] = useState("");
   const [pin, setPin] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -29,7 +40,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/");
+      router.push(returnTo);
       router.refresh();
     } catch {
       setMessage("네트워크 오류가 발생했습니다.");
@@ -70,7 +81,10 @@ export default function LoginPage() {
       </form>
       <p className="text-center text-sm text-neutral-500">
         아직 계정이 없나요?{" "}
-        <Link href="/signup" className="text-brand-dark underline">
+        <Link
+          href={`/signup?returnTo=${encodeURIComponent(returnTo)}`}
+          className="text-brand-dark underline"
+        >
           회원가입
         </Link>
       </p>

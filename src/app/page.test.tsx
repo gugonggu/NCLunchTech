@@ -19,6 +19,10 @@ vi.mock("@/app/visits/actions", () => ({
   completeTodayVisit: vi.fn(),
 }));
 
+vi.mock("@/lib/appointments/queries", () => ({
+  getUpcomingAppointments: vi.fn(),
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   createServiceRoleClient: vi.fn(() => ({
     from: () => ({
@@ -33,6 +37,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getActiveVisitToday } from "@/lib/visits/queries";
+import { getUpcomingAppointments } from "@/lib/appointments/queries";
 import HomePage from "./page";
 
 function renderHome(searchParams: Record<string, string> = {}) {
@@ -55,6 +60,7 @@ describe("HomePage", () => {
   it("오늘의 결정이 없으면 오늘 뭐 먹지?/식당 찾기 버튼을 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getUpcomingAppointments).mockResolvedValue([]);
 
     const ui = await renderHome();
     render(ui);
@@ -77,6 +83,7 @@ describe("HomePage", () => {
       restaurantLat: 35.171,
       restaurantLng: 129.131,
     });
+    vi.mocked(getUpcomingAppointments).mockResolvedValue([]);
 
     const ui = await renderHome();
     render(ui);
@@ -100,6 +107,7 @@ describe("HomePage", () => {
       restaurantLat: 35.171,
       restaurantLng: 129.131,
     });
+    vi.mocked(getUpcomingAppointments).mockResolvedValue([]);
 
     const ui = await renderHome();
     render(ui);
@@ -113,6 +121,7 @@ describe("HomePage", () => {
   it("허용 목록에 있는 visitStatus만 안내 문구로 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getUpcomingAppointments).mockResolvedValue([]);
 
     const ui = await renderHome({ visitStatus: "decided" });
     render(ui);
@@ -123,10 +132,45 @@ describe("HomePage", () => {
   it("허용 목록에 없는 visitStatus 값은 그대로 표시하지 않는다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getUpcomingAppointments).mockResolvedValue([]);
 
     const ui = await renderHome({ visitStatus: "<script>alert(1)</script>" });
     render(ui);
 
     expect(screen.queryByText(/script/)).not.toBeInTheDocument();
+  });
+
+  it("다가오는 약속이 있으면 목록으로 보여주고, 없으면 섹션 자체를 숨긴다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getUpcomingAppointments).mockResolvedValue([
+      {
+        id: "appt-1",
+        restaurantName: "테스트약속식당",
+        scheduledAt: "2026-07-21T03:30:00.000Z",
+        role: "host",
+        myStatus: null,
+      },
+    ]);
+
+    const ui = await renderHome();
+    render(ui);
+
+    expect(screen.getByText("다가오는 약속")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /테스트약속식당/ })).toHaveAttribute(
+      "href",
+      "/appointments/appt-1"
+    );
+  });
+
+  it("다가오는 약속이 없으면 섹션을 숨긴다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getUpcomingAppointments).mockResolvedValue([]);
+
+    const ui = await renderHome();
+    render(ui);
+
+    expect(screen.queryByText("다가오는 약속")).not.toBeInTheDocument();
   });
 });

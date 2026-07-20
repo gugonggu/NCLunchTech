@@ -5,7 +5,16 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { cancelTodayVisit, completeTodayVisit } from "@/app/visits/actions";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
+import { getUpcomingAppointments } from "@/lib/appointments/queries";
 import { LogoutButton } from "./LogoutButton";
+
+const upcomingFormatter = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 interface HomeSearchParams {
   visitStatus?: string;
@@ -50,6 +59,7 @@ export default async function HomePage({
 
   const today = getSeoulDateString(new Date());
   const todayVisit = await getActiveVisitToday(employee.id, today);
+  const upcomingAppointments = await getUpcomingAppointments(employee.id, new Date());
 
   let todayVisitDistanceM: number | null = null;
   if (todayVisit) {
@@ -150,6 +160,25 @@ export default async function HomePage({
           >
             식당 찾기
           </Link>
+        </div>
+      )}
+
+      {upcomingAppointments.length > 0 && (
+        <div className="flex w-full flex-col gap-2 text-left">
+          <p className="text-sm font-semibold text-neutral-500">다가오는 약속</p>
+          {upcomingAppointments.map((a) => (
+            <Link
+              key={a.id}
+              href={`/appointments/${a.id}`}
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3"
+            >
+              <p className="font-semibold">{a.restaurantName}</p>
+              <p className="text-sm text-neutral-500">
+                {upcomingFormatter.format(new Date(a.scheduledAt))}
+                {a.role === "host" ? " · 내가 만든 약속" : a.myStatus === "pending" ? " · 응답 대기 중" : " · 참여 확정"}
+              </p>
+            </Link>
+          ))}
         </div>
       )}
 

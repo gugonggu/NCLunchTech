@@ -52,14 +52,22 @@ function RestaurantCard({
         </p>
         {reason && <p className="mt-1 text-sm text-brand-dark">{reason}</p>}
       </Link>
-      <form action={decideRestaurant.bind(null, restaurant.id)} className="mt-2">
-        <button
-          type="submit"
-          className="w-full rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white"
+      <div className="mt-2 flex gap-2">
+        <form action={decideRestaurant.bind(null, restaurant.id)} className="flex-1">
+          <button
+            type="submit"
+            className="w-full rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white"
+          >
+            혼자 결정하기
+          </button>
+        </form>
+        <Link
+          href={`/appointments/new?restaurantId=${restaurant.id}`}
+          className="flex-1 rounded-xl bg-white px-3 py-2 text-center text-sm font-semibold text-brand-dark shadow-sm"
         >
-          여기로 결정
-        </button>
-      </form>
+          동료와 함께
+        </Link>
+      </div>
     </div>
   );
 }

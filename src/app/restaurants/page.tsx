@@ -10,6 +10,7 @@ interface RestaurantsSearchParams {
   category?: string;
   radius?: string;
   sort?: string;
+  forAppointment?: string;
 }
 
 export default async function RestaurantsPage({
@@ -18,6 +19,7 @@ export default async function RestaurantsPage({
   searchParams: Promise<RestaurantsSearchParams>;
 }) {
   const params = await searchParams;
+  const { forAppointment } = params;
   const supabase = createServiceRoleClient();
 
   const { data: settings } = await supabase
@@ -71,7 +73,14 @@ export default async function RestaurantsPage({
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
       <h1 className="text-xl font-bold text-brand-dark">식당 찾기</h1>
 
+      {forAppointment && (
+        <p className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
+          약속의 식당을 변경할 곳을 골라주세요.
+        </p>
+      )}
+
       <form method="get" className="flex flex-col gap-3">
+        {forAppointment && <input type="hidden" name="forAppointment" value={forAppointment} />}
         <input
           type="text"
           name="q"
@@ -124,7 +133,11 @@ export default async function RestaurantsPage({
         {visible.map((r) => (
           <li key={r.id}>
             <Link
-              href={`/restaurants/${r.id}`}
+              href={
+                forAppointment
+                  ? `/restaurants/${r.id}?forAppointment=${forAppointment}`
+                  : `/restaurants/${r.id}`
+              }
               className="block rounded-2xl border border-neutral-200 px-4 py-3"
             >
               <p className="font-semibold">{r.name}</p>
