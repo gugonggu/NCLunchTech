@@ -5,6 +5,8 @@ import { adminUuidSchema } from "@/lib/admin/validation";
 import { parseAdminRpcObjectStatus, parseAdminRpcStatus } from "@/lib/admin/rpc-result";
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getStoragePathsForReviews } from "@/lib/review-photos/queries";
+import { REVIEW_PHOTOS_BUCKET } from "@/lib/review-photos/validation";
 
 export async function dismissReport(reportId: string) {
   const admin = await getCurrentAdmin();
@@ -40,6 +42,20 @@ export async function deleteReportedReview(reportId: string) {
   }
 
   const supabase = createServiceRoleClient();
+
+  const { data: report } = await supabase
+    .from("reports")
+    .select("review_id")
+    .eq("id", reportId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (report?.review_id) {
+    const storagePaths = await getStoragePathsForReviews([report.review_id]);
+    if (storagePaths.length > 0) {
+      await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove(storagePaths);
+    }
+  }
 
   const { data, error } = await supabase.rpc("admin_delete_reported_review", {
     p_admin_id: admin.id,

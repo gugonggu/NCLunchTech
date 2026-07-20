@@ -6,7 +6,9 @@ import { getMyReview, hasCompletedVisit } from "@/lib/reviews/queries";
 import { REVIEW_STATUS_MESSAGES, REVIEW_TAGS, isReviewStatusCode } from "@/lib/reviews/validation";
 import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/queries";
 import { MEAL_STATUS_MESSAGES, isMealStatusCode, mealSourceSchema } from "@/lib/meals/validation";
-import { upsertReview } from "./actions";
+import { getReviewPhotos } from "@/lib/review-photos/queries";
+import { MAX_PHOTOS_PER_REVIEW, REVIEW_PHOTO_MESSAGES, isReviewPhotoStatusCode } from "@/lib/review-photos/validation";
+import { deleteReviewPhoto, uploadReviewPhoto, upsertReview } from "./actions";
 import { MealRecordForm } from "./MealRecordForm";
 
 interface NewReviewSearchParams {
@@ -15,6 +17,7 @@ interface NewReviewSearchParams {
   visitId?: string;
   appointmentId?: string;
   mealStatus?: string;
+  photoStatus?: string;
 }
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5];
@@ -24,7 +27,7 @@ export default async function NewReviewPage({
 }: {
   searchParams: Promise<NewReviewSearchParams>;
 }) {
-  const { restaurantId, status, visitId, appointmentId, mealStatus } = await searchParams;
+  const { restaurantId, status, visitId, appointmentId, mealStatus, photoStatus } = await searchParams;
 
   if (!restaurantId) {
     notFound();
@@ -51,6 +54,7 @@ export default async function NewReviewPage({
 
   const feedbackMessage = isReviewStatusCode(status) ? REVIEW_STATUS_MESSAGES[status] : null;
   const mealFeedbackMessage = isMealStatusCode(mealStatus) ? MEAL_STATUS_MESSAGES[mealStatus] : null;
+  const photoFeedbackMessage = isReviewPhotoStatusCode(photoStatus) ? REVIEW_PHOTO_MESSAGES[photoStatus] : null;
   const visited = await hasCompletedVisit(employee.id, restaurantId);
 
   if (!visited) {
@@ -71,6 +75,7 @@ export default async function NewReviewPage({
   }
 
   const existing = await getMyReview(employee.id, restaurantId);
+  const photos = existing ? await getReviewPhotos(existing.id) : [];
   const parsedSource = mealSourceSchema.safeParse({ visitId, appointmentId });
   const completedSource = parsedSource.success
     ? await getCompletedMealSource(employee.id, restaurantId, parsedSource.data)
@@ -214,6 +219,45 @@ export default async function NewReviewPage({
           {existing ? "리뷰 수정 저장" : "리뷰 저장"}
         </button>
       </form>
+
+      {existing && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-bold text-brand-dark">사진(선택, 최대 {MAX_PHOTOS_PER_REVIEW}장)</h2>
+
+          {photoFeedbackMessage && <p className="text-sm text-red-600">{photoFeedbackMessage}</p>}
+
+          {photos.length > 0 && (
+            <ul className="grid grid-cols-3 gap-2">
+              {photos.map((p) => (
+                <li key={p.id} className="flex flex-col gap-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.url} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                  <form action={deleteReviewPhoto.bind(null, p.id, restaurantId)}>
+                    <button type="submit" className="w-full rounded-lg bg-neutral-100 px-2 py-1 text-xs">
+                      삭제
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {photos.length < MAX_PHOTOS_PER_REVIEW && (
+            <form action={uploadReviewPhoto.bind(null, restaurantId)} className="flex flex-col gap-2">
+              <input
+                type="file"
+                name="photo"
+                accept="image/jpeg,image/png,image/webp"
+                required
+                className="text-sm text-neutral-600"
+              />
+              <button type="submit" className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
+                사진 추가
+              </button>
+            </form>
+          )}
+        </section>
+      )}
     </main>
   );
 }

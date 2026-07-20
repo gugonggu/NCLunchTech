@@ -10,6 +10,7 @@ import { getStatusSummary } from "@/lib/status-reports/queries";
 import { BUSINESS_STATUS_VALUES, CONGESTION_VALUES, formatMinutesAgo } from "@/lib/status-reports/validation";
 import { getComments } from "@/lib/review-comments/queries";
 import { getHelpfulCount, hasReacted } from "@/lib/review-reactions/queries";
+import { getRestaurantPhotoGallery } from "@/lib/review-photos/queries";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
 import {
@@ -98,6 +99,7 @@ export default async function RestaurantDetailPage({
   const reportFeedbackMessage = isReportStatusCode(reportStatus) ? REPORT_STATUS_MESSAGES[reportStatus] : null;
   const now = new Date();
   const statusSummary = await getStatusSummary(id, now);
+  const photoGallery = await getRestaurantPhotoGallery(id);
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
@@ -392,6 +394,20 @@ export default async function RestaurantDetailPage({
               리뷰 남기기
             </Link>
           )}
+        </section>
+      )}
+
+      {photoGallery.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-bold text-brand-dark">사진</h2>
+          <ul className="grid grid-cols-3 gap-2">
+            {photoGallery.map((p) => (
+              <li key={p.id}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt="" className="aspect-square w-full rounded-xl object-cover" />
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

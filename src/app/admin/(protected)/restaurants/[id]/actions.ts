@@ -5,6 +5,7 @@ import { adminUuidSchema, hoursHistorySnapshotSchema, menuHistorySnapshotSchema 
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { logAdminAction } from "@/lib/auth/admin-log";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { REVIEW_PHOTOS_BUCKET } from "@/lib/review-photos/validation";
 
 export async function setRestaurantActive(restaurantId: string, isActive: boolean) {
   const admin = await getCurrentAdmin();
@@ -192,4 +193,40 @@ export async function restoreRestaurantHours(restaurantId: string) {
   });
 
   redirect(`/admin/restaurants/${restaurantId}?status=restored`);
+}
+
+export async function deleteReviewPhotoAsAdmin(restaurantId: string, photoId: string) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    redirect("/admin/login");
+  }
+
+  if (!adminUuidSchema.safeParse(restaurantId).success || !adminUuidSchema.safeParse(photoId).success) {
+    redirect("/admin/restaurants?status=invalid_target");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: photo } = await supabase
+    .from("review_photos")
+    .select("id, storage_path")
+    .eq("id", photoId)
+    .maybeSingle();
+
+  if (!photo) {
+    redirect(`/admin/restaurants/${restaurantId}?status=target_not_found`);
+  }
+
+  await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove([photo.storage_path]);
+  const { error } = await supabase.from("review_photos").delete().eq("id", photoId);
+
+  if (error) {
+    throw new Error("사진 삭제에 실패했습니다.");
+  }
+
+  await logAdminAction(admin.id, "delete_review_photo", {
+    targetType: "review_photo",
+    targetId: photoId,
+  });
+
+  redirect(`/admin/restaurants/${restaurantId}?status=updated`);
 }

@@ -13,9 +13,23 @@ import {
   normalizeMealRecordFormData,
   type MealStatusCode,
 } from "@/lib/meals/validation";
+import { countReviewPhotos, getPhotoForOwnershipCheck } from "@/lib/review-photos/queries";
+import { processPhotoBuffer } from "@/lib/review-photos/image-processing";
+import {
+  MAX_PHOTOS_PER_REVIEW,
+  MAX_PHOTO_BYTES,
+  REVIEW_PHOTOS_BUCKET,
+  buildPhotoStoragePath,
+  isAllowedPhotoMimeType,
+  type ReviewPhotoStatusCode,
+} from "@/lib/review-photos/validation";
 
 function redirectToForm(restaurantId: string, status: string): never {
   redirect(`/reviews/new?restaurantId=${restaurantId}&status=${status}`);
+}
+
+function redirectToPhotoForm(restaurantId: string, status: ReviewPhotoStatusCode): never {
+  redirect(`/reviews/new?restaurantId=${restaurantId}&photoStatus=${status}`);
 }
 
 function redirectToMealForm(
@@ -177,4 +191,90 @@ export async function upsertReview(restaurantId: string, formData: FormData) {
   }
 
   redirect(`/restaurants/${restaurantId}?reviewStatus=saved`);
+}
+
+export async function uploadReviewPhoto(restaurantId: string, formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/reviews/new?restaurantId=${restaurantId}`)}`);
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: review } = await supabase
+    .from("reviews")
+    .select("id, employee_id")
+    .eq("employee_id", employee.id)
+    .eq("restaurant_id", restaurantId)
+    .maybeSingle();
+
+  if (!review || review.employee_id !== employee.id) {
+    redirectToPhotoForm(restaurantId, "not_author");
+  }
+
+  const existingCount = await countReviewPhotos(review.id);
+  if (existingCount >= MAX_PHOTOS_PER_REVIEW) {
+    redirectToPhotoForm(restaurantId, "too_many");
+  }
+
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) {
+    redirectToPhotoForm(restaurantId, "no_file");
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    redirectToPhotoForm(restaurantId, "too_large");
+  }
+  if (!isAllowedPhotoMimeType(file.type)) {
+    redirectToPhotoForm(restaurantId, "invalid_type");
+  }
+
+  const originalBuffer = Buffer.from(await file.arrayBuffer());
+  let processedBuffer: Buffer;
+  try {
+    processedBuffer = await processPhotoBuffer(originalBuffer, file.type);
+  } catch {
+    redirectToPhotoForm(restaurantId, "invalid_type");
+  }
+
+  const storagePath = buildPhotoStoragePath(review.id, file.type, crypto.randomUUID());
+  const { error: uploadError } = await supabase.storage
+    .from(REVIEW_PHOTOS_BUCKET)
+    .upload(storagePath, processedBuffer, { contentType: file.type });
+
+  if (uploadError) {
+    throw new Error("사진 업로드에 실패했습니다.");
+  }
+
+  const { error: insertError } = await supabase.from("review_photos").insert({
+    review_id: review.id,
+    employee_id: employee.id,
+    storage_path: storagePath,
+  });
+
+  if (insertError) {
+    await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove([storagePath]);
+    throw new Error("사진 등록에 실패했습니다.");
+  }
+
+  redirectToPhotoForm(restaurantId, "uploaded");
+}
+
+export async function deleteReviewPhoto(photoId: string, restaurantId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/reviews/new?restaurantId=${restaurantId}`)}`);
+  }
+
+  const photo = await getPhotoForOwnershipCheck(photoId);
+  if (!photo) {
+    redirectToPhotoForm(restaurantId, "not_found");
+  }
+  if (photo.employeeId !== employee.id) {
+    redirectToPhotoForm(restaurantId, "not_author");
+  }
+
+  const supabase = createServiceRoleClient();
+  await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove([photo.storagePath]);
+  await supabase.from("review_photos").delete().eq("id", photoId);
+
+  redirectToPhotoForm(restaurantId, "deleted");
 }

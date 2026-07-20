@@ -2,11 +2,18 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { restoreMenuItem, restoreRestaurantHours, setExcludedFromRecommend, setRestaurantActive } from "./actions";
+import {
+  deleteReviewPhotoAsAdmin,
+  restoreMenuItem,
+  restoreRestaurantHours,
+  setExcludedFromRecommend,
+  setRestaurantActive,
+} from "./actions";
 import { getAdminStatusMessage, RESTAURANT_ADMIN_STATUS_MESSAGES } from "@/lib/admin/status-messages";
 import { adminUuidSchema } from "@/lib/admin/validation";
 import { getRecentStatusReportsForAdmin } from "@/lib/status-reports/queries";
 import { formatMinutesAgo } from "@/lib/status-reports/validation";
+import { getRestaurantPhotosForAdmin } from "@/lib/review-photos/queries";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -57,6 +64,7 @@ export default async function AdminRestaurantDetailPage({
 
   const hoursByDay = new Map((hoursRows ?? []).map((h) => [h.day_of_week, h]));
   const recentStatusReports = await getRecentStatusReportsForAdmin(id);
+  const recentPhotos = await getRestaurantPhotosForAdmin(id);
   const now = new Date();
 
   return (
@@ -143,6 +151,30 @@ export default async function AdminRestaurantDetailPage({
                 <p className="text-neutral-500">
                   {r.employeeNickname} · {formatMinutesAgo(new Date(r.createdAt), now)}
                 </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-bold text-brand-dark">최근 사진</h2>
+        {recentPhotos.length === 0 ? (
+          <p className="text-sm text-neutral-500">아직 등록된 사진이 없어요.</p>
+        ) : (
+          <ul className="grid grid-cols-3 gap-2">
+            {recentPhotos.map((p) => (
+              <li key={p.id} className="flex flex-col gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                <p className="text-xs text-neutral-500">
+                  {p.employeeNickname} · {formatMinutesAgo(new Date(p.createdAt), now)}
+                </p>
+                <form action={deleteReviewPhotoAsAdmin.bind(null, id, p.id)}>
+                  <button type="submit" className="w-full rounded-lg bg-white px-2 py-1 text-xs text-red-600 shadow-sm">
+                    삭제
+                  </button>
+                </form>
               </li>
             ))}
           </ul>
