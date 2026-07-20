@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { getPollDetail, getWinningIds } from "@/lib/polls/queries";
-import { POLL_STATUS_MESSAGES, isPollStatusCode } from "@/lib/polls/validation";
+import { getPollDetail, getWinningIds, isEligibleAppointmentVoter } from "@/lib/polls/queries";
+import { POLL_STATUS_MESSAGES, isPollStatusCode, isValidRestaurantPollBridge } from "@/lib/polls/validation";
 import { cancelVote, closePoll, decidePoll, voteInPoll } from "./actions";
 
 const displayFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -33,6 +33,22 @@ export default async function PollDetailPage({
   const isCreator = employee?.id === poll.createdBy;
   const isOpen = poll.status === "open";
   const winningIds = poll.status !== "open" ? getWinningIds(poll.options) : [];
+  const canVote =
+    !!employee && (!poll.appointmentId || (await isEligibleAppointmentVoter(poll.appointmentId, employee.id)));
+  const decidedOption = poll.decidedOptionId
+    ? poll.options.find((o) => o.id === poll.decidedOptionId)
+    : undefined;
+  const decidedOptionRestaurantId = decidedOption?.restaurantId ?? null;
+  const canBridgeToAppointment =
+    isCreator &&
+    !!decidedOptionRestaurantId &&
+    isValidRestaurantPollBridge({
+      pollType: poll.pollType,
+      status: poll.status,
+      appointmentId: poll.appointmentId,
+      decidedOptionRestaurantId,
+      targetRestaurantId: decidedOptionRestaurantId,
+    });
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
@@ -45,6 +61,11 @@ export default async function PollDetailPage({
       </h1>
       {poll.pollType === "menu" && poll.restaurantName && (
         <p className="text-neutral-700">{poll.restaurantName}</p>
+      )}
+      {poll.appointmentId && (
+        <Link href={`/appointments/${poll.appointmentId}`} className="text-sm text-neutral-500 underline">
+          연결된 약속 보기
+        </Link>
       )}
 
       {feedbackMessage && (
@@ -80,7 +101,7 @@ export default async function PollDetailPage({
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="text-sm text-neutral-500">{option.voteCount}표</span>
-                  {isOpen && employee && (
+                  {isOpen && canVote && (
                     <form action={voteInPoll.bind(null, poll.id, option.id)}>
                       <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-1.5 text-xs font-semibold">
                         {isMine ? "다시 선택" : "투표"}
@@ -104,7 +125,7 @@ export default async function PollDetailPage({
         })}
       </ul>
 
-      {isOpen && employee && poll.myOptionId && (
+      {isOpen && canVote && poll.myOptionId && (
         <form action={cancelVote.bind(null, poll.id)}>
           <button
             type="submit"
@@ -115,12 +136,25 @@ export default async function PollDetailPage({
         </form>
       )}
 
+      {isOpen && employee && poll.appointmentId && !canVote && (
+        <p className="text-sm text-neutral-500">이 약속에서 수락한 참여자만 투표할 수 있어요.</p>
+      )}
+
       {isOpen && isCreator && (
         <form action={closePoll.bind(null, poll.id)}>
           <button type="submit" className="w-full rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
             지금 마감하기
           </button>
         </form>
+      )}
+
+      {canBridgeToAppointment && (
+        <Link
+          href={`/appointments/new?restaurantId=${decidedOptionRestaurantId}&fromPollId=${poll.id}`}
+          className="rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+        >
+          이 식당으로 약속 만들기
+        </Link>
       )}
 
       {!employee && (

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getAppointmentDetail, getMyParticipant, getParticipants } from "@/lib/appointments/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
+import { getAppointmentPolls } from "@/lib/polls/queries";
+import { MAX_POLL_OPTIONS } from "@/lib/polls/validation";
 import {
   APPOINTMENT_STATUS_MESSAGES,
   formatSeoulDateTimeLocal,
@@ -13,12 +16,19 @@ import {
   cancelAppointment,
   confirmAttendance,
   confirmHostAttendance,
+  createAppointmentMenuPoll,
   markHostNoShow,
   markParticipantNoShow,
   respondToInvite,
   updateAppointmentSchedule,
   withdrawParticipation,
 } from "./actions";
+
+const POLL_STATUS_LABELS: Record<string, string> = {
+  open: "진행 중",
+  closed: "마감됨 · 결과 확정 대기",
+  decided: "결과 확정됨",
+};
 
 const displayFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -80,6 +90,19 @@ export default async function AppointmentDetailPage({
   const participantNeedsConfirmation =
     !isHost && needsConfirmation && myParticipant?.status === "accepted";
 
+  const appointmentPolls = await getAppointmentPolls(id);
+  let pollableMenuItems: { id: string; name: string; price: number | null }[] = [];
+  if (isHost && isOpen) {
+    const supabase = createServiceRoleClient();
+    const { data } = await supabase
+      .from("menu_items")
+      .select("id, name, price")
+      .eq("restaurant_id", appointment.restaurantId)
+      .eq("is_sold_out", false)
+      .order("name");
+    pollableMenuItems = data ?? [];
+  }
+
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
       <Link href="/" className="text-sm text-neutral-500">
@@ -111,6 +134,83 @@ export default async function AppointmentDetailPage({
         <p className="mt-2 text-sm text-neutral-700">{displayFormatter.format(scheduledAt)}</p>
         {appointment.memo && <p className="mt-2 text-sm text-neutral-700">{appointment.memo}</p>}
       </div>
+
+      {(appointmentPolls.length > 0 || (isHost && isOpen)) && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-bold text-brand-dark">메뉴 투표</h2>
+
+          {appointmentPolls.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {appointmentPolls.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={`/polls/${p.id}`}
+                    className="flex items-center justify-between rounded-2xl border border-neutral-200 px-4 py-3"
+                  >
+                    <span>{POLL_STATUS_LABELS[p.status] ?? p.status}</span>
+                    <span className="text-sm text-neutral-500">{p.totalVotes}표</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {isHost && isOpen && (
+            <form action={createAppointmentMenuPoll.bind(null, id)} className="flex flex-col gap-3">
+              <p className="text-sm text-neutral-500">
+                수락한 참여자만 투표할 수 있어요. 등록 메뉴 선택과 직접 입력을 합쳐서 최대 {MAX_POLL_OPTIONS}
+                개까지 가능해요.
+              </p>
+
+              {pollableMenuItems.length === 0 ? (
+                <p className="text-sm text-neutral-500">등록된 메뉴가 없어요. 직접 입력만 사용할 수 있어요.</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {pollableMenuItems.map((m) => (
+                    <li key={m.id}>
+                      <label className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 px-4 py-3">
+                        <span>{m.name}</span>
+                        <span className="flex items-center gap-3 text-sm text-neutral-500">
+                          {m.price != null ? `${m.price.toLocaleString("ko-KR")}원` : "가격 정보 없음"}
+                          <input type="checkbox" name="menuItemIds" value={m.id} />
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-neutral-600">직접 입력(선택)</p>
+                {[0, 1, 2].map((i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    name="customLabels"
+                    maxLength={50}
+                    placeholder="예: 오늘의 특선"
+                    className="rounded-2xl border border-neutral-200 px-4 py-3"
+                  />
+                ))}
+              </div>
+
+              <label className="flex flex-col gap-1 text-sm text-neutral-600">
+                마감 시각
+                <input
+                  type="datetime-local"
+                  name="closesAt"
+                  required
+                  className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+                />
+              </label>
+
+              <button type="submit" className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
+                메뉴 투표 만들기
+              </button>
+            </form>
+          )}
+        </section>
+      )}
 
       {hostNeedsConfirmation && (
         <div className="flex flex-col gap-2">

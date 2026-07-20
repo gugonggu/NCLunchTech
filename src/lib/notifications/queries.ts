@@ -76,3 +76,15 @@ export async function getActiveParticipantEmployeeIds(appointmentId: string): Pr
 
   return (data ?? []).map((r) => r.employee_id);
 }
+
+/** 약속 메뉴 투표 생성 알림 대상: 수락(accepted)한 참여자만(투표 가능한 사람과 동일한 범위). */
+export async function getAcceptedParticipantEmployeeIds(appointmentId: string): Promise<string[]> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("appointment_participants")
+    .select("employee_id")
+    .eq("appointment_id", appointmentId)
+    .eq("status", "accepted");
+
+  return (data ?? []).map((r) => r.employee_id);
+}

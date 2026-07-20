@@ -3,6 +3,7 @@ import {
   dedupeIds,
   getWinningOptionIds,
   isPollStatusCode,
+  isValidRestaurantPollBridge,
   sanitizeCustomLabels,
   shouldLazyClose,
 } from "./validation";
@@ -91,5 +92,40 @@ describe("sanitizeCustomLabels", () => {
   it("길이 제한을 초과하면 제거한다", () => {
     const tooLong = "a".repeat(51);
     expect(sanitizeCustomLabels([tooLong, "정상"])).toEqual(["정상"]);
+  });
+});
+
+describe("isValidRestaurantPollBridge", () => {
+  const base = {
+    pollType: "restaurant" as const,
+    status: "decided" as const,
+    appointmentId: null,
+    decidedOptionRestaurantId: "restaurant-1",
+    targetRestaurantId: "restaurant-1",
+  };
+
+  it("식당 투표+결정됨+미연결+식당 id 일치면 true", () => {
+    expect(isValidRestaurantPollBridge(base)).toBe(true);
+  });
+
+  it("메뉴 투표면 false", () => {
+    expect(isValidRestaurantPollBridge({ ...base, pollType: "menu" })).toBe(false);
+  });
+
+  it("아직 결정 전이면 false", () => {
+    expect(isValidRestaurantPollBridge({ ...base, status: "open" })).toBe(false);
+    expect(isValidRestaurantPollBridge({ ...base, status: "closed" })).toBe(false);
+  });
+
+  it("이미 다른 약속에 연결됐으면 false", () => {
+    expect(isValidRestaurantPollBridge({ ...base, appointmentId: "appointment-1" })).toBe(false);
+  });
+
+  it("결정된 식당과 요청한 식당이 다르면 false(주소 조작 방지)", () => {
+    expect(isValidRestaurantPollBridge({ ...base, targetRestaurantId: "restaurant-2" })).toBe(false);
+  });
+
+  it("결정된 선택지에 식당 id가 없으면(메뉴 선택지 등) false", () => {
+    expect(isValidRestaurantPollBridge({ ...base, decidedOptionRestaurantId: null })).toBe(false);
   });
 });

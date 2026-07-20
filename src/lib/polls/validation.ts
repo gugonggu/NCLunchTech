@@ -44,6 +44,7 @@ export const POLL_STATUS_MESSAGES = {
   invalid_closes_at: "마감 시각은 현재보다 미래여야 해요.",
   too_few_options: "선택지를 1개 이상 골라주세요.",
   too_many_options: `선택지는 최대 ${MAX_POLL_OPTIONS}개까지 가능해요.`,
+  not_eligible_voter: "이 약속에서 수락한 참여자만 투표할 수 있어요.",
 } as const;
 
 export type PollStatusCode = keyof typeof POLL_STATUS_MESSAGES;
@@ -78,4 +79,25 @@ export function sanitizeCustomLabels(raw: FormDataEntryValue[]): string[] {
     }
   }
   return result;
+}
+
+/**
+ * 결정된 독립 식당 투표의 결과로 약속을 만들어도 되는지 검증한다(2-2 브릿지).
+ * 식당 투표이면서, 결과가 확정됐고, 아직 다른 약속에 연결되지 않았으며,
+ * 결정된 선택지의 식당이 실제로 요청된 식당과 일치해야 한다(주소창 조작 방지).
+ */
+export function isValidRestaurantPollBridge(params: {
+  pollType: PollType;
+  status: PollStatus;
+  appointmentId: string | null;
+  decidedOptionRestaurantId: string | null | undefined;
+  targetRestaurantId: string;
+}): boolean {
+  return (
+    params.pollType === "restaurant" &&
+    params.status === "decided" &&
+    params.appointmentId === null &&
+    !!params.decidedOptionRestaurantId &&
+    params.decidedOptionRestaurantId === params.targetRestaurantId
+  );
 }

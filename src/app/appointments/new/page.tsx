@@ -13,6 +13,7 @@ import { createAppointment } from "./actions";
 interface NewAppointmentSearchParams {
   restaurantId?: string;
   status?: string;
+  fromPollId?: string;
 }
 
 export default async function NewAppointmentPage({
@@ -20,7 +21,7 @@ export default async function NewAppointmentPage({
 }: {
   searchParams: Promise<NewAppointmentSearchParams>;
 }) {
-  const { restaurantId, status } = await searchParams;
+  const { restaurantId, status, fromPollId } = await searchParams;
 
   if (!restaurantId) {
     notFound();
@@ -58,8 +59,14 @@ export default async function NewAppointmentPage({
       </p>
 
       {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+      {fromPollId && (
+        <p className="rounded-2xl bg-brand-bg px-4 py-3 text-sm text-brand-dark">
+          투표로 정해진 식당이에요.
+        </p>
+      )}
 
       <form action={createAppointment.bind(null, restaurant.id)} className="flex flex-col gap-3">
+        {fromPollId && <input type="hidden" name="fromPollId" value={fromPollId} />}
         <label className="flex flex-col gap-1 text-sm text-neutral-600">
           약속 시각
           <input

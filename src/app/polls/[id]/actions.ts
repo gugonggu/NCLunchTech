@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { getPollDetail } from "@/lib/polls/queries";
+import { getPollDetail, isEligibleAppointmentVoter } from "@/lib/polls/queries";
 
 function redirectWithStatus(pollId: string, status: string): never {
   redirect(`/polls/${pollId}?status=${status}`);
@@ -24,6 +24,9 @@ export async function voteInPoll(pollId: string, optionId: string) {
   }
   if (!poll.options.some((o) => o.id === optionId)) {
     redirectWithStatus(pollId, "invalid_option");
+  }
+  if (poll.appointmentId && !(await isEligibleAppointmentVoter(poll.appointmentId, employee.id))) {
+    redirectWithStatus(pollId, "not_eligible_voter");
   }
 
   const supabase = createServiceRoleClient();
@@ -57,6 +60,9 @@ export async function cancelVote(pollId: string) {
   }
   if (poll.status !== "open") {
     redirectWithStatus(pollId, "already_closed");
+  }
+  if (poll.appointmentId && !(await isEligibleAppointmentVoter(poll.appointmentId, employee.id))) {
+    redirectWithStatus(pollId, "not_eligible_voter");
   }
 
   const supabase = createServiceRoleClient();

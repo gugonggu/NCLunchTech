@@ -3,11 +3,21 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { getActiveParticipantEmployeeIds, createNotification } from "@/lib/notifications/queries";
-import { buildAppointmentCancelledMessage, buildAppointmentUpdatedMessage } from "@/lib/notifications/validation";
+import {
+  getActiveParticipantEmployeeIds,
+  getAcceptedParticipantEmployeeIds,
+  createNotification,
+} from "@/lib/notifications/queries";
+import {
+  buildAppointmentCancelledMessage,
+  buildAppointmentUpdatedMessage,
+  buildPollInvitedMessage,
+} from "@/lib/notifications/validation";
 import { getAppointmentDetail, getMyParticipant } from "@/lib/appointments/queries";
 import { canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
 import { getAttendanceTiming } from "@/lib/appointments/attendance";
+import { closeOpenPollsForAppointment } from "@/lib/polls/queries";
+import { MAX_POLL_OPTIONS, dedupeIds, sanitizeCustomLabels } from "@/lib/polls/validation";
 
 function redirectWithStatus(appointmentId: string, status: string): never {
   redirect(`/appointments/${appointmentId}?status=${status}`);
@@ -192,6 +202,7 @@ export async function cancelAppointment(appointmentId: string) {
     throw new Error("약속 취소에 실패했습니다.");
   }
 
+  await closeOpenPollsForAppointment(appointmentId);
   await notifyActiveParticipants(appointmentId, appointment.restaurantName, "appointment_cancelled");
 
   redirectWithStatus(appointmentId, "cancelled");
@@ -398,7 +409,95 @@ export async function changeAppointmentRestaurant(appointmentId: string, restaur
     throw new Error("식당 변경에 실패했습니다.");
   }
 
+  // 식당이 바뀌면 이전 식당 메뉴 기준으로 만들어둔 메뉴 투표는 더 이상 유효하지 않다.
+  await closeOpenPollsForAppointment(appointmentId);
   await notifyActiveParticipants(appointmentId, restaurant.name, "appointment_updated");
 
   redirectWithStatus(appointmentId, "updated");
+}
+
+/** 방장이 약속에 메뉴 투표를 연결한다. 수락한 참여자만 투표 가능(폴 조회/투표 액션에서 재검증). */
+export async function createAppointmentMenuPoll(appointmentId: string, formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  const appointment = await requireOpenAppointment(appointmentId);
+  if (appointment.hostEmployeeId !== employee.id) {
+    redirectWithStatus(appointmentId, "not_host");
+  }
+
+  const closesAt = parseSeoulDateTimeLocal(String(formData.get("closesAt") ?? ""));
+  if (!closesAt || closesAt.getTime() <= Date.now()) {
+    redirectWithStatus(appointmentId, "invalid_poll_closes_at");
+  }
+
+  const supabase = createServiceRoleClient();
+  const menuItemIds = dedupeIds(formData.getAll("menuItemIds"));
+  const customLabels = sanitizeCustomLabels(formData.getAll("customLabels"));
+  const totalCount = menuItemIds.length + customLabels.length;
+
+  if (totalCount === 0) {
+    redirectWithStatus(appointmentId, "too_few_poll_options");
+  }
+  if (totalCount > MAX_POLL_OPTIONS) {
+    redirectWithStatus(appointmentId, "too_many_poll_options");
+  }
+
+  let validMenuItemIds: string[] = [];
+  if (menuItemIds.length > 0) {
+    const { data: menuItems } = await supabase
+      .from("menu_items")
+      .select("id")
+      .in("id", menuItemIds)
+      .eq("restaurant_id", appointment.restaurantId);
+
+    validMenuItemIds = (menuItems ?? []).map((m) => m.id);
+    if (validMenuItemIds.length !== menuItemIds.length) {
+      redirectWithStatus(appointmentId, "invalid_poll_option");
+    }
+  }
+
+  const { data: poll, error } = await supabase
+    .from("polls")
+    .insert({
+      created_by: employee.id,
+      poll_type: "menu",
+      restaurant_id: appointment.restaurantId,
+      appointment_id: appointmentId,
+      closes_at: closesAt.toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (error || !poll) {
+    throw new Error("투표 생성에 실패했습니다.");
+  }
+
+  let position = 0;
+  const optionRows = [
+    ...validMenuItemIds.map((id) => ({ poll_id: poll.id, menu_item_id: id, position: position++ })),
+    ...customLabels.map((label) => ({ poll_id: poll.id, custom_label: label, position: position++ })),
+  ];
+
+  const { error: optionsError } = await supabase.from("poll_options").insert(optionRows);
+  if (optionsError) {
+    throw new Error("투표 생성에 실패했습니다.");
+  }
+
+  const participantIds = await getAcceptedParticipantEmployeeIds(appointmentId);
+  const message = buildPollInvitedMessage(appointment.restaurantName);
+  await Promise.all(
+    participantIds.map((employeeId) =>
+      createNotification({
+        employeeId,
+        type: "poll_invited",
+        message,
+        relatedAppointmentId: appointmentId,
+      })
+    )
+  );
+
+  redirectWithStatus(appointmentId, "poll_created");
 }

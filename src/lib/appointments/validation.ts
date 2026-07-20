@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_POLL_OPTIONS } from "@/lib/polls/validation";
 
 export type AppointmentStatus = "active" | "cancelled";
 export type ParticipantStatus = "pending" | "accepted" | "declined" | "cancelled" | "completed" | "expired";
@@ -133,6 +134,12 @@ export const APPOINTMENT_STATUS_MESSAGES = {
   already_responded: "이미 응답한 약속이에요.",
   already_confirmed: "이미 방문 확인을 마쳤어요.",
   too_early: "약속 예정 시각에서 1시간 후에 방문을 확인할 수 있어요.",
+  invalid_poll_link: "투표 결과를 이 약속에 연결할 수 없어요.",
+  poll_created: "메뉴 투표를 만들었어요.",
+  invalid_poll_closes_at: "투표 마감 시각은 현재보다 미래여야 해요.",
+  too_few_poll_options: "선택지를 1개 이상 골라주세요.",
+  too_many_poll_options: `선택지는 최대 ${MAX_POLL_OPTIONS}개까지 가능해요.`,
+  invalid_poll_option: "입력값을 다시 확인해주세요.",
 } as const;
 
 export type AppointmentStatusCode = keyof typeof APPOINTMENT_STATUS_MESSAGES;
