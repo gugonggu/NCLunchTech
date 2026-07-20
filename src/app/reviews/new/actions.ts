@@ -5,9 +5,124 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { hasCompletedVisit } from "@/lib/reviews/queries";
 import { normalizeReviewFormData, reviewSchema } from "@/lib/reviews/validation";
+import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/queries";
+import {
+  mealRecordSchema,
+  mealMenuNameSchema,
+  mealSourceSchema,
+  normalizeMealRecordFormData,
+  type MealStatusCode,
+} from "@/lib/meals/validation";
 
 function redirectToForm(restaurantId: string, status: string): never {
   redirect(`/reviews/new?restaurantId=${restaurantId}&status=${status}`);
+}
+
+function redirectToMealForm(
+  restaurantId: string,
+  visitId: string | undefined,
+  appointmentId: string | undefined,
+  status: MealStatusCode
+): never {
+  const params = new URLSearchParams({ restaurantId, mealStatus: status });
+  if (visitId) params.set("visitId", visitId);
+  if (appointmentId) params.set("appointmentId", appointmentId);
+  redirect(`/reviews/new?${params.toString()}`);
+}
+
+export async function upsertMealRecord(
+  restaurantId: string,
+  visitId: string | undefined,
+  appointmentId: string | undefined,
+  formData: FormData
+) {
+  const returnTo = `/reviews/new?${new URLSearchParams({
+    restaurantId,
+    ...(visitId ? { visitId } : {}),
+    ...(appointmentId ? { appointmentId } : {}),
+  }).toString()}`;
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+  }
+
+  const parsedSource = mealSourceSchema.safeParse({ visitId, appointmentId });
+  if (!parsedSource.success) {
+    redirectToMealForm(restaurantId, visitId, appointmentId, "invalid_source");
+  }
+
+  const completedSource = await getCompletedMealSource(employee.id, restaurantId, parsedSource.data);
+  if (!completedSource) {
+    redirectToMealForm(restaurantId, visitId, appointmentId, "invalid_source");
+  }
+
+  const parsed = mealRecordSchema.safeParse(normalizeMealRecordFormData(formData));
+  if (!parsed.success) {
+    redirectToMealForm(restaurantId, visitId, appointmentId, "invalid_input");
+  }
+
+  const supabase = createServiceRoleClient();
+  let menuName = parsed.data.customMenuName;
+  if (parsed.data.menuItemId) {
+    const { data: menuItem } = await supabase
+      .from("menu_items")
+      .select("id, name")
+      .eq("id", parsed.data.menuItemId)
+      .eq("restaurant_id", restaurantId)
+      .maybeSingle();
+    if (!menuItem) {
+      redirectToMealForm(restaurantId, visitId, appointmentId, "invalid_menu");
+    }
+    const parsedMenuName = mealMenuNameSchema.safeParse(menuItem.name);
+    if (!parsedMenuName.success) {
+      redirectToMealForm(restaurantId, visitId, appointmentId, "invalid_menu");
+    }
+    menuName = parsedMenuName.data;
+  }
+
+  const existing = await getMealRecordForSource(employee.id, completedSource);
+  const values = {
+    employee_id: employee.id,
+    restaurant_id: restaurantId,
+    visit_id: completedSource.visitId ?? null,
+    appointment_id: completedSource.appointmentId ?? null,
+    menu_item_id: parsed.data.menuItemId ?? null,
+    menu_name_snapshot: menuName!,
+    paid_price: parsed.data.paidPrice,
+    updated_at: new Date().toISOString(),
+  };
+
+  let result;
+  if (existing) {
+    result = await supabase
+        .from("meal_records")
+        .update(values)
+        .eq("id", existing.id)
+        .eq("employee_id", employee.id)
+        .select("id")
+        .maybeSingle();
+  } else {
+    result = await supabase.from("meal_records").insert(values).select("id").maybeSingle();
+    if (result.error?.code === "23505") {
+      const concurrentlyCreated = await getMealRecordForSource(employee.id, completedSource);
+      if (!concurrentlyCreated) {
+        throw new Error("먹은 메뉴 기록 저장에 실패했습니다.");
+      }
+      result = await supabase
+        .from("meal_records")
+        .update(values)
+        .eq("id", concurrentlyCreated.id)
+        .eq("employee_id", employee.id)
+        .select("id")
+        .maybeSingle();
+    }
+  }
+
+  if (result.error || !result.data) {
+    throw new Error("먹은 메뉴 기록 저장에 실패했습니다.");
+  }
+
+  redirectToMealForm(restaurantId, visitId, appointmentId, "saved");
 }
 
 export async function upsertReview(restaurantId: string, formData: FormData) {

@@ -8,6 +8,7 @@ import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
 import { getRelevantAppointments } from "@/lib/appointments/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
+import { getMealRecordForSource } from "@/lib/meals/queries";
 import { LogoutButton } from "./LogoutButton";
 
 const upcomingFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -62,6 +63,10 @@ export default async function HomePage({
   const now = new Date();
   const today = getSeoulDateString(now);
   const todayVisit = await getActiveVisitToday(employee.id, today);
+  const todayMealRecord =
+    todayVisit?.status === "completed"
+      ? await getMealRecordForSource(employee.id, { visitId: todayVisit.id })
+      : null;
   const relevantAppointments = await getRelevantAppointments(employee.id, now);
   const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
 
@@ -211,8 +216,13 @@ export default async function HomePage({
             {todayVisitDistanceM !== null && ` · ${todayVisitDistanceM}m`}
           </p>
           <p className="mt-2 text-sm text-brand-dark">방문 완료</p>
+          {todayMealRecord && (
+            <p className="mt-1 text-sm text-neutral-600">
+              {todayMealRecord.menuName} · {todayMealRecord.paidPrice.toLocaleString("ko-KR")}원
+            </p>
+          )}
           <Link
-            href={`/reviews/new?restaurantId=${todayVisit.restaurantId}`}
+            href={`/reviews/new?restaurantId=${todayVisit.restaurantId}&visitId=${todayVisit.id}`}
             className="mt-3 block rounded-xl bg-neutral-100 px-3 py-2 text-center text-sm font-semibold"
           >
             리뷰 남기기

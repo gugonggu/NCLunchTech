@@ -28,6 +28,10 @@ vi.mock("@/lib/notifications/queries", () => ({
   getUnreadNotificationCount: vi.fn(),
 }));
 
+vi.mock("@/lib/meals/queries", () => ({
+  getMealRecordForSource: vi.fn(),
+}));
+
 const { mockSettingsMaybeSingle } = vi.hoisted(() => ({
   mockSettingsMaybeSingle: vi.fn(),
 }));
@@ -48,10 +52,12 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getRelevantAppointments } from "@/lib/appointments/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
+import { getMealRecordForSource } from "@/lib/meals/queries";
 import HomePage from "./page";
 
 function mockDefaults() {
   vi.mocked(getUnreadNotificationCount).mockResolvedValue(0);
+  vi.mocked(getMealRecordForSource).mockResolvedValue(null);
   mockSettingsMaybeSingle.mockResolvedValue({
     data: { company_lat: 35.17, company_lng: 129.13, announcement: null },
   });
@@ -104,7 +110,6 @@ describe("HomePage", () => {
       updatedAt: new Date().toISOString(),
     });
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
-
     const ui = await renderHome();
     render(ui);
 
@@ -130,17 +135,24 @@ describe("HomePage", () => {
       updatedAt: new Date().toISOString(),
     });
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(getMealRecordForSource).mockResolvedValue({
+      id: "meal-1",
+      menuItemId: null,
+      menuName: "제육볶음",
+      paidPrice: 9500,
+    });
 
     const ui = await renderHome();
     render(ui);
 
     expect(screen.getByText("오늘 다녀온 식당")).toBeInTheDocument();
     expect(screen.getByText("방문 완료")).toBeInTheDocument();
+    expect(screen.getByText("제육볶음 · 9,500원")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "방문 완료" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "결정 취소" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "리뷰 남기기" })).toHaveAttribute(
       "href",
-      "/reviews/new?restaurantId=r-1"
+      "/reviews/new?restaurantId=r-1&visitId=visit-1"
     );
   });
 

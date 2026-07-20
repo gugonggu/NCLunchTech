@@ -52,6 +52,53 @@ export async function isFavorite(employeeId: string, restaurantId: string): Prom
   return !!data;
 }
 
+export interface MealRecordSummary {
+  menuName: string;
+  paidPrice: number;
+}
+
+interface MealRecordSummaryRow extends MealRecordSummary {
+  restaurantId: string;
+  createdAt: string;
+}
+
+export function buildLatestMealRecordsByRestaurant(
+  rows: MealRecordSummaryRow[]
+): Map<string, MealRecordSummary> {
+  const latest = new Map<string, MealRecordSummaryRow>();
+  for (const row of rows) {
+    const current = latest.get(row.restaurantId);
+    if (!current || new Date(row.createdAt).getTime() > new Date(current.createdAt).getTime()) {
+      latest.set(row.restaurantId, row);
+    }
+  }
+  return new Map(
+    [...latest].map(([restaurantId, row]) => [
+      restaurantId,
+      { menuName: row.menuName, paidPrice: row.paidPrice },
+    ])
+  );
+}
+
+export async function getLatestMealRecordsByRestaurant(
+  employeeId: string
+): Promise<Map<string, MealRecordSummary>> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("meal_records")
+    .select("restaurant_id, menu_name_snapshot, paid_price, created_at")
+    .eq("employee_id", employeeId);
+
+  return buildLatestMealRecordsByRestaurant(
+    (data ?? []).map((row) => ({
+      restaurantId: row.restaurant_id,
+      menuName: row.menu_name_snapshot,
+      paidPrice: row.paid_price,
+      createdAt: row.created_at,
+    }))
+  );
+}
+
 export interface CategoryBreakdown {
   category: string;
   visitedCount: number;

@@ -3,7 +3,12 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
-import { buildCategoryBreakdown, getFavoriteRestaurantIds, getVisitedRestaurantIds } from "@/lib/collection/queries";
+import {
+  buildCategoryBreakdown,
+  getFavoriteRestaurantIds,
+  getLatestMealRecordsByRestaurant,
+  getVisitedRestaurantIds,
+} from "@/lib/collection/queries";
 import { RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { toggleFavorite } from "@/app/restaurants/[id]/actions";
 
@@ -35,9 +40,10 @@ export default async function CollectionPage({
     supabase.from("restaurants").select("id, name, category").eq("is_active", true).range(from, to)
   );
 
-  const [visitedIds, favoriteIds] = await Promise.all([
+  const [visitedIds, favoriteIds, latestMealRecords] = await Promise.all([
     getVisitedRestaurantIds(employee.id),
     getFavoriteRestaurantIds(employee.id),
+    getLatestMealRecordsByRestaurant(employee.id),
   ]);
 
   const breakdown = buildCategoryBreakdown(RESTAURANT_CATEGORIES, allRestaurants, visitedIds);
@@ -98,6 +104,12 @@ export default async function CollectionPage({
                     {r.category}
                     {visitedIds.has(r.id) ? " · 방문 완료" : " · 미방문"}
                   </p>
+                  {latestMealRecords.get(r.id) && (
+                    <p className="text-sm text-neutral-600">
+                      {latestMealRecords.get(r.id)!.menuName} ·{" "}
+                      {latestMealRecords.get(r.id)!.paidPrice.toLocaleString("ko-KR")}원
+                    </p>
+                  )}
                 </Link>
               </li>
             ))}
@@ -156,6 +168,12 @@ export default async function CollectionPage({
                   {r.category}
                   {visitedIds.has(r.id) ? " · 방문 완료" : " · 미방문"}
                 </p>
+                {latestMealRecords.get(r.id) && (
+                  <p className="text-sm text-neutral-600">
+                    {latestMealRecords.get(r.id)!.menuName} ·{" "}
+                    {latestMealRecords.get(r.id)!.paidPrice.toLocaleString("ko-KR")}원
+                  </p>
+                )}
               </Link>
               <form action={toggleFavorite.bind(null, r.id)}>
                 <button type="submit" className="px-2 text-xl" aria-label="즐겨찾기 토글">

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getAppointmentDetail, getMyParticipant, getParticipants } from "@/lib/appointments/queries";
+import { getMealRecordForSource } from "@/lib/meals/queries";
 import {
   APPOINTMENT_STATUS_MESSAGES,
   formatSeoulDateTimeLocal,
@@ -66,6 +67,12 @@ export default async function AppointmentDetailPage({
 
   const myParticipant = isHost ? null : await getMyParticipant(id, employee.id);
   const participants = isHost ? await getParticipants(id) : [];
+  const attendanceCompleted = isHost
+    ? appointment.hostAttendanceStatus === "completed"
+    : myParticipant?.status === "completed";
+  const mealRecord = attendanceCompleted
+    ? await getMealRecordForSource(employee.id, { appointmentId: id })
+    : null;
 
   const hostNeedsConfirmation =
     isHost && needsConfirmation && appointment.hostAttendanceStatus === null;
@@ -129,12 +136,19 @@ export default async function AppointmentDetailPage({
       )}
 
       {isHost && appointment.hostAttendanceStatus === "completed" && (
-        <Link
-          href={`/reviews/new?restaurantId=${appointment.restaurantId}`}
-          className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
-        >
-          리뷰 남기기
-        </Link>
+        <div className="flex flex-col gap-2">
+          {mealRecord && (
+            <p className="text-sm text-neutral-600">
+              {mealRecord.menuName} · {mealRecord.paidPrice.toLocaleString("ko-KR")}원
+            </p>
+          )}
+          <Link
+            href={`/reviews/new?restaurantId=${appointment.restaurantId}&appointmentId=${appointment.id}`}
+            className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+          >
+            리뷰 남기기
+          </Link>
+        </div>
       )}
 
       {isHost && (
@@ -272,12 +286,19 @@ export default async function AppointmentDetailPage({
       )}
 
       {!isHost && myParticipant?.status === "completed" && (
-        <Link
-          href={`/reviews/new?restaurantId=${appointment.restaurantId}`}
-          className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
-        >
-          리뷰 남기기
-        </Link>
+        <div className="flex flex-col gap-2">
+          {mealRecord && (
+            <p className="text-sm text-neutral-600">
+              {mealRecord.menuName} · {mealRecord.paidPrice.toLocaleString("ko-KR")}원
+            </p>
+          )}
+          <Link
+            href={`/reviews/new?restaurantId=${appointment.restaurantId}&appointmentId=${appointment.id}`}
+            className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+          >
+            리뷰 남기기
+          </Link>
+        </div>
       )}
 
       {!isHost && myParticipant?.status === "declined" && (
