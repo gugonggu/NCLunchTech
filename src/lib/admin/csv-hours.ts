@@ -86,7 +86,9 @@ export function parseHoursCsv(
 
     let openTime: string | null = null;
     let closeTime: string | null = null;
-    if (isClosed === false) {
+    if (isClosed === true && (openTimeRaw || closeTimeRaw)) {
+      errors.push("휴무일에는 open_time과 close_time을 비워야 합니다.");
+    } else if (isClosed === false) {
       if (!TIME_PATTERN.test(openTimeRaw)) {
         errors.push("open_time 형식이 올바르지 않습니다(HH:mm).");
       } else {

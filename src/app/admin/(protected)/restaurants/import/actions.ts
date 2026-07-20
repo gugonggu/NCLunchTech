@@ -113,6 +113,9 @@ export async function applyCsvBatch(batchId: string) {
   if (batch.status === "applied") {
     redirect(`/admin/restaurants/import/${batchId}?status=already_applied`);
   }
+  if (batch.rows.some((row) => row.errors.length > 0)) {
+    redirect(`/admin/restaurants/import/${batchId}?status=validation_errors`);
+  }
 
   const supabase = createServiceRoleClient();
   const validMenuRows = batch.type === "menu"

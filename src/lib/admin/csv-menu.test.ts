@@ -45,6 +45,12 @@ describe("parseMenuCsv", () => {
     expect(result.rows[0].errors).toContain("name이 비어 있습니다.");
   });
 
+  it("name이 50자를 넘으면 오류로 표시한다", () => {
+    const csv = `kakao_place_id,name,price\nkakao-1,${"가".repeat(51)},8000`;
+    const result = parseMenuCsv(csv, restaurants, []);
+    expect(result.rows[0].errors).toContain("name은 50자 이하여야 합니다.");
+  });
+
   it("price가 숫자가 아니면 오류로 표시한다", () => {
     const csv = "kakao_place_id,name,price\nkakao-1,짜장면,비쌈";
     const result = parseMenuCsv(csv, restaurants, []);

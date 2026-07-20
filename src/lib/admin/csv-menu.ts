@@ -65,6 +65,8 @@ export function parseMenuCsv(
     }
     if (!name) {
       errors.push("name이 비어 있습니다.");
+    } else if (name.length > 50) {
+      errors.push("name은 50자 이하여야 합니다.");
     }
 
     let price: number | null = null;

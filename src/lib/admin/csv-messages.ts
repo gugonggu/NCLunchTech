@@ -10,6 +10,7 @@ export const CSV_IMPORT_STATUS_MESSAGES = {
   batch_not_found: "존재하지 않는 업로드예요.",
   already_applied: "이미 반영된 업로드예요.",
   no_valid_rows: "반영할 수 있는 정상 행이 없어요.",
+  validation_errors: "오류 행을 모두 수정한 CSV를 다시 업로드해주세요.",
   batch_invalid: "저장된 업로드 데이터가 올바르지 않아요. 다시 업로드해주세요.",
   apply_failed: "반영 중 오류가 발생했어요. 상태를 확인한 뒤 다시 시도해주세요.",
   applied: "반영했어요.",

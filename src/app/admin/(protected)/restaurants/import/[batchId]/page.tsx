@@ -69,6 +69,10 @@ export default async function CsvBatchPreviewPage({
         <p className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
           이미 반영된 업로드예요({batch.appliedAt}).
         </p>
+      ) : errorCount > 0 ? (
+        <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          오류 행을 수정한 CSV를 다시 업로드해야 전체 내용을 반영할 수 있어요.
+        </p>
       ) : (
         <form action={applyCsvBatch.bind(null, batchId)}>
           <button

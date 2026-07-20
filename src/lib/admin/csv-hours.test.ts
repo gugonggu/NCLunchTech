@@ -30,6 +30,12 @@ describe("parseHoursCsv", () => {
     expect(result.rows[0].isClosed).toBe(true);
   });
 
+  it("휴무일에 영업시간이 있으면 오류로 표시한다", () => {
+    const csv = "kakao_place_id,day_of_week,is_closed,open_time,close_time\nkakao-1,1,true,09:00,18:00";
+    const result = parseHoursCsv(csv, restaurants, []);
+    expect(result.rows[0].errors).toContain("휴무일에는 open_time과 close_time을 비워야 합니다.");
+  });
+
   it("이미 등록된 식당·요일이면 수정(isNew=false)으로 분류한다", () => {
     const csv = "kakao_place_id,day_of_week,is_closed,open_time,close_time\nkakao-1,0,false,09:00,18:00";
     const result = parseHoursCsv(csv, restaurants, [{ restaurantId: "r1", dayOfWeek: 0 }]);

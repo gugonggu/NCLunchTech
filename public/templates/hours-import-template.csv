@@ -1,0 +1,3 @@
+kakao_place_id,day_of_week,is_closed,open_time,close_time
+REPLACE_WITH_KAKAO_ID,1,false,11:00,20:00
+REPLACE_WITH_KAKAO_ID,0,true,,
