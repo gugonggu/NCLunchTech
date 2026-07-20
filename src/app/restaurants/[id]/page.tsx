@@ -6,9 +6,18 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { getRestaurantReviewSummary, getReportableReviews, hasCompletedVisit } from "@/lib/reviews/queries";
 import { isFavorite } from "@/lib/collection/queries";
 import { isReportStatusCode, REPORT_STATUS_MESSAGES } from "@/lib/reports/validation";
+import { getStatusSummary } from "@/lib/status-reports/queries";
+import { BUSINESS_STATUS_VALUES, CONGESTION_VALUES, formatMinutesAgo } from "@/lib/status-reports/validation";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
-import { addMenuItem, toggleFavorite, toggleMenuSoldOut, updateMenuPrice, updateRestaurantHours } from "./actions";
+import {
+  addMenuItem,
+  submitStatusReport,
+  toggleFavorite,
+  toggleMenuSoldOut,
+  updateMenuPrice,
+  updateRestaurantHours,
+} from "./actions";
 
 const RATING_LABELS: { key: "avgTaste" | "avgSpeed" | "avgPrice" | "avgSoloFit"; label: string }[] = [
   { key: "avgTaste", label: "맛" },
@@ -71,6 +80,8 @@ export default async function RestaurantDetailPage({
   const canReview = employee ? await hasCompletedVisit(employee.id, id) : false;
   const isFavorited = employee ? await isFavorite(employee.id, id) : false;
   const reportFeedbackMessage = isReportStatusCode(reportStatus) ? REPORT_STATUS_MESSAGES[reportStatus] : null;
+  const now = new Date();
+  const statusSummary = await getStatusSummary(id, now);
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
@@ -281,6 +292,70 @@ export default async function RestaurantDetailPage({
           )}
         </section>
       )}
+
+      <section className="flex flex-col gap-4">
+        <h2 className="font-bold text-brand-dark">지금 상태</h2>
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-neutral-600">혼잡도</p>
+          {statusSummary.congestion ? (
+            <p className="text-sm text-neutral-700">
+              {statusSummary.congestion.latestValue} · {formatMinutesAgo(new Date(statusSummary.congestion.latestAt), now)}
+              <span className="text-neutral-400">
+                {" "}
+                (최근 {statusSummary.congestion.freshCount}건, {statusSummary.congestion.distinctReporterCount}명 참여)
+              </span>
+            </p>
+          ) : (
+            <p className="text-sm text-neutral-400">정보 없음</p>
+          )}
+          {employee && (
+            <div className="flex gap-2">
+              {CONGESTION_VALUES.map((value) => (
+                <form key={value} action={submitStatusReport.bind(null, id, "congestion")} className="flex-1">
+                  <input type="hidden" name="value" value={value} />
+                  <button type="submit" className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold">
+                    {value}
+                  </button>
+                </form>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-neutral-600">영업 상태</p>
+          {statusSummary.businessStatus ? (
+            <p className="text-sm text-neutral-700">
+              {statusSummary.businessStatus.latestValue} ·{" "}
+              {formatMinutesAgo(new Date(statusSummary.businessStatus.latestAt), now)}
+              <span className="text-neutral-400">
+                {" "}
+                (최근 {statusSummary.businessStatus.freshCount}건, {statusSummary.businessStatus.distinctReporterCount}명
+                참여)
+              </span>
+            </p>
+          ) : (
+            <p className="text-sm text-neutral-400">정보 없음</p>
+          )}
+          {employee && (
+            <div className="grid grid-cols-2 gap-2">
+              {BUSINESS_STATUS_VALUES.map((value) => (
+                <form key={value} action={submitStatusReport.bind(null, id, "business_status")}>
+                  <input type="hidden" name="value" value={value} />
+                  <button type="submit" className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold">
+                    {value}
+                  </button>
+                </form>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <p className="text-xs text-neutral-400">
+          제보는 여러 직원의 최근 의견을 참고용으로 모은 것이라, 한 사람의 제보만으로 확정된 사실은 아니에요.
+        </p>
+      </section>
     </main>
   );
 }

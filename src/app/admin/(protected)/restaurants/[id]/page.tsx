@@ -5,6 +5,8 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { restoreMenuItem, restoreRestaurantHours, setExcludedFromRecommend, setRestaurantActive } from "./actions";
 import { getAdminStatusMessage, RESTAURANT_ADMIN_STATUS_MESSAGES } from "@/lib/admin/status-messages";
 import { adminUuidSchema } from "@/lib/admin/validation";
+import { getRecentStatusReportsForAdmin } from "@/lib/status-reports/queries";
+import { formatMinutesAgo } from "@/lib/status-reports/validation";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -54,6 +56,8 @@ export default async function AdminRestaurantDetailPage({
   const hoursRows = hoursResult.data;
 
   const hoursByDay = new Map((hoursRows ?? []).map((h) => [h.day_of_week, h]));
+  const recentStatusReports = await getRecentStatusReportsForAdmin(id);
+  const now = new Date();
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-12">
@@ -123,6 +127,26 @@ export default async function AdminRestaurantDetailPage({
             영업시간 직전 값으로 복구
           </button>
         </form>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-bold text-brand-dark">최근 혼잡·영업 상태 제보</h2>
+        {recentStatusReports.length === 0 ? (
+          <p className="text-sm text-neutral-500">아직 제보가 없어요.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {recentStatusReports.map((r) => (
+              <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
+                <p className="font-semibold">
+                  {r.reportType === "congestion" ? "혼잡도" : "영업 상태"} · {r.value}
+                </p>
+                <p className="text-neutral-500">
+                  {r.employeeNickname} · {formatMinutesAgo(new Date(r.createdAt), now)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );

@@ -23,6 +23,11 @@ describe("normalizeRecommendParams", () => {
     expect(normalizeRecommendParams({ excludeRecentVisits: "on" }).excludeRecentVisits).toBe(true);
     expect(normalizeRecommendParams({}).excludeRecentVisits).toBeUndefined();
   });
+
+  it("체크박스가 켜져 있으면(on) excludeCongested를 true로, 없으면 undefined로 바꾼다", () => {
+    expect(normalizeRecommendParams({ excludeCongested: "on" }).excludeCongested).toBe(true);
+    expect(normalizeRecommendParams({}).excludeCongested).toBeUndefined();
+  });
 });
 
 describe("recommendConditionsSchema", () => {

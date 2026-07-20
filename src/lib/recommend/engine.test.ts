@@ -98,6 +98,24 @@ describe("filterCandidates", () => {
     const recentVisitDays = new Map([["a", 0]]);
     expect(filterCandidates(list, { excludeRecentVisits: true }, recentVisitDays)).toEqual([]);
   });
+
+  it("신선한 영업 상태가 완전 제외 대상이면 조건과 무관하게 항상 제외한다", () => {
+    const list = [
+      candidate({ id: "a", excludingBusinessStatus: "재료 소진" }),
+      candidate({ id: "b", excludingBusinessStatus: null }),
+    ];
+    expect(filterCandidates(list, {}).map((c) => c.id)).toEqual(["b"]);
+  });
+
+  it("혼잡한 곳 제외를 선택하지 않으면 혼잡한 식당도 후보에 남는다", () => {
+    const list = [candidate({ id: "a", isFreshlyCongested: true }), candidate({ id: "b" })];
+    expect(filterCandidates(list, {}).map((c) => c.id)).toEqual(["a", "b"]);
+  });
+
+  it("혼잡한 곳 제외를 선택하면 신선하게 혼잡한 식당만 제외한다", () => {
+    const list = [candidate({ id: "a", isFreshlyCongested: true }), candidate({ id: "b" })];
+    expect(filterCandidates(list, { excludeCongested: true }).map((c) => c.id)).toEqual(["b"]);
+  });
 });
 
 describe("pickRecommendation", () => {

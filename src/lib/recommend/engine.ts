@@ -10,6 +10,10 @@ export interface RecommendCandidate {
   distanceM: number;
   isActive: boolean;
   menuItems: CandidateMenuItem[];
+  /** 신선한 최신 영업 상태가 "완전 제외 대상"(조기 마감·재료 소진·임시 휴무)이면 그 값, 없으면 null. */
+  excludingBusinessStatus?: string | null;
+  /** 신선한 최신 혼잡도가 '혼잡'이면 true. */
+  isFreshlyCongested?: boolean;
 }
 
 export interface RecommendConditions {
@@ -18,6 +22,7 @@ export interface RecommendConditions {
   category?: string;
   maxPriceWon?: number;
   excludeRecentVisits?: boolean;
+  excludeCongested?: boolean;
 }
 
 /** 최근 방문으로 간주하는 기간(일). 확정 기획에 수치가 없어 잡은 권장 기본값 — 조정 시 이 값만 바꾸면 된다. */
@@ -72,6 +77,16 @@ export function filterCandidates(
       if (daysAgo !== undefined && daysAgo < RECENT_VISIT_WINDOW_DAYS) {
         return false;
       }
+    }
+
+    // 조기 마감·재료 소진·임시 휴무가 신선하게 제보된 식당은 조건과 무관하게 항상 제외한다.
+    if (c.excludingBusinessStatus) {
+      return false;
+    }
+
+    // 혼잡도는 "혼잡한 곳 제외"를 선택했을 때만 완전 제외한다(선택 안 하면 가중치 감점은 2-7에서 처리).
+    if (conditions.excludeCongested && c.isFreshlyCongested) {
+      return false;
     }
 
     return true;

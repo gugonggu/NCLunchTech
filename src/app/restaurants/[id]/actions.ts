@@ -7,6 +7,8 @@ import { restaurantHoursSchema } from "@/lib/restaurants/hours-validation";
 import { getMenuItemInRestaurant } from "@/lib/restaurants/menu-items";
 import { menuItemSchema } from "@/lib/restaurants/menu-validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { submitReport } from "@/lib/status-reports/queries";
+import { isValidReportValue, type ReportType } from "@/lib/status-reports/validation";
 
 export async function toggleFavorite(restaurantId: string) {
   const employee = await getCurrentEmployee();
@@ -209,6 +211,28 @@ export async function updateRestaurantHours(restaurantId: string, formData: Form
     changedBy: employee.id,
     before,
     after,
+  });
+
+  revalidatePath(`/restaurants/${restaurantId}`);
+}
+
+export async function submitStatusReport(restaurantId: string, reportType: ReportType, formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const value = String(formData.get("value") ?? "");
+  if (!isValidReportValue(reportType, value)) {
+    throw new Error("선택할 수 없는 값입니다.");
+  }
+
+  await submitReport({
+    employeeId: employee.id,
+    restaurantId,
+    reportType,
+    value,
+    now: new Date(),
   });
 
   revalidatePath(`/restaurants/${restaurantId}`);

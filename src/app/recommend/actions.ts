@@ -14,6 +14,7 @@ function buildRecommendUrl(conditions: RecommendConditionsInput): string {
   if (conditions.radius !== undefined) params.set("radius", String(conditions.radius));
   if (conditions.maxPriceWon !== undefined) params.set("maxPrice", String(conditions.maxPriceWon));
   if (conditions.excludeRecentVisits) params.set("excludeRecent", "on");
+  if (conditions.excludeCongested) params.set("excludeCongested", "on");
 
   const qs = params.toString();
   return qs ? `/recommend?${qs}` : "/recommend";

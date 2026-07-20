@@ -12,6 +12,7 @@ import {
 } from "@/lib/recommend/engine";
 import { getExclusionList, intersectWithCandidates } from "@/lib/recommend/exclusion-cookie";
 import { normalizeRecommendParams, recommendConditionsSchema } from "@/lib/recommend/validation";
+import { getExcludingBusinessStatusMap, getFreshCongestedRestaurantIds } from "@/lib/status-reports/queries";
 import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
@@ -29,6 +30,7 @@ interface RecommendSearchParams {
   radius?: string;
   maxPrice?: string;
   excludeRecent?: string;
+  excludeCongested?: string;
 }
 
 function RestaurantCard({
@@ -92,6 +94,7 @@ export default async function RecommendPage({
     radius: rawParams.radius,
     maxPriceWon: rawParams.maxPrice,
     excludeRecentVisits: rawParams.excludeRecent,
+    excludeCongested: rawParams.excludeCongested,
   });
 
   const parsed = recommendConditionsSchema.safeParse(normalized);
@@ -148,11 +151,11 @@ export default async function RecommendPage({
   }));
 
   const hasMenuData = candidates.some((c) => c.menuItems.length > 0);
+  const now = new Date();
 
   const employee = await getCurrentEmployee();
   let recentVisitDays: RecentVisitDaysMap = new Map();
   if (employee) {
-    const now = new Date();
     const today = getSeoulDateString(now);
     const sinceDate = getSeoulDateString(new Date(now.getTime() - RECENT_VISIT_WINDOW_DAYS * 24 * 60 * 60 * 1000));
 
@@ -171,7 +174,16 @@ export default async function RecommendPage({
     }
   }
 
-  const withinRadius = filterByRadius(candidates, radius);
+  const withinRadiusBase = filterByRadius(candidates, radius);
+  const [excludingBusinessStatusMap, congestedIds] = await Promise.all([
+    getExcludingBusinessStatusMap(withinRadiusBase.map((c) => c.id), now),
+    getFreshCongestedRestaurantIds(withinRadiusBase.map((c) => c.id), now),
+  ]);
+  const withinRadius = withinRadiusBase.map((c) => ({
+    ...c,
+    excludingBusinessStatus: excludingBusinessStatusMap.get(c.id) ?? null,
+    isFreshlyCongested: congestedIds.has(c.id),
+  }));
   const filtered = filterCandidates(withinRadius, conditions, recentVisitDays);
 
   const excludedFromCookie = await getExclusionList();
@@ -279,6 +291,15 @@ export default async function RecommendPage({
             defaultChecked={conditions.excludeRecentVisits ?? false}
           />
           최근 방문 제외(최근 {RECENT_VISIT_WINDOW_DAYS}일 이내 다녀온 식당 완전히 제외)
+        </label>
+
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            name="excludeCongested"
+            defaultChecked={conditions.excludeCongested ?? false}
+          />
+          혼잡한 곳 제외(최근 혼잡 제보가 있는 식당 완전히 제외)
         </label>
 
         <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
