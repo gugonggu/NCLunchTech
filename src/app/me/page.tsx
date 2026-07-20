@@ -2,7 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
 import { LogoutButton } from "../LogoutButton";
+
+const RANK_CATEGORY_LABELS = {
+  review: "리뷰왕",
+  explorer: "점심 개척왕",
+  menu: "메뉴 수집왕",
+} as const;
 
 const joinedAtFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -88,6 +95,11 @@ export default async function MePage() {
     { label: "즐겨찾기", value: favoritesResult.count ?? 0 },
   ];
 
+  const leaderboard = await getMonthlyLeaderboard(employee.id);
+  const myRanks = (Object.entries(RANK_CATEGORY_LABELS) as [keyof typeof RANK_CATEGORY_LABELS, string][])
+    .map(([key, label]) => ({ label, myRank: leaderboard.categories[key].myRank }))
+    .filter((row) => row.myRank !== null);
+
   return (
     <main className="flex flex-1 flex-col gap-5 bg-brand-bg px-6 py-8">
       <div>
@@ -113,6 +125,22 @@ export default async function MePage() {
       >
         알림 보기
       </Link>
+
+      {myRanks.length > 0 && (
+        <section className="rounded-2xl bg-white px-4 py-4 shadow-sm" aria-label="이번 달 내 순위">
+          <p className="text-sm font-semibold text-neutral-500">{leaderboard.label} 내 순위</p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {myRanks.map((row) => (
+              <li key={row.label} className="flex items-center justify-between text-sm text-neutral-700">
+                <span>{row.label}</span>
+                <span className="font-semibold text-brand-dark">
+                  {row.myRank!.rank}위 ({row.myRank!.score})
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Link
         href="/leaderboard"

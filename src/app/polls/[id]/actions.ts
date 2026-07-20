@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getPollDetail, isEligibleAppointmentVoter } from "@/lib/polls/queries";
+import { getAcceptedParticipantEmployeeIds, createNotification } from "@/lib/notifications/queries";
+import { buildPollClosedMessage, buildPollDecidedMessage } from "@/lib/notifications/validation";
 
 function redirectWithStatus(pollId: string, status: string): never {
   redirect(`/polls/${pollId}?status=${status}`);
@@ -100,6 +102,21 @@ export async function closePoll(pollId: string) {
     throw new Error("투표 마감에 실패했습니다.");
   }
 
+  if (poll.appointmentId && poll.restaurantName) {
+    const participantIds = await getAcceptedParticipantEmployeeIds(poll.appointmentId);
+    const message = buildPollClosedMessage(poll.restaurantName);
+    await Promise.all(
+      participantIds.map((employeeId) =>
+        createNotification({
+          employeeId,
+          type: "poll_closed",
+          message,
+          relatedAppointmentId: poll.appointmentId as string,
+        })
+      )
+    );
+  }
+
   redirectWithStatus(pollId, "closed");
 }
 
@@ -136,6 +153,22 @@ export async function decidePoll(pollId: string, optionId: string) {
 
   if (error) {
     throw new Error("결과 확정에 실패했습니다.");
+  }
+
+  if (poll.appointmentId && poll.restaurantName) {
+    const decidedOption = poll.options.find((o) => o.id === optionId);
+    const participantIds = await getAcceptedParticipantEmployeeIds(poll.appointmentId);
+    const message = buildPollDecidedMessage(poll.restaurantName, decidedOption?.label ?? "메뉴");
+    await Promise.all(
+      participantIds.map((employeeId) =>
+        createNotification({
+          employeeId,
+          type: "poll_decided",
+          message,
+          relatedAppointmentId: poll.appointmentId as string,
+        })
+      )
+    );
   }
 
   redirectWithStatus(pollId, "decided");
