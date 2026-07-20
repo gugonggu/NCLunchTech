@@ -167,10 +167,10 @@ export async function getExcludingBusinessStatusMap(
   return result;
 }
 
-/** 추천 배치 조회: "혼잡한 곳 제외" 조건용 — 신선한 최신 혼잡도가 '혼잡'인 식당 id 집합. */
-export async function getFreshCongestedRestaurantIds(restaurantIds: string[], now: Date): Promise<Set<string>> {
+/** 추천용 배치 조회: 신선한 최신 혼잡도 값(한산/보통/혼잡) 자체를 식당별로 반환한다. */
+export async function getFreshCongestionValueMap(restaurantIds: string[], now: Date): Promise<Map<string, string>> {
   if (restaurantIds.length === 0) {
-    return new Set();
+    return new Map();
   }
 
   const supabase = createServiceRoleClient();
@@ -183,10 +183,10 @@ export async function getFreshCongestedRestaurantIds(restaurantIds: string[], no
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false });
 
-  const result = new Set<string>();
+  const result = new Map<string, string>();
   for (const [restaurantId, latest] of latestPerRestaurant(data ?? [])) {
-    if (latest.value === "혼잡" && isReportFresh("congestion", new Date(latest.createdAt), now)) {
-      result.add(restaurantId);
+    if (isReportFresh("congestion", new Date(latest.createdAt), now)) {
+      result.set(restaurantId, latest.value);
     }
   }
   return result;

@@ -94,3 +94,82 @@ export type ReviewStatusCode = keyof typeof REVIEW_STATUS_MESSAGES;
 export function isReviewStatusCode(value: string | undefined): value is ReviewStatusCode {
   return !!value && Object.prototype.hasOwnProperty.call(REVIEW_STATUS_MESSAGES, value);
 }
+
+/** 추천 엔진 2.0(2-7)에서 "직원 평가 좋은 곳"/"빨리 나오는 곳" 신호로 인정하는 기준. */
+export const GOOD_RATING_THRESHOLD = 4.0;
+export const MIN_REVIEWS_FOR_RATING_SIGNAL = 2;
+/** 태그가 "많이 언급됐다"고 보는 최소 건수. */
+export const MIN_TAG_MENTIONS_FOR_SIGNAL = 2;
+
+export interface ReviewAggregateRow {
+  restaurantId: string;
+  tasteRating: number;
+  speedRating: number;
+  priceRating: number;
+  soloFitRating: number;
+  tags: string[] | null;
+}
+
+export interface ReviewAggregate {
+  avgOverall: number;
+  avgSpeed: number;
+  reviewCount: number;
+  /** 2건 이상 언급된 태그 중 가장 많이 언급된 것(없으면 null). */
+  topTag: string | null;
+}
+
+/** 여러 식당의 리뷰 원본 행을 식당별로 집계한다(평균 평점, 최다 언급 태그). DB 접근이 없는 순수 함수. */
+export function aggregateReviewRows(rows: ReviewAggregateRow[]): Map<string, ReviewAggregate> {
+  const grouped = new Map<
+    string,
+    { overallSum: number; speedSum: number; count: number; tagCounts: Map<string, number> }
+  >();
+
+  for (const row of rows) {
+    const entry = grouped.get(row.restaurantId) ?? {
+      overallSum: 0,
+      speedSum: 0,
+      count: 0,
+      tagCounts: new Map<string, number>(),
+    };
+    entry.overallSum += (row.tasteRating + row.speedRating + row.priceRating + row.soloFitRating) / 4;
+    entry.speedSum += row.speedRating;
+    entry.count += 1;
+    for (const tag of row.tags ?? []) {
+      entry.tagCounts.set(tag, (entry.tagCounts.get(tag) ?? 0) + 1);
+    }
+    grouped.set(row.restaurantId, entry);
+  }
+
+  const result = new Map<string, ReviewAggregate>();
+  for (const [restaurantId, entry] of grouped) {
+    let topTag: string | null = null;
+    let topCount = 0;
+    for (const [tag, count] of entry.tagCounts) {
+      if (count > topCount) {
+        topTag = tag;
+        topCount = count;
+      }
+    }
+
+    result.set(restaurantId, {
+      avgOverall: entry.overallSum / entry.count,
+      avgSpeed: entry.speedSum / entry.count,
+      reviewCount: entry.count,
+      topTag: topCount >= MIN_TAG_MENTIONS_FOR_SIGNAL ? topTag : null,
+    });
+  }
+  return result;
+}
+
+export function hasGoodRatingSignal(aggregate: ReviewAggregate | undefined): boolean {
+  return (
+    !!aggregate && aggregate.reviewCount >= MIN_REVIEWS_FOR_RATING_SIGNAL && aggregate.avgOverall >= GOOD_RATING_THRESHOLD
+  );
+}
+
+export function hasFastServiceSignal(aggregate: ReviewAggregate | undefined): boolean {
+  return (
+    !!aggregate && aggregate.reviewCount >= MIN_REVIEWS_FOR_RATING_SIGNAL && aggregate.avgSpeed >= GOOD_RATING_THRESHOLD
+  );
+}

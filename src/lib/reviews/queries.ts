@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { aggregateReviewRows, type ReviewAggregate } from "./validation";
 import type { RevisitIntent } from "./validation";
 
 export interface MyReview {
@@ -161,4 +162,28 @@ export async function hasCompletedVisit(employeeId: string, restaurantId: string
   });
 
   return (visitCount ?? 0) > 0 || (hostCount ?? 0) > 0 || attendedViaAppointment;
+}
+
+/** 추천 엔진 2.0(2-7)용: 여러 식당의 리뷰를 한 번에 집계한다(평균 평점, 최다 언급 태그). */
+export async function getReviewAggregates(restaurantIds: string[]): Promise<Map<string, ReviewAggregate>> {
+  if (restaurantIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("reviews")
+    .select("restaurant_id, taste_rating, speed_rating, price_rating, solo_fit_rating, tags")
+    .in("restaurant_id", restaurantIds);
+
+  return aggregateReviewRows(
+    (data ?? []).map((row) => ({
+      restaurantId: row.restaurant_id,
+      tasteRating: row.taste_rating,
+      speedRating: row.speed_rating,
+      priceRating: row.price_rating,
+      soloFitRating: row.solo_fit_rating,
+      tags: row.tags,
+    }))
+  );
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
 import {
-  buildRecommendReason,
+  buildRecommendReasons,
   filterByRadius,
   filterCandidates,
   pickRecommendation,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/recommend/engine";
 import { getExclusionList, intersectWithCandidates } from "@/lib/recommend/exclusion-cookie";
 import { normalizeRecommendParams, recommendConditionsSchema } from "@/lib/recommend/validation";
-import { getExcludingBusinessStatusMap, getFreshCongestedRestaurantIds } from "@/lib/status-reports/queries";
+import { getExcludingBusinessStatusMap, getFreshCongestionValueMap } from "@/lib/status-reports/queries";
 import { RecommendMapView, type RecommendMapPoint } from "./RecommendMapView";
 import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
@@ -20,7 +20,13 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
 import { getRecentCompletedVisits } from "@/lib/visits/queries";
 import { getRecentAttendedAppointments } from "@/lib/appointments/queries";
-import { getReviewCounts } from "@/lib/reviews/queries";
+import { getReviewAggregates, getReviewCounts } from "@/lib/reviews/queries";
+import { hasFastServiceSignal, hasGoodRatingSignal } from "@/lib/reviews/validation";
+import {
+  getFavoriteRestaurantIds,
+  getGloballyVisitedRestaurantIds,
+  getVisitedRestaurantIds,
+} from "@/lib/collection/queries";
 import { decideRestaurant } from "@/app/visits/actions";
 import { rerollRecommendation, resetExclusions } from "./actions";
 
@@ -32,17 +38,21 @@ interface RecommendSearchParams {
   maxPrice?: string;
   excludeRecent?: string;
   excludeCongested?: string;
+  preferFavorites?: string;
+  preferGoodRating?: string;
+  preferFast?: string;
+  preferUnvisited?: string;
 }
 
 function RestaurantCard({
   restaurant,
   highlight,
-  reason,
+  reasons,
   reviewCount,
 }: {
   restaurant: RecommendCandidate;
   highlight: boolean;
-  reason?: string;
+  reasons?: string[];
   reviewCount: number;
 }) {
   return (
@@ -59,7 +69,11 @@ function RestaurantCard({
           {restaurant.category} · {restaurant.distanceM}m
           {reviewCount > 0 && ` · 리뷰 ${reviewCount}개`}
         </p>
-        {reason && <p className="mt-1 text-sm text-brand-dark">{reason}</p>}
+        {reasons?.map((reason) => (
+          <p key={reason} className="mt-1 text-sm text-brand-dark">
+            {reason}
+          </p>
+        ))}
       </Link>
       <div className="mt-2 flex gap-2">
         <form action={decideRestaurant.bind(null, restaurant.id)} className="flex-1">
@@ -96,6 +110,10 @@ export default async function RecommendPage({
     maxPriceWon: rawParams.maxPrice,
     excludeRecentVisits: rawParams.excludeRecent,
     excludeCongested: rawParams.excludeCongested,
+    preferFavorites: rawParams.preferFavorites,
+    preferGoodRating: rawParams.preferGoodRating,
+    preferFast: rawParams.preferFast,
+    preferUnvisited: rawParams.preferUnvisited,
   });
 
   const parsed = recommendConditionsSchema.safeParse(normalized);
@@ -178,15 +196,40 @@ export default async function RecommendPage({
   }
 
   const withinRadiusBase = filterByRadius(candidates, radius);
-  const [excludingBusinessStatusMap, congestedIds] = await Promise.all([
-    getExcludingBusinessStatusMap(withinRadiusBase.map((c) => c.id), now),
-    getFreshCongestedRestaurantIds(withinRadiusBase.map((c) => c.id), now),
+  const withinRadiusIds = withinRadiusBase.map((c) => c.id);
+
+  const [
+    excludingBusinessStatusMap,
+    congestionValueMap,
+    reviewAggregates,
+    favoriteIds,
+    visitedByMeIds,
+    globallyVisitedIds,
+  ] = await Promise.all([
+    getExcludingBusinessStatusMap(withinRadiusIds, now),
+    getFreshCongestionValueMap(withinRadiusIds, now),
+    getReviewAggregates(withinRadiusIds),
+    employee ? getFavoriteRestaurantIds(employee.id) : Promise.resolve(new Set<string>()),
+    employee ? getVisitedRestaurantIds(employee.id) : Promise.resolve(new Set<string>()),
+    getGloballyVisitedRestaurantIds(),
   ]);
-  const withinRadius = withinRadiusBase.map((c) => ({
-    ...c,
-    excludingBusinessStatus: excludingBusinessStatusMap.get(c.id) ?? null,
-    isFreshlyCongested: congestedIds.has(c.id),
-  }));
+
+  const withinRadius = withinRadiusBase.map((c) => {
+    const aggregate = reviewAggregates.get(c.id);
+    const congestionValue = congestionValueMap.get(c.id);
+    return {
+      ...c,
+      excludingBusinessStatus: excludingBusinessStatusMap.get(c.id) ?? null,
+      isFreshlyCongested: congestionValue === "혼잡",
+      isFreshlyQuiet: congestionValue === "한산",
+      isFavorite: favoriteIds.has(c.id),
+      hasGoodRatingSignal: hasGoodRatingSignal(aggregate),
+      hasFastServiceSignal: hasFastServiceSignal(aggregate),
+      topReviewTag: aggregate?.topTag ?? null,
+      isUnvisitedByMe: !visitedByMeIds.has(c.id),
+      isGloballyUnvisited: !globallyVisitedIds.has(c.id),
+    };
+  });
   const filtered = filterCandidates(withinRadius, conditions, recentVisitDays);
 
   const excludedFromCookie = await getExclusionList();
@@ -195,7 +238,7 @@ export default async function RecommendPage({
     filtered.map((c) => c.id)
   );
 
-  const result = pickRecommendation(filtered, { excludeIds: activeExclusions, recentVisitDays });
+  const result = pickRecommendation(filtered, { excludeIds: activeExclusions, recentVisitDays, conditions });
 
   let emptyMessage: string | null = null;
   if (companyLat === null || companyLng === null) {
@@ -228,22 +271,6 @@ export default async function RecommendPage({
           className="rounded-2xl border border-neutral-200 px-4 py-3"
         />
 
-        <div>
-          <input
-            type="text"
-            name="menuQ"
-            defaultValue={conditions.menuName ?? ""}
-            placeholder="메뉴 이름 검색"
-            disabled={!hasMenuData}
-            className="w-full rounded-2xl border border-neutral-200 px-4 py-3 disabled:bg-neutral-100 disabled:text-neutral-400"
-          />
-          {!hasMenuData && (
-            <p className="mt-1 text-xs text-neutral-400">
-              등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
-            </p>
-          )}
-        </div>
-
         <select
           name="category"
           defaultValue={conditions.category ?? ""}
@@ -269,41 +296,73 @@ export default async function RecommendPage({
           ))}
         </select>
 
-        <div>
-          <input
-            type="number"
-            name="maxPrice"
-            min={0}
-            step={100}
-            defaultValue={conditions.maxPriceWon ?? ""}
-            placeholder="희망 가격(원) 이하"
-            disabled={!hasMenuData}
-            className="w-full rounded-2xl border border-neutral-200 px-4 py-3 disabled:bg-neutral-100 disabled:text-neutral-400"
-          />
-          {!hasMenuData && (
-            <p className="mt-1 text-xs text-neutral-400">
-              등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
+        <details className="text-sm text-neutral-600">
+          <summary className="cursor-pointer select-none py-1">필터 · 우선 조건</summary>
+          <div className="mt-2 flex flex-col gap-3">
+            <div>
+              <input
+                type="text"
+                name="menuQ"
+                defaultValue={conditions.menuName ?? ""}
+                placeholder="메뉴 이름 검색"
+                disabled={!hasMenuData}
+                className="w-full rounded-2xl border border-neutral-200 px-4 py-3 disabled:bg-neutral-100 disabled:text-neutral-400"
+              />
+              {!hasMenuData && (
+                <p className="mt-1 text-xs text-neutral-400">
+                  등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <input
+                type="number"
+                name="maxPrice"
+                min={0}
+                step={100}
+                defaultValue={conditions.maxPriceWon ?? ""}
+                placeholder="희망 가격(원) 이하"
+                disabled={!hasMenuData}
+                className="w-full rounded-2xl border border-neutral-200 px-4 py-3 disabled:bg-neutral-100 disabled:text-neutral-400"
+              />
+              {!hasMenuData && (
+                <p className="mt-1 text-xs text-neutral-400">
+                  등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
+                </p>
+              )}
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <input type="checkbox" name="excludeRecent" defaultChecked={conditions.excludeRecentVisits ?? false} />
+              최근 방문 제외(최근 {RECENT_VISIT_WINDOW_DAYS}일 이내 다녀온 식당 완전히 제외)
+            </label>
+            <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <input type="checkbox" name="excludeCongested" defaultChecked={conditions.excludeCongested ?? false} />
+              혼잡한 곳 제외(최근 혼잡 제보가 있는 식당 완전히 제외)
+            </label>
+
+            <p className="mt-1 text-xs font-semibold text-neutral-500">
+              아래 조건은 완전히 배제하지 않고 뽑힐 확률만 높여요(무작위성은 유지).
             </p>
-          )}
-        </div>
-
-        <label className="flex items-center gap-2 text-sm text-neutral-600">
-          <input
-            type="checkbox"
-            name="excludeRecent"
-            defaultChecked={conditions.excludeRecentVisits ?? false}
-          />
-          최근 방문 제외(최근 {RECENT_VISIT_WINDOW_DAYS}일 이내 다녀온 식당 완전히 제외)
-        </label>
-
-        <label className="flex items-center gap-2 text-sm text-neutral-600">
-          <input
-            type="checkbox"
-            name="excludeCongested"
-            defaultChecked={conditions.excludeCongested ?? false}
-          />
-          혼잡한 곳 제외(최근 혼잡 제보가 있는 식당 완전히 제외)
-        </label>
+            <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <input type="checkbox" name="preferFavorites" defaultChecked={conditions.preferFavorites ?? false} />
+              즐겨찾기 우선
+            </label>
+            <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <input type="checkbox" name="preferGoodRating" defaultChecked={conditions.preferGoodRating ?? false} />
+              직원 평가 좋은 곳 우선
+            </label>
+            <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <input type="checkbox" name="preferFast" defaultChecked={conditions.preferFast ?? false} />
+              빨리 나오는 곳 우선
+            </label>
+            <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <input type="checkbox" name="preferUnvisited" defaultChecked={conditions.preferUnvisited ?? false} />
+              아직 가보지 않은 곳 우선
+            </label>
+          </div>
+        </details>
 
         <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
           이 조건으로 추천받기
@@ -324,7 +383,7 @@ export default async function RecommendPage({
             <RestaurantCard
               restaurant={result.main}
               highlight
-              reason={buildRecommendReason(result.main, conditions)}
+              reasons={buildRecommendReasons(result.main, conditions, recentVisitDays)}
               reviewCount={reviewCounts.get(result.main.id) ?? 0}
             />
 

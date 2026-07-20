@@ -15,6 +15,10 @@ function buildRecommendUrl(conditions: RecommendConditionsInput): string {
   if (conditions.maxPriceWon !== undefined) params.set("maxPrice", String(conditions.maxPriceWon));
   if (conditions.excludeRecentVisits) params.set("excludeRecent", "on");
   if (conditions.excludeCongested) params.set("excludeCongested", "on");
+  if (conditions.preferFavorites) params.set("preferFavorites", "on");
+  if (conditions.preferGoodRating) params.set("preferGoodRating", "on");
+  if (conditions.preferFast) params.set("preferFast", "on");
+  if (conditions.preferUnvisited) params.set("preferUnvisited", "on");
 
   const qs = params.toString();
   return qs ? `/recommend?${qs}` : "/recommend";

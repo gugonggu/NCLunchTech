@@ -28,6 +28,20 @@ describe("normalizeRecommendParams", () => {
     expect(normalizeRecommendParams({ excludeCongested: "on" }).excludeCongested).toBe(true);
     expect(normalizeRecommendParams({}).excludeCongested).toBeUndefined();
   });
+
+  it("우선 조건 체크박스 4개도 동일하게 on/undefined로 바꾼다", () => {
+    const result = normalizeRecommendParams({
+      preferFavorites: "on",
+      preferGoodRating: "on",
+      preferFast: "on",
+      preferUnvisited: "on",
+    });
+    expect(result.preferFavorites).toBe(true);
+    expect(result.preferGoodRating).toBe(true);
+    expect(result.preferFast).toBe(true);
+    expect(result.preferUnvisited).toBe(true);
+    expect(normalizeRecommendParams({}).preferFavorites).toBeUndefined();
+  });
 });
 
 describe("recommendConditionsSchema", () => {

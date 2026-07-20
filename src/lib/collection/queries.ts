@@ -35,6 +35,32 @@ export async function getVisitedRestaurantIds(employeeId: string): Promise<Set<s
   return ids;
 }
 
+/** 직원 전체(누구든) 완료 방문한 식당 id 집합 — 추천 사유의 "아직 아무도 방문하지 않았어요"용. */
+export async function getGloballyVisitedRestaurantIds(): Promise<Set<string>> {
+  const supabase = createServiceRoleClient();
+
+  const [{ data: visits }, { data: hostedAppointments }, { data: participantRows }] = await Promise.all([
+    supabase.from("visits").select("restaurant_id").eq("status", "completed"),
+    supabase.from("appointments").select("restaurant_id").eq("host_attendance_status", "completed"),
+    supabase.from("appointment_participants").select("appointments(restaurant_id)").eq("status", "completed"),
+  ]);
+
+  const ids = new Set<string>();
+  for (const v of visits ?? []) {
+    ids.add(v.restaurant_id);
+  }
+  for (const a of hostedAppointments ?? []) {
+    ids.add(a.restaurant_id);
+  }
+  for (const p of participantRows ?? []) {
+    const appt = p.appointments as unknown as { restaurant_id: string } | null;
+    if (appt) {
+      ids.add(appt.restaurant_id);
+    }
+  }
+  return ids;
+}
+
 export async function getFavoriteRestaurantIds(employeeId: string): Promise<Set<string>> {
   const supabase = createServiceRoleClient();
   const { data } = await supabase.from("favorites").select("restaurant_id").eq("employee_id", employeeId);

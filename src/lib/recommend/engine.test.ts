@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildRecommendReason,
+  MAX_WEIGHT,
+  MIN_WEIGHT,
+  buildRecommendReasons,
   filterByRadius,
   filterCandidates,
+  getWeight,
   pickRecommendation,
   type RecommendCandidate,
 } from "./engine";
@@ -215,10 +218,84 @@ describe("pickRecommendation", () => {
   });
 });
 
-describe("buildRecommendReason", () => {
-  it("실제로 확인 불가능한 정보(리뷰 수·혼잡도 등)를 언급하지 않는다", () => {
+describe("getWeight", () => {
+  it("아무 조건도 없으면 1이다", () => {
+    expect(getWeight(candidate({ id: "a" }))).toBe(1);
+  });
+
+  it("신선하게 혼잡한 식당은 감점된다", () => {
+    expect(getWeight(candidate({ id: "a", isFreshlyCongested: true }))).toBeLessThan(1);
+  });
+
+  it("우선 조건을 선택하지 않으면 해당 신호가 있어도 가점되지 않는다", () => {
+    expect(getWeight(candidate({ id: "a", isFavorite: true }), {})).toBe(1);
+  });
+
+  it("preferFavorites를 선택하고 즐겨찾기한 식당이면 가점된다", () => {
+    expect(getWeight(candidate({ id: "a", isFavorite: true }), { preferFavorites: true })).toBeGreaterThan(1);
+  });
+
+  it("여러 우선 조건이 동시에 만족되면 곱해서 더 크게 가점된다", () => {
+    const single = getWeight(candidate({ id: "a", isFavorite: true }), { preferFavorites: true });
+    const double = getWeight(candidate({ id: "a", isFavorite: true, isUnvisitedByMe: true }), {
+      preferFavorites: true,
+      preferUnvisited: true,
+    });
+    expect(double).toBeGreaterThan(single);
+  });
+
+  it("가중치가 아무리 겹쳐도 MIN_WEIGHT~MAX_WEIGHT 범위를 벗어나지 않는다", () => {
+    const veryLow = getWeight(
+      { ...candidate({ id: "a" }), isFreshlyCongested: true },
+      {},
+      new Map([["a", 0]])
+    );
+    expect(veryLow).toBeGreaterThanOrEqual(MIN_WEIGHT);
+
+    const veryHigh = getWeight(
+      candidate({ id: "a", isFavorite: true, hasGoodRatingSignal: true, hasFastServiceSignal: true, isUnvisitedByMe: true }),
+      { preferFavorites: true, preferGoodRating: true, preferFast: true, preferUnvisited: true }
+    );
+    expect(veryHigh).toBeLessThanOrEqual(MAX_WEIGHT);
+  });
+});
+
+describe("buildRecommendReasons", () => {
+  it("실제로 확인 불가능한 정보(가짜 인기·혼잡 등)를 언급하지 않는다", () => {
     const main = candidate({ id: "a" });
-    const reason = buildRecommendReason(main, {});
-    expect(reason).not.toMatch(/리뷰|인기|혼잡|영업 중/);
+    const reasons = buildRecommendReasons(main, {});
+    expect(reasons.join(" ")).not.toMatch(/인기|영업 중/);
+  });
+
+  it("아무 신호도 없으면 거리 문구를 최소 1개 보장한다", () => {
+    // recentVisitDays에 이 식당이 최근 방문으로 잡혀 있어야 "최근 미방문" 사유도 안 뜬다.
+    const main = candidate({ id: "a", distanceM: 250 });
+    const recentVisitDays = new Map([["a", 3]]);
+    expect(buildRecommendReasons(main, {}, recentVisitDays)).toEqual(["회사에서 약 250m 거리예요."]);
+  });
+
+  it("검색/카테고리 조건이 최우선으로 들어간다", () => {
+    const main = candidate({ id: "a" });
+    const reasons = buildRecommendReasons(main, { category: "한식" });
+    expect(reasons[0]).toBe("선택하신 '한식' 분류에서 골라봤어요.");
+  });
+
+  it("즐겨찾기·리뷰 태그 등 실제 신호가 있으면 함께 표시하되 최대 2개로 자른다", () => {
+    const main = candidate({ id: "a", isFavorite: true, hasGoodRatingSignal: true, topReviewTag: "가성비 좋아요" });
+    const reasons = buildRecommendReasons(main, {});
+    expect(reasons).toHaveLength(2);
+    expect(reasons[0]).toBe("즐겨찾기한 식당이에요.");
+  });
+
+  it("최근 방문 기록이 없으면(recentVisitDays에 없음) 최근 미방문 사유를 넣는다", () => {
+    const main = candidate({ id: "a" });
+    const reasons = buildRecommendReasons(main, {}, new Map());
+    expect(reasons).toContain("최근 14일 동안 방문하지 않았어요.");
+  });
+
+  it("14일 이내 방문 기록이 있으면 최근 미방문 사유를 넣지 않는다", () => {
+    const main = candidate({ id: "a", distanceM: 250 });
+    const reasons = buildRecommendReasons(main, {}, new Map([["a", 3]]));
+    expect(reasons).not.toContain("최근 14일 동안 방문하지 않았어요.");
   });
 });

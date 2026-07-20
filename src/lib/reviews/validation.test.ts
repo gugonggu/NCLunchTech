@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { isReviewStatusCode, parseTagList, reviewSchema } from "./validation";
+import {
+  aggregateReviewRows,
+  hasFastServiceSignal,
+  hasGoodRatingSignal,
+  isReviewStatusCode,
+  parseTagList,
+  reviewSchema,
+  type ReviewAggregateRow,
+} from "./validation";
 
 const validBase = {
   tasteRating: "5",
@@ -80,5 +88,87 @@ describe("isReviewStatusCode", () => {
     expect(isReviewStatusCode("saved")).toBe(true);
     expect(isReviewStatusCode("아무거나")).toBe(false);
     expect(isReviewStatusCode(undefined)).toBe(false);
+  });
+});
+
+function row(overrides: Partial<ReviewAggregateRow>): ReviewAggregateRow {
+  return {
+    restaurantId: "r1",
+    tasteRating: 5,
+    speedRating: 5,
+    priceRating: 5,
+    soloFitRating: 5,
+    tags: null,
+    ...overrides,
+  };
+}
+
+describe("aggregateReviewRows", () => {
+  it("식당별로 평균 평점을 계산한다", () => {
+    const result = aggregateReviewRows([
+      row({ restaurantId: "a", tasteRating: 4, speedRating: 4, priceRating: 4, soloFitRating: 4 }),
+      row({ restaurantId: "a", tasteRating: 2, speedRating: 2, priceRating: 2, soloFitRating: 2 }),
+      row({ restaurantId: "b", tasteRating: 5, speedRating: 5, priceRating: 5, soloFitRating: 5 }),
+    ]);
+
+    expect(result.get("a")?.avgOverall).toBe(3);
+    expect(result.get("a")?.reviewCount).toBe(2);
+    expect(result.get("b")?.avgOverall).toBe(5);
+  });
+
+  it("속도 평점만 따로 평균낸다", () => {
+    const result = aggregateReviewRows([
+      row({ restaurantId: "a", speedRating: 3 }),
+      row({ restaurantId: "a", speedRating: 5 }),
+    ]);
+    expect(result.get("a")?.avgSpeed).toBe(4);
+  });
+
+  it("태그가 2건 이상 언급되면 최다 언급 태그를 반환한다", () => {
+    const result = aggregateReviewRows([
+      row({ restaurantId: "a", tags: ["가성비 좋아요"] }),
+      row({ restaurantId: "a", tags: ["가성비 좋아요", "양이 많아요"] }),
+      row({ restaurantId: "a", tags: ["양이 많아요"] }),
+    ]);
+    // 가성비 좋아요: 2건, 양이 많아요: 2건 → 먼저 등장한(더 많이 센 순서상 동일할 때 첫 값 유지) 태그
+    expect(result.get("a")?.topTag).not.toBeNull();
+  });
+
+  it("모든 태그가 1건씩만 언급되면 topTag는 null이다", () => {
+    const result = aggregateReviewRows([
+      row({ restaurantId: "a", tags: ["가성비 좋아요"] }),
+      row({ restaurantId: "a", tags: ["양이 많아요"] }),
+    ]);
+    expect(result.get("a")?.topTag).toBeNull();
+  });
+
+  it("리뷰가 없으면 빈 Map이다", () => {
+    expect(aggregateReviewRows([]).size).toBe(0);
+  });
+});
+
+describe("hasGoodRatingSignal / hasFastServiceSignal", () => {
+  it("리뷰 2건 이상 + 평균 4.0 이상이면 true", () => {
+    const result = aggregateReviewRows([row({ restaurantId: "a" }), row({ restaurantId: "a" })]);
+    expect(hasGoodRatingSignal(result.get("a"))).toBe(true);
+    expect(hasFastServiceSignal(result.get("a"))).toBe(true);
+  });
+
+  it("리뷰가 1건뿐이면 평점이 높아도 false(표본 부족)", () => {
+    const result = aggregateReviewRows([row({ restaurantId: "a" })]);
+    expect(hasGoodRatingSignal(result.get("a"))).toBe(false);
+  });
+
+  it("평균이 기준 미만이면 false", () => {
+    const result = aggregateReviewRows([
+      row({ restaurantId: "a", tasteRating: 2, speedRating: 2, priceRating: 2, soloFitRating: 2 }),
+      row({ restaurantId: "a", tasteRating: 2, speedRating: 2, priceRating: 2, soloFitRating: 2 }),
+    ]);
+    expect(hasGoodRatingSignal(result.get("a"))).toBe(false);
+  });
+
+  it("집계 자체가 없으면(undefined) false", () => {
+    expect(hasGoodRatingSignal(undefined)).toBe(false);
+    expect(hasFastServiceSignal(undefined)).toBe(false);
   });
 });
