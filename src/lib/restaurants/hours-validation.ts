@@ -46,3 +46,29 @@ export const dayHoursSchema = z
 export const restaurantHoursSchema = z.array(dayHoursSchema).length(7);
 
 export type DayHoursInput = z.infer<typeof dayHoursSchema>;
+
+const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+export interface OpenNowRow {
+  dayOfWeek: number;
+  isClosed: boolean;
+  openTime: string | null;
+  closeTime: string | null;
+}
+
+/** Asia/Seoul 기준 현재 요일·시각으로 해당 요일의 영업시간과 비교해 "지금 영업 중"인지 계산한다. */
+export function isOpenNow(hoursByDay: Map<number, OpenNowRow>, now: Date): boolean {
+  const seoul = new Date(now.getTime() + SEOUL_OFFSET_MS);
+  const dayOfWeek = seoul.getUTCDay();
+  const nowHHMM = `${String(seoul.getUTCHours()).padStart(2, "0")}:${String(seoul.getUTCMinutes()).padStart(2, "0")}`;
+
+  const row = hoursByDay.get(dayOfWeek);
+  if (!row || row.isClosed || !row.openTime || !row.closeTime) {
+    return false;
+  }
+
+  // HH:mm은 고정폭 문자열이라 사전식 비교가 곧 시간 비교와 같다(dayHoursSchema와 동일한 가정).
+  const open = row.openTime.slice(0, 5);
+  const close = row.closeTime.slice(0, 5);
+  return open <= nowHHMM && nowHHMM < close;
+}

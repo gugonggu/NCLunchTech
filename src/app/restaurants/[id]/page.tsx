@@ -212,14 +212,14 @@ export default async function RestaurantDetailPage({
                 <input
                   type="time"
                   name={`open_${day}`}
-                  defaultValue={row?.open_time ?? ""}
+                  defaultValue={row?.open_time?.slice(0, 5) ?? ""}
                   className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
                 />
                 <span>~</span>
                 <input
                   type="time"
                   name={`close_${day}`}
-                  defaultValue={row?.close_time ?? ""}
+                  defaultValue={row?.close_time?.slice(0, 5) ?? ""}
                   className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
                 />
               </div>

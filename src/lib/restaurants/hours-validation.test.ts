@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { restaurantHoursSchema } from "./hours-validation";
+import { isOpenNow, restaurantHoursSchema, type OpenNowRow } from "./hours-validation";
 
 function buildWeek(overrides: Partial<Record<number, Record<string, unknown>>> = {}) {
   return Array.from({ length: 7 }, (_, day) => ({
@@ -54,5 +54,44 @@ describe("restaurantHoursSchema", () => {
   it("요일이 7개가 아니면 실패한다", () => {
     const week = buildWeek().slice(0, 6);
     expect(restaurantHoursSchema.safeParse(week).success).toBe(false);
+  });
+});
+
+describe("isOpenNow", () => {
+  // Asia/Seoul 기준 정오(12:00)가 되는 UTC 시각. 실제 요일은 계산해서 쓴다(하드코딩 의존 없음).
+  const now = new Date("2026-07-15T03:00:00.000Z");
+  const seoulDayOfWeek = new Date(now.getTime() + 9 * 60 * 60 * 1000).getUTCDay();
+
+  function hoursMap(row: Partial<OpenNowRow> = {}): Map<number, OpenNowRow> {
+    return new Map([
+      [
+        seoulDayOfWeek,
+        { dayOfWeek: seoulDayOfWeek, isClosed: false, openTime: "09:00:00", closeTime: "18:00:00", ...row },
+      ],
+    ]);
+  }
+
+  it("영업시간 범위 안이면 true", () => {
+    expect(isOpenNow(hoursMap(), now)).toBe(true);
+  });
+
+  it("휴무일이면 false", () => {
+    expect(isOpenNow(hoursMap({ isClosed: true, openTime: null, closeTime: null }), now)).toBe(false);
+  });
+
+  it("해당 요일 데이터가 없으면 false", () => {
+    expect(isOpenNow(new Map(), now)).toBe(false);
+  });
+
+  it("영업 시작 전이면 false", () => {
+    expect(isOpenNow(hoursMap({ openTime: "13:00:00" }), now)).toBe(false);
+  });
+
+  it("영업 종료 후면 false", () => {
+    expect(isOpenNow(hoursMap({ closeTime: "11:00:00" }), now)).toBe(false);
+  });
+
+  it("종료 시각 정각은 영업 중이 아니다", () => {
+    expect(isOpenNow(hoursMap({ openTime: "09:00:00", closeTime: "12:00:00" }), now)).toBe(false);
   });
 });

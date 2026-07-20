@@ -67,7 +67,12 @@ export default async function MePage() {
     favoritesResult,
   ];
   if (results.some((result) => result.error) || !profileResult.data) {
-    throw new Error("내 정보 조회에 실패했습니다.");
+    return (
+      <main className="flex flex-1 flex-col gap-4 bg-brand-bg px-6 py-8">
+        <p className="text-sm text-red-600">내 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+        <LogoutButton />
+      </main>
+    );
   }
 
   const stats = [

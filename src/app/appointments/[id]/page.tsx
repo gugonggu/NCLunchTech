@@ -34,6 +34,7 @@ const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
   declined: "거절",
   cancelled: "불참",
   completed: "다녀왔어요",
+  expired: "응답 없음",
 };
 
 export default async function AppointmentDetailPage({

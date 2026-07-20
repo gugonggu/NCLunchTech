@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export type AppointmentStatus = "active" | "cancelled";
-export type ParticipantStatus = "pending" | "accepted" | "declined" | "cancelled" | "completed";
+export type ParticipantStatus = "pending" | "accepted" | "declined" | "cancelled" | "completed" | "expired";
 export type HostAttendanceStatus = "completed" | "cancelled";
 
 const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
@@ -74,6 +74,8 @@ const PARTICIPANT_TRANSITIONS: Record<ParticipantStatus, ParticipantStatus[]> = 
   declined: [],
   cancelled: [],
   completed: [],
+  // expired(응답 없음)는 사용자 응답이 아니라 시각 경과로만 전이되는 시스템 상태라 여기 포함하지 않는다.
+  expired: [],
 };
 
 export function canParticipantTransition(from: ParticipantStatus, to: ParticipantStatus): boolean {

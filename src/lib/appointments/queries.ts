@@ -123,6 +123,51 @@ export interface RelevantAppointment {
 }
 
 /**
+ * 응답하지 않은 채 약속 예정 시각이 지난 초대(pending)를 expired(응답 없음)로 지연 반영한다.
+ * 화면에서는 이미 이런 초대를 숨겨왔지만(scheduledAt < now 체크), DB에 pending으로 영구히
+ * 쌓이는 것을 막기 위해 조회 시점마다 정리한다. 실패해도 화면 노출 로직(아래 continue 체크)이
+ * 그대로 걸러주므로 사용자에게 보이는 동작은 달라지지 않는다.
+ */
+async function expireStalePendingParticipants(employeeId: string, now: Date): Promise<void> {
+  const supabase = createServiceRoleClient();
+
+  const { data: pendingRows } = await supabase
+    .from("appointment_participants")
+    .select("id, appointment_id")
+    .eq("employee_id", employeeId)
+    .eq("status", "pending");
+
+  if (!pendingRows || pendingRows.length === 0) {
+    return;
+  }
+
+  const { data: staleAppointments } = await supabase
+    .from("appointments")
+    .select("id")
+    .in(
+      "id",
+      pendingRows.map((p) => p.appointment_id)
+    )
+    .eq("status", "active")
+    .lt("scheduled_at", now.toISOString());
+
+  const staleAppointmentIds = new Set((staleAppointments ?? []).map((a) => a.id));
+  const staleParticipantIds = pendingRows
+    .filter((p) => staleAppointmentIds.has(p.appointment_id))
+    .map((p) => p.id);
+
+  if (staleParticipantIds.length === 0) {
+    return;
+  }
+
+  await supabase
+    .from("appointment_participants")
+    .update({ status: "expired", responded_at: now.toISOString() })
+    .in("id", staleParticipantIds)
+    .eq("status", "pending");
+}
+
+/**
  * 홈 화면에 보여줄 약속: 내가 방장이며 아직 방문 확인 전이거나, 대기/확정 상태로 참여 중인 약속.
  * needsConfirmation이 true면 "방문 확인" 섹션에, false면 "다가오는 약속"에 사용한다.
  */
@@ -131,6 +176,8 @@ export async function getRelevantAppointments(
   now: Date
 ): Promise<RelevantAppointment[]> {
   const supabase = createServiceRoleClient();
+
+  await expireStalePendingParticipants(employeeId, now);
 
   const [{ data: hosted }, { data: participantRows }] = await Promise.all([
     supabase

@@ -105,6 +105,12 @@ describe("canParticipantTransition", () => {
   it("accepted에서 declined로는 갈 수 없다(거절은 최초 응답에서만)", () => {
     expect(canParticipantTransition("accepted", "declined")).toBe(false);
   });
+
+  it("expired(응답 없음)는 사용자 응답으로 도달할 수 없고 그 자체로 종결 상태다", () => {
+    expect(canParticipantTransition("pending", "expired")).toBe(false);
+    expect(canParticipantTransition("expired", "accepted")).toBe(false);
+    expect(canParticipantTransition("expired", "declined")).toBe(false);
+  });
 });
 
 describe("sanitizeReturnTo", () => {
