@@ -99,7 +99,7 @@ function LoginForm() {
           아직 계정이 없나요?{" "}
           <Link
             href={`/signup?returnTo=${encodeURIComponent(returnTo)}`}
-            className="font-semibold text-brand-dark underline"
+            className="inline-flex min-h-11 min-w-11 font-semibold text-brand-dark underline"
           >
             회원가입
           </Link>

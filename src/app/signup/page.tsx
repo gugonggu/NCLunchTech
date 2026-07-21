@@ -122,7 +122,7 @@ function SignupForm() {
           이미 계정이 있나요?{" "}
           <Link
             href={`/login?returnTo=${encodeURIComponent(returnTo)}`}
-            className="font-semibold text-brand-dark underline"
+            className="inline-flex min-h-11 min-w-11 font-semibold text-brand-dark underline"
           >
             로그인
           </Link>
