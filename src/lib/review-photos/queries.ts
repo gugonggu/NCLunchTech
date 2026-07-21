@@ -10,8 +10,10 @@ export interface ReviewPhoto {
   createdAt: string;
 }
 
-function toPublicUrl(storagePath: string): string {
-  const supabase = createServiceRoleClient();
+function toPublicUrl(
+  storagePath: string,
+  supabase = createServiceRoleClient(),
+): string {
   return supabase.storage.from(REVIEW_PHOTOS_BUCKET).getPublicUrl(storagePath).data.publicUrl;
 }
 
@@ -129,19 +131,31 @@ export async function getRepresentativeRestaurantPhotoMap(
   }
 
   const supabase = createServiceRoleClient();
-  const { data } = await supabase
-    .from("review_photos")
-    .select("storage_path, reviews!inner(restaurant_id)")
-    .in("reviews.restaurant_id", restaurantIds)
-    .order("created_at", { ascending: false });
+  const uniqueRestaurantIds = [...new Set(restaurantIds)];
+  const entries = await Promise.all(
+    uniqueRestaurantIds.map(async (restaurantId) => {
+      try {
+        const { data, error } = await supabase
+          .from("review_photos")
+          .select("storage_path, reviews!inner(restaurant_id)")
+          .eq("reviews.restaurant_id", restaurantId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const row = data?.[0];
+        if (error || !row) {
+          return null;
+        }
+        return [restaurantId, toPublicUrl(row.storage_path, supabase)] as const;
+      } catch {
+        return null;
+      }
+    }),
+  );
 
   const result = new Map<string, string>();
-  for (const row of data ?? []) {
-    const review = row.reviews as unknown as {
-      restaurant_id: string;
-    } | null;
-    if (review && !result.has(review.restaurant_id)) {
-      result.set(review.restaurant_id, toPublicUrl(row.storage_path));
+  for (const entry of entries) {
+    if (entry) {
+      result.set(...entry);
     }
   }
 

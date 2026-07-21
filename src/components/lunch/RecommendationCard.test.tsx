@@ -39,8 +39,22 @@ describe("RecommendationCard", () => {
 
     expect(card).toHaveClass("bg-brand-soft");
     expect(decideButton).toHaveClass("min-h-12", "min-w-11", "w-full");
-    expect(appointmentLink).toHaveClass("min-h-12", "min-w-11", "w-full");
-    expect(detailLink).toHaveClass("min-h-12", "min-w-11", "w-full");
+    expect(appointmentLink).toHaveClass(
+      "min-h-12",
+      "min-w-11",
+      "w-full",
+      "border",
+      "border-line",
+      "bg-surface",
+      "text-ink",
+    );
+    expect(detailLink).toHaveClass(
+      "min-h-12",
+      "min-w-11",
+      "w-full",
+      "bg-transparent",
+      "text-ink-muted",
+    );
     expect(
       decideButton.compareDocumentPosition(appointmentLink) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -94,11 +108,17 @@ describe("RecommendationCard", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("img", {
-        name: "아주 긴 이름의 테스트 한식당 이미지 준비 중",
-      }),
-    ).toBeInTheDocument();
+    const fallback = screen.getByRole("img", {
+      name: "아주 긴 이름의 테스트 한식당 이미지 준비 중",
+    });
+
+    expect(fallback).toHaveClass("aspect-[4/3]");
+    expect(fallback.textContent).toBe("한식");
+    expect(fallback.firstElementChild).toHaveClass(
+      "text-sm",
+      "font-semibold",
+      "text-ink-muted",
+    );
   });
 
   it("shows an explicit unavailable price for a menu without a price", () => {

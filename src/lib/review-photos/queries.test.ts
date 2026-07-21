@@ -16,31 +16,53 @@ interface PhotoRow {
   reviews: { restaurant_id: string };
 }
 
-function setupClient(rows: PhotoRow[]) {
-  const orderedQuery = {
-    limit: vi.fn((count: number) =>
-      Promise.resolve({ data: rows.slice(0, count) }),
-    ),
-    then: (
-      resolve: (value: { data: PhotoRow[] }) => unknown,
-      reject?: (reason: unknown) => unknown,
-    ) => Promise.resolve({ data: rows }).then(resolve, reject),
-  };
-  const order = vi.fn(() => orderedQuery);
-  const inFilter = vi.fn(() => ({ order }));
-  const select = vi.fn(() => ({ in: inFilter }));
+type QueryOutcome =
+  | { data: PhotoRow[] | null; error: Error | null }
+  | { throws: Error };
+
+function setupClient(outcomes: Record<string, QueryOutcome>) {
+  const globalRows = Object.values(outcomes).flatMap((outcome) =>
+    "data" in outcome ? (outcome.data ?? []) : [],
+  );
+  const globalOrder = vi.fn().mockResolvedValue({
+    data: globalRows,
+    error: null,
+  });
+  const inFilter = vi.fn(() => ({ order: globalOrder }));
+  const queries = new Map<
+    string,
+    { eq: ReturnType<typeof vi.fn>; order: ReturnType<typeof vi.fn>; limit: ReturnType<typeof vi.fn> }
+  >();
+  const from = vi.fn(() => {
+    let restaurantId = "";
+    const limit = vi.fn(async () => {
+      const outcome = outcomes[restaurantId] ?? { data: [], error: null };
+      if ("throws" in outcome) {
+        throw outcome.throws;
+      }
+      return outcome;
+    });
+    const order = vi.fn(() => ({ limit }));
+    const eq = vi.fn((_column: string, id: string) => {
+      restaurantId = id;
+      queries.set(id, { eq, order, limit });
+      return { order };
+    });
+    const select = vi.fn(() => ({ eq, in: inFilter }));
+    return { select };
+  });
   const storageFrom = vi.fn(() => ({
     getPublicUrl: (path: string) => ({
       data: { publicUrl: `https://photos.test/${path}` },
     }),
   }));
   const client = {
-    from: vi.fn(() => ({ select })),
+    from,
     storage: { from: storageFrom },
   };
   mocks.createServiceRoleClient.mockReturnValue(client);
 
-  return { inFilter, order };
+  return { client, inFilter, queries };
 }
 
 describe("getRepresentativeRestaurantPhotoMap", () => {
@@ -55,59 +77,75 @@ describe("getRepresentativeRestaurantPhotoMap", () => {
     expect(mocks.createServiceRoleClient).not.toHaveBeenCalled();
   });
 
-  it("keeps the newest photo for each restaurant", async () => {
-    const rows = [
-      {
-        storage_path: "new-r1.jpg",
-        reviews: { restaurant_id: "r1" },
+  it("queries the newest photo once per unique restaurant id", async () => {
+    const { client, inFilter, queries } = setupClient({
+      r1: {
+        data: [
+          {
+            storage_path: "new-r1.jpg",
+            reviews: { restaurant_id: "r1" },
+          },
+        ],
+        error: null,
       },
-      {
-        storage_path: "old-r1.jpg",
-        reviews: { restaurant_id: "r1" },
+      r2: {
+        data: [
+          {
+            storage_path: "older-r2.jpg",
+            reviews: { restaurant_id: "r2" },
+          },
+        ],
+        error: null,
       },
-      {
-        storage_path: "new-r2.jpg",
-        reviews: { restaurant_id: "r2" },
-      },
-    ];
-    const { inFilter, order } = setupClient(rows);
+    });
 
     await expect(
-      getRepresentativeRestaurantPhotoMap(["r1", "r2"]),
+      getRepresentativeRestaurantPhotoMap(["r1", "r1", "r2"]),
     ).resolves.toEqual(
       new Map([
         ["r1", "https://photos.test/new-r1.jpg"],
-        ["r2", "https://photos.test/new-r2.jpg"],
+        ["r2", "https://photos.test/older-r2.jpg"],
       ]),
     );
 
-    expect(inFilter).toHaveBeenCalledWith("reviews.restaurant_id", [
-      "r1",
-      "r2",
-    ]);
-    expect(order).toHaveBeenCalledWith("created_at", { ascending: false });
+    expect(mocks.createServiceRoleClient).toHaveBeenCalledTimes(1);
+    expect(client.from).toHaveBeenCalledTimes(2);
+    expect(inFilter).not.toHaveBeenCalled();
+    for (const restaurantId of ["r1", "r2"]) {
+      const query = queries.get(restaurantId);
+      expect(query?.eq).toHaveBeenCalledWith(
+        "reviews.restaurant_id",
+        restaurantId,
+      );
+      expect(query?.order).toHaveBeenCalledWith("created_at", {
+        ascending: false,
+      });
+      expect(query?.limit).toHaveBeenCalledWith(1);
+    }
   });
 
-  it("returns every requested restaurant when newer photos belong to one restaurant", async () => {
-    const rows = [
-      ...Array.from({ length: 21 }, (_, index) => ({
-        storage_path: `r1-${index}.jpg`,
-        reviews: { restaurant_id: "r1" },
-      })),
-      {
-        storage_path: "r2-older.jpg",
-        reviews: { restaurant_id: "r2" },
+  it("omits restaurants with missing or failed photo queries", async () => {
+    const { client } = setupClient({
+      r1: {
+        data: [
+          {
+            storage_path: "r1.jpg",
+            reviews: { restaurant_id: "r1" },
+          },
+        ],
+        error: null,
       },
-    ];
-    setupClient(rows);
+      r2: { data: [], error: null },
+      r3: { data: null, error: new Error("query failed") },
+      r4: { throws: new Error("network failed") },
+    });
 
     await expect(
-      getRepresentativeRestaurantPhotoMap(["r1", "r2"]),
+      getRepresentativeRestaurantPhotoMap(["r1", "r2", "r3", "r4"]),
     ).resolves.toEqual(
-      new Map([
-        ["r1", "https://photos.test/r1-0.jpg"],
-        ["r2", "https://photos.test/r2-older.jpg"],
-      ]),
+      new Map([["r1", "https://photos.test/r1.jpg"]]),
     );
+    expect(client.from).toHaveBeenCalledTimes(4);
+    expect(mocks.createServiceRoleClient).toHaveBeenCalledTimes(1);
   });
 });
