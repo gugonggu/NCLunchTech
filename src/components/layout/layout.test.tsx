@@ -9,7 +9,7 @@ describe("AppNavigation", () => {
   it("shows the five core destinations and marks the active item", () => {
     render(<AppNavigation />);
 
-    for (const label of ["홈", "식당", "같이 먹기", "알림", "내 정보"]) {
+    for (const label of ["홈", "식당", "함께 먹기", "알림", "내 정보"]) {
       expect(screen.getAllByRole("link", { name: label }).length).toBeGreaterThan(0);
     }
 

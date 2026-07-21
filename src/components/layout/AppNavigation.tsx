@@ -8,7 +8,7 @@ import { cx } from "@/components/ui/cx";
 export const NAV_ITEMS = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/restaurants", label: "식당", icon: "restaurant" },
-  { href: "/appointments/new", label: "같이 먹기", icon: "people" },
+  { href: "/appointments/new", label: "함께 먹기", icon: "people" },
   { href: "/notifications", label: "알림", icon: "bell" },
   { href: "/me", label: "내 정보", icon: "profile" },
 ] as const satisfies ReadonlyArray<{ href: string; label: string; icon: AppIconName }>;
