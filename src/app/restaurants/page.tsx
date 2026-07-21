@@ -10,6 +10,7 @@ import { getRecentCompletedVisits } from "@/lib/visits/queries";
 import { getRecentAttendedAppointments } from "@/lib/appointments/queries";
 import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
 import { RestaurantsMapView, type MapRestaurant } from "./RestaurantsMapView";
+import { RestaurantsMapWorkspace } from "./RestaurantsMapWorkspace";
 
 const RESULT_LIMIT = 60;
 
@@ -163,8 +164,8 @@ export default async function RestaurantsPage({
   const companyLocation = companyLat !== null && companyLng !== null ? { lat: companyLat, lng: companyLng } : null;
 
   return (
-    <main className="relative flex flex-1 flex-col overflow-hidden">
-      <div className="absolute inset-x-0 top-0 z-20 flex flex-col gap-2 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
+    <RestaurantsMapWorkspace
+      header={<div className="flex flex-col gap-2 px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-brand-dark">식당 찾기</h1>
           <p className="text-xs text-neutral-500">
@@ -271,13 +272,14 @@ export default async function RestaurantsPage({
             </div>
           </details>
         </form>
-      </div>
+      </div>}
+    >
 
       <RestaurantsMapView
         restaurants={mapRestaurants}
         companyLocation={companyLocation}
         forAppointment={forAppointment}
       />
-    </main>
+    </RestaurantsMapWorkspace>
   );
 }

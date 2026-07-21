@@ -81,6 +81,8 @@ export function BottomSheet({
   return (
     <div
       id="restaurant-results-sheet"
+      role="region"
+      aria-label="식당 목록"
       className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.12)] transition-[height] duration-300 ease-out ${HEIGHT_CLASSES[snap]}`}
     >
       <div className="flex shrink-0 items-center px-2 py-2">

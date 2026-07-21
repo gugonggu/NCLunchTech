@@ -74,7 +74,7 @@ export function RestaurantsMapView({
           });
           kakaoSdk.maps.event.addListener(marker, "click", () => {
             setSelectedId(r.id);
-            setSheetSnap((prev) => (prev === "peek" ? "half" : prev));
+            setSheetSnap((prev) => (prev === "hidden" || prev === "peek" ? "half" : prev));
             map.panTo(marker.getPosition());
           });
           markersRef.current.set(r.id, marker);
@@ -119,6 +119,7 @@ export function RestaurantsMapView({
 
   function handleSelectFromList(id: string) {
     setSelectedId(id);
+    setSheetSnap((prev) => (prev === "hidden" || prev === "peek" ? "half" : prev));
     const marker = markersRef.current.get(id);
     if (marker && mapRef.current) {
       mapRef.current.panTo(marker.getPosition());
@@ -133,6 +134,18 @@ export function RestaurantsMapView({
         <div className="absolute inset-x-0 top-0 z-20 bg-white px-4 py-3 text-center text-sm text-neutral-600 shadow-sm">
           {mapError}
         </div>
+      )}
+
+      {sheetSnap === "hidden" && (
+        <button
+          type="button"
+          onClick={() => setSheetSnap("half")}
+          aria-controls="restaurant-results-sheet"
+          aria-expanded="false"
+          className="absolute bottom-4 right-4 z-20 min-h-11 min-w-11 rounded-2xl bg-white px-4 text-sm font-semibold text-neutral-700 shadow-md"
+        >
+          식당 목록 열기
+        </button>
       )}
 
       <BottomSheet
