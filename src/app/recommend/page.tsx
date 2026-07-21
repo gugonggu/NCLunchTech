@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { RecommendationCard } from "@/components/lunch/RecommendationCard";
+import { Button, buttonStyles } from "@/components/ui/Button";
+import { FeedbackState } from "@/components/ui/FeedbackState";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
 import {
@@ -12,9 +15,10 @@ import {
 } from "@/lib/recommend/engine";
 import { getExclusionList, intersectWithCandidates } from "@/lib/recommend/exclusion-cookie";
 import { normalizeRecommendParams, recommendConditionsSchema } from "@/lib/recommend/validation";
+import { getRepresentativeRestaurantPhotoMap } from "@/lib/review-photos/queries";
 import { getExcludingBusinessStatusMap, getFreshCongestionValueMap } from "@/lib/status-reports/queries";
 import { RecommendMapView, type RecommendMapPoint } from "./RecommendMapView";
-import { DEFAULT_RADIUS_M, RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
+import { DEFAULT_RADIUS_M } from "@/lib/restaurants/constants";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
@@ -29,6 +33,8 @@ import {
 } from "@/lib/collection/queries";
 import { decideRestaurant } from "@/app/visits/actions";
 import { rerollRecommendation, resetExclusions } from "./actions";
+import { RecommendationFilters } from "./RecommendationFilters";
+import { ResponsiveFilterPanel } from "./ResponsiveFilterPanel";
 
 interface RecommendSearchParams {
   q?: string;
@@ -42,57 +48,6 @@ interface RecommendSearchParams {
   preferGoodRating?: string;
   preferFast?: string;
   preferUnvisited?: string;
-}
-
-function RestaurantCard({
-  restaurant,
-  highlight,
-  reasons,
-  reviewCount,
-}: {
-  restaurant: RecommendCandidate;
-  highlight: boolean;
-  reasons?: string[];
-  reviewCount: number;
-}) {
-  return (
-    <div
-      className={
-        highlight
-          ? "rounded-2xl border-2 border-brand bg-brand-bg px-4 py-4"
-          : "rounded-2xl border border-neutral-200 px-4 py-3"
-      }
-    >
-      <Link href={`/restaurants/${restaurant.id}`} className="block">
-        <p className="font-semibold">{restaurant.name}</p>
-        <p className="text-sm text-neutral-500">
-          {restaurant.category} · {restaurant.distanceM}m
-          {reviewCount > 0 && ` · 리뷰 ${reviewCount}개`}
-        </p>
-        {reasons?.map((reason) => (
-          <p key={reason} className="mt-1 text-sm text-brand-dark">
-            {reason}
-          </p>
-        ))}
-      </Link>
-      <div className="mt-2 flex gap-2">
-        <form action={decideRestaurant.bind(null, restaurant.id)} className="flex-1">
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white"
-          >
-            혼자 결정하기
-          </button>
-        </form>
-        <Link
-          href={`/appointments/new?restaurantId=${restaurant.id}`}
-          className="flex-1 rounded-xl bg-white px-3 py-2 text-center text-sm font-semibold text-brand-dark shadow-sm"
-        >
-          동료와 함께
-        </Link>
-      </div>
-    </div>
-  );
 }
 
 export default async function RecommendPage({
@@ -120,14 +75,18 @@ export default async function RecommendPage({
 
   if (!parsed.success) {
     return (
-      <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-        <h1 className="text-xl font-bold text-brand-dark">오늘 뭐 먹지?</h1>
-        <p className="text-sm text-red-600">
-          {parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다."}
-        </p>
-        <Link href="/recommend" className="text-brand-dark underline">
-          조건 없이 다시 시도
-        </Link>
+      <main className="flex w-full flex-1 flex-col gap-6">
+        <h1 className="text-2xl font-bold text-ink sm:text-3xl">오늘 뭐 먹지?</h1>
+        <FeedbackState
+          tone="error"
+          title="추천 조건을 확인해 주세요"
+          description={parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다."}
+          action={
+            <Link href="/recommend" className={buttonStyles({ variant: "secondary" })}>
+              조건 없이 다시 시도
+            </Link>
+          }
+        />
       </main>
     );
   }
@@ -256,182 +215,110 @@ export default async function RecommendPage({
   const showResetButton = excludedFromCookie.length > 0;
 
   const displayedIds = result.main ? [result.main.id, ...result.alternatives.map((a) => a.id)] : [];
-  const reviewCounts = await getReviewCounts(displayedIds);
+  const [reviewCounts, photoUrls] = await Promise.all([
+    getReviewCounts(displayedIds),
+    getRepresentativeRestaurantPhotoMap(displayedIds),
+  ]);
+  const filterSummary = [
+    conditions.category || "전체 음식",
+    radius < 1000 ? `${radius}m` : `${radius / 1000}km`,
+    conditions.maxPriceWon ? `${conditions.maxPriceWon.toLocaleString("ko-KR")}원 이하` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-      <h1 className="text-xl font-bold text-brand-dark">오늘 뭐 먹지?</h1>
+    <main className="flex w-full flex-1 flex-col gap-6">
+      <header>
+        <p className="text-sm font-semibold text-brand-dark">빠르고 가볍게 골라드려요</p>
+        <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">오늘 뭐 먹지?</h1>
+      </header>
 
-      <form method="get" className="flex flex-col gap-3">
-        <input
-          type="text"
-          name="q"
-          defaultValue={conditions.restaurantName ?? ""}
-          placeholder="식당 이름 검색"
-          className="rounded-2xl border border-neutral-200 px-4 py-3"
-        />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <ResponsiveFilterPanel summary={filterSummary}>
+          <RecommendationFilters conditions={conditions} radius={radius} hasMenuData={hasMenuData} />
+        </ResponsiveFilterPanel>
 
-        <select
-          name="category"
-          defaultValue={conditions.category ?? ""}
-          className="rounded-2xl border border-neutral-200 px-4 py-3"
-        >
-          <option value="">전체 분류</option>
-          {RESTAURANT_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-
-        <select
-          name="radius"
-          defaultValue={String(radius)}
-          className="rounded-2xl border border-neutral-200 px-4 py-3"
-        >
-          {RADIUS_OPTIONS_M.map((r) => (
-            <option key={r} value={r}>
-              {r < 1000 ? `${r}m` : `${r / 1000}km`}
-            </option>
-          ))}
-        </select>
-
-        <details className="text-sm text-neutral-600">
-          <summary className="cursor-pointer select-none py-1">필터 · 우선 조건</summary>
-          <div className="mt-2 flex flex-col gap-3">
-            <div>
-              <input
-                type="text"
-                name="menuQ"
-                defaultValue={conditions.menuName ?? ""}
-                placeholder="메뉴 이름 검색"
-                disabled={!hasMenuData}
-                className="w-full rounded-2xl border border-neutral-200 px-4 py-3 disabled:bg-neutral-100 disabled:text-neutral-400"
-              />
-              {!hasMenuData && (
-                <p className="mt-1 text-xs text-neutral-400">
-                  등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <input
-                type="number"
-                name="maxPrice"
-                min={0}
-                step={100}
-                defaultValue={conditions.maxPriceWon ?? ""}
-                placeholder="희망 가격(원) 이하"
-                disabled={!hasMenuData}
-                className="w-full rounded-2xl border border-neutral-200 px-4 py-3 disabled:bg-neutral-100 disabled:text-neutral-400"
-              />
-              {!hasMenuData && (
-                <p className="mt-1 text-xs text-neutral-400">
-                  등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
-                </p>
-              )}
-            </div>
-
-            <label className="flex items-center gap-2 text-sm text-neutral-600">
-              <input type="checkbox" name="excludeRecent" defaultChecked={conditions.excludeRecentVisits ?? false} />
-              최근 방문 제외(최근 {RECENT_VISIT_WINDOW_DAYS}일 이내 다녀온 식당 완전히 제외)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-neutral-600">
-              <input type="checkbox" name="excludeCongested" defaultChecked={conditions.excludeCongested ?? false} />
-              혼잡한 곳 제외(최근 혼잡 제보가 있는 식당 완전히 제외)
-            </label>
-
-            <p className="mt-1 text-xs font-semibold text-neutral-500">
-              아래 조건은 완전히 배제하지 않고 뽑힐 확률만 높여요(무작위성은 유지).
-            </p>
-            <label className="flex items-center gap-2 text-sm text-neutral-600">
-              <input type="checkbox" name="preferFavorites" defaultChecked={conditions.preferFavorites ?? false} />
-              즐겨찾기 우선
-            </label>
-            <label className="flex items-center gap-2 text-sm text-neutral-600">
-              <input type="checkbox" name="preferGoodRating" defaultChecked={conditions.preferGoodRating ?? false} />
-              직원 평가 좋은 곳 우선
-            </label>
-            <label className="flex items-center gap-2 text-sm text-neutral-600">
-              <input type="checkbox" name="preferFast" defaultChecked={conditions.preferFast ?? false} />
-              빨리 나오는 곳 우선
-            </label>
-            <label className="flex items-center gap-2 text-sm text-neutral-600">
-              <input type="checkbox" name="preferUnvisited" defaultChecked={conditions.preferUnvisited ?? false} />
-              아직 가보지 않은 곳 우선
-            </label>
-          </div>
-        </details>
-
-        <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
-          이 조건으로 추천받기
-        </button>
-      </form>
-
-      {emptyMessage ? (
-        <p className="rounded-2xl bg-neutral-100 px-4 py-4 text-sm text-neutral-600">{emptyMessage}</p>
-      ) : (
-        result.main && (
-          <div className="flex flex-col gap-3">
-            {result.wasExclusionReset && (
-              <p className="text-xs text-neutral-400">
-                오늘 넘긴 식당을 포함해 다시 보여드렸어요. 조건에 맞는 새로운 후보가 더 없어요.
-              </p>
-            )}
-
-            <RestaurantCard
-              restaurant={result.main}
-              highlight
-              reasons={buildRecommendReasons(result.main, conditions, recentVisitDays)}
-              reviewCount={reviewCounts.get(result.main.id) ?? 0}
+        <section className="flex flex-col gap-4 lg:col-start-1 lg:row-span-2 lg:row-start-1" aria-label="추천 결과">
+          {emptyMessage ? (
+            <FeedbackState
+              title="추천 결과가 없어요"
+              description={emptyMessage}
+              action={
+                <Link href="/recommend" className={buttonStyles({ variant: "secondary" })}>
+                  조건 초기화
+                </Link>
+              }
             />
+          ) : (
+            result.main && (
+              <>
+                {result.wasExclusionReset && (
+                  <p className="rounded-control bg-surface-muted px-4 py-3 text-sm text-ink-muted">
+                    오늘 넘긴 식당을 포함해 다시 보여드렸어요. 조건에 맞는 새로운 후보가 더 없어요.
+                  </p>
+                )}
 
-            {result.alternatives.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-semibold text-neutral-500">다른 후보</p>
-                {result.alternatives.map((alt) => (
-                  <RestaurantCard
-                    key={alt.id}
-                    restaurant={alt}
-                    highlight={false}
-                    reviewCount={reviewCounts.get(alt.id) ?? 0}
-                  />
-                ))}
-              </div>
-            )}
+                <RecommendationCard
+                  restaurant={result.main}
+                  photoUrl={photoUrls.get(result.main.id) ?? null}
+                  reasons={buildRecommendReasons(result.main, conditions, recentVisitDays)}
+                  reviewCount={reviewCounts.get(result.main.id) ?? 0}
+                  variant="hero"
+                  decideAction={decideRestaurant.bind(null, result.main.id)}
+                />
 
+                {result.alternatives.length > 0 && (
+                  <section className="space-y-3" aria-labelledby="alternative-recommendations-title">
+                    <h2 id="alternative-recommendations-title" className="text-base font-bold text-ink">
+                      다른 후보
+                    </h2>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {result.alternatives.map((alt) => (
+                        <RecommendationCard
+                          key={alt.id}
+                          restaurant={alt}
+                          photoUrl={photoUrls.get(alt.id) ?? null}
+                          reviewCount={reviewCounts.get(alt.id) ?? 0}
+                          variant="alternative"
+                          decideAction={decideRestaurant.bind(null, alt.id)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <form action={rerollRecommendation.bind(null, result.main.id, conditions)} className="flex-1">
+                    <Button type="submit" variant="secondary" block>
+                      다시 추천
+                    </Button>
+                  </form>
+
+                  {showResetButton && (
+                    <form action={resetExclusions.bind(null, conditions)} className="flex-1">
+                      <Button type="submit" variant="ghost" block>
+                        제외 목록 초기화
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              </>
+            )
+          )}
+        </section>
+
+        {result.main ? (
+          <aside className="lg:col-start-2 lg:row-start-2" aria-label="추천 식당 위치">
             <RecommendMapView
               points={[result.main, ...result.alternatives].map(
                 (r): RecommendMapPoint => ({ id: r.id, name: r.name, lat: r.lat, lng: r.lng })
               )}
               companyLocation={companyLat !== null && companyLng !== null ? { lat: companyLat, lng: companyLng } : null}
             />
-
-            <div className="flex gap-2">
-              <form action={rerollRecommendation.bind(null, result.main.id, conditions)} className="flex-1">
-                <button
-                  type="submit"
-                  className="w-full rounded-2xl bg-white px-4 py-3 font-semibold text-brand-dark shadow-sm"
-                >
-                  다시 추천
-                </button>
-              </form>
-
-              {showResetButton && (
-                <form action={resetExclusions.bind(null, conditions)} className="flex-1">
-                  <button
-                    type="submit"
-                    className="w-full rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-500 shadow-sm"
-                  >
-                    제외 목록 초기화
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        )
-      )}
+          </aside>
+        ) : null}
+      </div>
     </main>
   );
 }

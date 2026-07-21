@@ -91,10 +91,10 @@ export function RecommendMapView({
   }
 
   return (
-    <div className="relative h-56 w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
+    <div className="relative h-52 w-full overflow-hidden rounded-card border border-line bg-surface-muted sm:h-64 lg:h-72">
       <div ref={mapContainerRef} className="absolute inset-0" />
       {mapError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 px-4 text-center text-sm text-neutral-500">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface/90 px-4 text-center text-sm text-ink-muted">
           {mapError}
         </div>
       )}
