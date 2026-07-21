@@ -36,13 +36,13 @@ describe("normalizeAppointmentRestaurantSearch", () => {
     });
   });
 
-  it("retains allowed URL filter values", () => {
+  it("accepts the standard GET checkbox value while retaining allowed URL filter values", () => {
     expect(
       normalizeAppointmentRestaurantSearch({
         q: "  김밥  ",
         category: "한식",
         radius: "500",
-        openNow: "true",
+        openNow: "on",
         sort: "name",
         page: "2",
       }),
@@ -87,7 +87,7 @@ describe("searchAppointmentRestaurants", () => {
         q: "김밥",
         category: "한식",
         radius: "500",
-        openNow: "true",
+        openNow: "on",
         sort: "name",
         page: "2",
       }),

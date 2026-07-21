@@ -74,7 +74,7 @@ export function normalizeAppointmentRestaurantSearch(
     q: (raw.q ?? "").trim().slice(0, 50),
     category: (RESTAURANT_CATEGORIES as readonly string[]).includes(category) ? category : "",
     radius: (RADIUS_OPTIONS_M as readonly number[]).includes(radius) ? radius : DEFAULT_RADIUS_M,
-    openNow: raw.openNow === "true",
+    openNow: raw.openNow === "on" || raw.openNow === "true",
     sort: (SORTS as readonly string[]).includes(sort) ? (sort as AppointmentRestaurantSort) : "distance",
     page: Number.isInteger(page) && page > 0 ? page : 1,
   };
