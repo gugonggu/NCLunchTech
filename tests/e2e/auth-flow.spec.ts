@@ -40,7 +40,7 @@ test("직원 인증 흐름: 비로그인 → 가입 → 식당찾기 접근 → 
       ] as const;
       await expect(mobileNavigation.getByRole("link")).toHaveCount(navigationDestinations.length);
       for (const [label, href] of navigationDestinations) {
-        const link = mobileNavigation.getByRole("link", { name: label });
+        const link = mobileNavigation.getByRole("link", { name: label, exact: true });
         await expect(link).toBeVisible();
         await expect(link).toHaveAttribute("href", href);
       }
