@@ -138,6 +138,7 @@ export default async function HomePage({
           appointmentsNeedingConfirmation={appointmentsNeedingConfirmation}
           primaryPoll={primaryPoll}
           distanceM={todayVisitDistanceM}
+          now={now}
         />
         <TodayTimeline
           polls={secondaryPolls}

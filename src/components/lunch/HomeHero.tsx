@@ -25,6 +25,7 @@ interface HomeHeroProps {
   appointmentsNeedingConfirmation: RelevantAppointment[];
   primaryPoll: RelevantPoll | null;
   distanceM: number | null;
+  now: Date;
 }
 
 function VisitMeta({ visit, distanceM }: { visit: ActiveVisit; distanceM: number | null }) {
@@ -44,6 +45,7 @@ export function HomeHero({
   appointmentsNeedingConfirmation,
   primaryPoll,
   distanceM,
+  now,
 }: HomeHeroProps) {
   return (
     <section aria-label="오늘 가장 중요한 일">
@@ -97,7 +99,7 @@ export function HomeHero({
             <h2 className="mt-2 text-2xl font-bold text-ink">{primaryPoll.label}</h2>
             <p className="mt-2 text-sm text-ink-muted">
               선택지를 확인하고 동료들과 오늘 점심을 정해보세요.
-              {isClosingSoon(new Date(primaryPoll.closesAt), new Date()) && " · 마감 임박"}
+              {isClosingSoon(new Date(primaryPoll.closesAt), now) && " · 마감 임박"}
             </p>
             <Link
               href={`/polls/${primaryPoll.id}`}

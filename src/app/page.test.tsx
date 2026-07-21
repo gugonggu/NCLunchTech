@@ -123,6 +123,13 @@ describe("HomePage", () => {
         status: "open",
         closesAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       },
+      {
+        id: "poll-2",
+        pollType: "restaurant",
+        label: "후보 점심 투표",
+        status: "open",
+        closesAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      },
     ]);
 
     const ui = await renderHome();
@@ -134,10 +141,69 @@ describe("HomePage", () => {
       "/polls/poll-1",
     );
     expect(within(hero).queryByText("오늘의 점심")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /오늘 점심 투표/ })).toHaveLength(1);
+    expect(screen.getAllByText("오늘 점심 투표")).toHaveLength(1);
 
     const timeline = screen.getByLabelText("오늘 일정");
     expect(within(timeline).getByText("오늘의 점심")).toBeInTheDocument();
     expect(screen.getAllByText("오늘의 점심")).toHaveLength(1);
+    expect(within(timeline).getByText("한식 · 144m")).toBeInTheDocument();
+    expect(within(timeline).getByRole("link", { name: "상세 보기" })).toHaveAttribute(
+      "href",
+      "/restaurants/r-1",
+    );
+    expect(within(timeline).getByRole("link", { name: "변경하기" })).toHaveAttribute("href", "/recommend");
+    expect(within(timeline).getByRole("button", { name: "결정 취소" })).toBeInTheDocument();
+    expect(within(timeline).getByRole("button", { name: "방문 완료" })).toBeInTheDocument();
+    expect(within(timeline).getByRole("heading", { name: "진행 중인 투표" })).toBeInTheDocument();
+  });
+
+  it("열린 투표가 완료 방문보다 우선해도 완료 상세와 리뷰 링크를 일정에 보존한다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue({
+      id: "visit-1",
+      restaurantId: "r-1",
+      status: "completed",
+      restaurantName: "테스트식당",
+      restaurantCategory: "한식",
+      restaurantLat: 35.171,
+      restaurantLng: 129.131,
+      updatedAt: new Date().toISOString(),
+    });
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(getRelevantPolls).mockResolvedValue([
+      {
+        id: "poll-1",
+        pollType: "restaurant",
+        label: "오늘 점심 투표",
+        status: "open",
+        closesAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      },
+    ]);
+    vi.mocked(getMealRecordForSource).mockResolvedValue({
+      id: "meal-1",
+      menuItemId: null,
+      menuName: "제육볶음",
+      paidPrice: 9500,
+    });
+
+    const ui = await renderHome();
+    render(ui);
+
+    const hero = screen.getByLabelText("오늘 가장 중요한 일");
+    expect(within(hero).getByRole("link", { name: /오늘 점심 투표/ })).toHaveAttribute(
+      "href",
+      "/polls/poll-1",
+    );
+
+    const timeline = screen.getByLabelText("오늘 일정");
+    expect(within(timeline).getByText("한식 · 144m")).toBeInTheDocument();
+    expect(within(timeline).getByText("제육볶음 · 9,500원")).toBeInTheDocument();
+    expect(within(timeline).getByRole("link", { name: "리뷰 남기기" })).toHaveAttribute(
+      "href",
+      "/reviews/new?restaurantId=r-1&visitId=visit-1",
+    );
   });
 
   it("결정 후 1시간 전인 planned 방문은 오늘의 점심 카드로 보여준다", async () => {
@@ -266,7 +332,7 @@ describe("HomePage", () => {
     const ui = await renderHome();
     render(ui);
 
-    expect(screen.getByText("다가오는 약속")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "다가오는 약속" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /테스트약속식당/ })).toHaveAttribute(
       "href",
       "/appointments/appt-1"

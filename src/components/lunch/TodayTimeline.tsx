@@ -83,6 +83,10 @@ export function TodayTimeline({
         <Card padding="compact">
           <p className="text-xs font-semibold text-success">오늘 다녀온 식당 · 방문 완료</p>
           <p className="mt-1 font-semibold text-ink">{todayVisit.restaurantName}</p>
+          <p className="text-sm text-ink-muted">
+            {todayVisit.restaurantCategory}
+            {distanceM !== null && ` · ${distanceM}m`}
+          </p>
           {todayMealRecord && (
             <p className="mt-1 text-sm text-ink-muted">
               {todayMealRecord.menuName} · {todayMealRecord.paidPrice.toLocaleString("ko-KR")}원
@@ -99,7 +103,7 @@ export function TodayTimeline({
 
       {polls.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold text-ink-muted">진행 중인 투표</p>
+          <h3 className="text-sm font-semibold text-ink-muted">진행 중인 투표</h3>
           {polls.map((poll) => (
             <Link key={poll.id} href={`/polls/${poll.id}`} className="rounded-control bg-surface px-4 py-3 shadow-card">
               <span className="block font-semibold text-ink">{poll.label}</span>
@@ -114,7 +118,7 @@ export function TodayTimeline({
 
       {appointments.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold text-ink-muted">다가오는 약속</p>
+          <h3 className="text-sm font-semibold text-ink-muted">다가오는 약속</h3>
           {appointments.map((appointment) => (
             <Link
               key={appointment.id}
