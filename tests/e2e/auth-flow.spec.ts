@@ -31,8 +31,18 @@ test("직원 인증 흐름: 비로그인 → 가입 → 식당찾기 접근 → 
       await expect(page.getByText(`${nickname}님, 안녕하세요.`)).toBeVisible();
       await expect(page.getByRole("link", { name: "식당 찾기" })).toBeVisible();
       const mobileNavigation = page.getByRole("navigation", { name: "하단 탐색" });
-      for (const label of ["홈", "식당", "함께 먹기", "알림", "내 정보"]) {
-        await expect(mobileNavigation.getByRole("link", { name: label })).toBeVisible();
+      const navigationDestinations = [
+        ["홈", "/"],
+        ["식당", "/restaurants"],
+        ["함께 먹기", "/appointments/new"],
+        ["알림", "/notifications"],
+        ["내 정보", "/me"],
+      ] as const;
+      await expect(mobileNavigation.getByRole("link")).toHaveCount(navigationDestinations.length);
+      for (const [label, href] of navigationDestinations) {
+        const link = mobileNavigation.getByRole("link", { name: label });
+        await expect(link).toBeVisible();
+        await expect(link).toHaveAttribute("href", href);
       }
 
       employeeId = await findEmployeeIdByNickname(nickname);
@@ -42,13 +52,26 @@ test("직원 인증 흐름: 비로그인 → 가입 → 식당찾기 접근 → 
       }
     });
 
+    await test.step("모바일 추천 화면은 핵심 조작을 표시하고 가로로 넘치지 않는다", async () => {
+      await page.goto("/recommend");
+      await expect(page.getByRole("heading", { name: "오늘 뭐 먹지?" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "추천 조건 열기" })).toBeVisible();
+
+      const sizes = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(sizes.content).toBeLessThanOrEqual(sizes.viewport);
+    });
+
     await test.step("/restaurants에 접근할 수 있다", async () => {
       await page.goto("/restaurants");
       await expect(page.getByRole("heading", { name: "식당 찾기" })).toBeVisible();
     });
 
-    await test.step("로그아웃하면 홈이 비로그인 화면으로 바뀐다", async () => {
+    await test.step("내 정보에서 로그아웃하면 홈이 비로그인 화면으로 바뀐다", async () => {
       await page.goto("/me");
+      await expect(page).toHaveURL("/me");
       await page.getByRole("button", { name: "로그아웃" }).click();
       await expect(page.getByRole("link", { name: "로그인" })).toBeVisible();
     });
