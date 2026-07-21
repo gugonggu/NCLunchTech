@@ -1,4 +1,9 @@
-import type { ReactElement, ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { cx } from "./cx";
 
 export function FeedbackState({
@@ -12,6 +17,15 @@ export function FeedbackState({
   action?: ReactNode;
   tone?: "empty" | "error";
 }): ReactElement {
+  const styledAction = isValidElement<{ className?: string }>(action)
+    ? cloneElement(action, {
+        className: cx(
+          "inline-flex min-h-11 items-center justify-center",
+          action.props.className,
+        ),
+      })
+    : action;
+
   return (
     <section
       className={cx(
@@ -23,7 +37,7 @@ export function FeedbackState({
     >
       <h2 className="text-base font-semibold">{title}</h2>
       {description ? <p className="mt-2 text-sm">{description}</p> : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {styledAction ? <div className="mt-4">{styledAction}</div> : null}
     </section>
   );
 }
