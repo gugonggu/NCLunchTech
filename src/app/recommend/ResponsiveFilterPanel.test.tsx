@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RecommendationFilters } from "./RecommendationFilters";
 import { ResponsiveFilterPanel } from "./ResponsiveFilterPanel";
@@ -29,8 +29,8 @@ afterEach(() => {
   document.body.style.overflow = "";
 });
 
-function renderPanel({ busy = false }: { busy?: boolean } = {}) {
-  return render(
+function panel({ busy = false }: { busy?: boolean } = {}) {
+  return (
     <ResponsiveFilterPanel summary="한식 · 800m">
       <form>
         <label htmlFor="radius">거리</label>
@@ -39,8 +39,20 @@ function renderPanel({ busy = false }: { busy?: boolean } = {}) {
           적용
         </button>
       </form>
-    </ResponsiveFilterPanel>,
+    </ResponsiveFilterPanel>
   );
+}
+
+function renderPanel(options: { busy?: boolean } = {}) {
+  return render(panel(options));
+}
+
+function emitDesktopBreakpoint() {
+  act(() => {
+    for (const listener of mediaListeners) {
+      listener({ matches: true } as MediaQueryListEvent);
+    }
+  });
 }
 
 describe("ResponsiveFilterPanel", () => {
@@ -107,13 +119,28 @@ describe("ResponsiveFilterPanel", () => {
     fireEvent.click(trigger);
 
     expect(mediaListeners.size).toBeGreaterThan(0);
-    act(() => {
-      for (const listener of mediaListeners) {
-        listener({ matches: true } as MediaQueryListEvent);
-      }
-    });
+    emitDesktopBreakpoint();
 
     expect(screen.queryByRole("dialog", { name: "추천 조건" })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("clip");
+    expect(trigger).toHaveFocus();
+  });
+
+  it("keeps a busy navigation form mounted across md and closes when pending clears", async () => {
+    document.body.style.overflow = "clip";
+    const view = renderPanel({ busy: true });
+    const trigger = screen.getByRole("button", { name: "추천 조건 열기" });
+    fireEvent.click(trigger);
+
+    emitDesktopBreakpoint();
+    expect(screen.getByRole("dialog", { name: "추천 조건" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "적용" })).toHaveAttribute("aria-busy", "true");
+    expect(document.body.style.overflow).toBe("hidden");
+
+    view.rerender(panel({ busy: false }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "추천 조건" })).not.toBeInTheDocument();
+    });
     expect(document.body.style.overflow).toBe("clip");
     expect(trigger).toHaveFocus();
   });

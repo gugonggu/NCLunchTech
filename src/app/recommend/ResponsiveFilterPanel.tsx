@@ -33,15 +33,42 @@ export function ResponsiveFilterPanel({
 
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 768px)");
+    let pendingObserver: MutationObserver | null = null;
     const handleBreakpointChange = (event: MediaQueryListEvent) => {
-      if (event.matches) {
+      pendingObserver?.disconnect();
+      pendingObserver = null;
+
+      if (!event.matches) {
+        return;
+      }
+
+      if (!hasBusySubmit()) {
         setIsOpen(false);
+        return;
+      }
+
+      if (dialogRef.current) {
+        pendingObserver = new MutationObserver(() => {
+          if (!hasBusySubmit()) {
+            pendingObserver?.disconnect();
+            pendingObserver = null;
+            setIsOpen(false);
+          }
+        });
+        pendingObserver.observe(dialogRef.current, {
+          attributes: true,
+          subtree: true,
+          attributeFilter: ["aria-busy"],
+        });
       }
     };
 
     desktopQuery.addEventListener("change", handleBreakpointChange);
-    return () => desktopQuery.removeEventListener("change", handleBreakpointChange);
-  }, []);
+    return () => {
+      pendingObserver?.disconnect();
+      desktopQuery.removeEventListener("change", handleBreakpointChange);
+    };
+  }, [hasBusySubmit]);
 
   useEffect(() => {
     if (!isOpen) {

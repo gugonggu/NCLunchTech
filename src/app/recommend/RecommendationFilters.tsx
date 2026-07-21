@@ -1,4 +1,5 @@
 import { useId } from "react";
+import Form from "next/form";
 import { FormField } from "@/components/ui/FormField";
 import { RECENT_VISIT_WINDOW_DAYS, type RecommendConditions } from "@/lib/recommend/engine";
 import { RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
@@ -47,7 +48,7 @@ export function RecommendationFilters({
     : undefined;
 
   return (
-    <form method="get" className="space-y-5">
+    <Form action="/recommend" className="space-y-5">
       <FormField label="식당 이름" htmlFor={`${formId}-restaurant-name`}>
         <input
           id={`${formId}-restaurant-name`}
@@ -153,6 +154,6 @@ export function RecommendationFilters({
       </fieldset>
 
       <RecommendationFilterSubmit />
-    </form>
+    </Form>
   );
 }
