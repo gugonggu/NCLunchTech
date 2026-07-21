@@ -133,8 +133,7 @@ export async function getRepresentativeRestaurantPhotoMap(
     .from("review_photos")
     .select("storage_path, reviews!inner(restaurant_id)")
     .in("reviews.restaurant_id", restaurantIds)
-    .order("created_at", { ascending: false })
-    .limit(Math.max(20, restaurantIds.length * 4));
+    .order("created_at", { ascending: false });
 
   const result = new Map<string, string>();
   for (const row of data ?? []) {

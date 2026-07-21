@@ -54,8 +54,9 @@ export function RecommendationCard({
           {firstMenu && (
             <>
               {` · ${firstMenu.name}`}
-              {firstMenu.price !== null &&
-                ` ${firstMenu.price.toLocaleString("ko-KR")}원`}
+              {firstMenu.price === null
+                ? " 가격 정보 없음"
+                : ` ${firstMenu.price.toLocaleString("ko-KR")}원`}
             </>
           )}
         </p>
