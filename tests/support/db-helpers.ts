@@ -58,7 +58,13 @@ export async function deleteEmployeeById(registryPath: string, id: string): Prom
 
 export async function createTestRestaurant(
   registryPath: string,
-  overrides: Partial<{ isActive: boolean; name: string }> = {}
+  overrides: Partial<{
+    category: string;
+    isActive: boolean;
+    lat: number;
+    lng: number;
+    name: string;
+  }> = {}
 ): Promise<string> {
   const supabase = getTestClient();
   const { data: settings } = await supabase
@@ -73,10 +79,10 @@ export async function createTestRestaurant(
     .insert({
       kakao_place_id: `e2e-test-${suffix}`,
       name: overrides.name ?? `E2E 테스트 식당 ${suffix}`,
-      category: "기타",
+      category: overrides.category ?? "기타",
       address: "테스트 주소",
-      lat: settings?.company_lat ?? 35.0,
-      lng: settings?.company_lng ?? 129.0,
+      lat: overrides.lat ?? settings?.company_lat ?? 35.0,
+      lng: overrides.lng ?? settings?.company_lng ?? 129.0,
       is_active: overrides.isActive ?? true,
     })
     .select("id")
@@ -88,6 +94,42 @@ export async function createTestRestaurant(
 
   recordEntity(registryPath, "restaurants", data.id as string);
   return data.id as string;
+}
+
+export async function replaceTestRestaurantHours(
+  restaurantId: string,
+  rows: Array<{
+    dayOfWeek: number;
+    isClosed: boolean;
+    openTime: string | null;
+    closeTime: string | null;
+  }>,
+): Promise<void> {
+  const supabase = getTestClient();
+  const { error: deleteError } = await supabase
+    .from("restaurant_hours")
+    .delete()
+    .eq("restaurant_id", restaurantId);
+
+  if (deleteError) {
+    throw new Error(`Failed to delete test restaurant hours: ${deleteError.message}`);
+  }
+
+  if (rows.length === 0) return;
+
+  const { error: insertError } = await supabase.from("restaurant_hours").insert(
+    rows.map((row) => ({
+      restaurant_id: restaurantId,
+      day_of_week: row.dayOfWeek,
+      is_closed: row.isClosed,
+      open_time: row.openTime,
+      close_time: row.closeTime,
+    })),
+  );
+
+  if (insertError) {
+    throw new Error(`Failed to create test restaurant hours: ${insertError.message}`);
+  }
 }
 
 export async function deleteRestaurantById(registryPath: string, id: string): Promise<void> {
