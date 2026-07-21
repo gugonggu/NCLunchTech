@@ -53,8 +53,8 @@ declare
 begin
   select company_lat, company_lng
   into v_company_lat, v_company_lng
-  from public.app_settings
-  where id = 1;
+  from public.app_settings settings
+  where settings.id = 1;
 
   if v_company_lat is null or v_company_lng is null then
     raise exception 'company_location_missing' using errcode = 'P0001';
@@ -87,10 +87,10 @@ begin
       and (v_query = '' or r.name ilike '%' || v_query || '%')
       and (v_category = '' or r.category = v_category)
   ), filtered as (
-    select *
-    from candidates
-    where distance_m <= v_radius_m
-      and (not coalesce(p_open_now, false) or is_open_now)
+    select c.*
+    from candidates c
+    where c.distance_m <= v_radius_m
+      and (not coalesce(p_open_now, false) or c.is_open_now)
   ), counted as (
     select count(*)::bigint as total_count from filtered
   )
@@ -128,10 +128,10 @@ begin
       and (v_query = '' or r.name ilike '%' || v_query || '%')
       and (v_category = '' or r.category = v_category)
   ), filtered as (
-    select *
-    from candidates
-    where distance_m <= v_radius_m
-      and (not coalesce(p_open_now, false) or is_open_now)
+    select c.*
+    from candidates c
+    where c.distance_m <= v_radius_m
+      and (not coalesce(p_open_now, false) or c.is_open_now)
   ), counted as (
     select count(*)::bigint as total_count from filtered
   )
