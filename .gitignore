@@ -1,6 +1,9 @@
 # dependencies
 /node_modules
 
+# local isolated worktrees
+/.worktrees/
+
 # next.js
 /.next/
 /out/
