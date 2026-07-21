@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, type FormEvent, useState } from "react";
+import { AuthShell } from "@/components/layout/AuthShell";
+import { Button } from "@/components/ui/Button";
+import { FormField } from "@/components/ui/FormField";
 import { sanitizeReturnTo } from "@/lib/appointments/validation";
 
 export default function LoginPage() {
@@ -50,44 +53,58 @@ function LoginForm() {
   }
 
   return (
-    <main className="flex flex-1 flex-col justify-center gap-6 px-6 py-12">
-      <h1 className="text-xl font-bold text-brand-dark">로그인</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          className="rounded-2xl border border-neutral-200 px-4 py-3"
-          placeholder="닉네임"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          required
-        />
-        <input
-          className="rounded-2xl border border-neutral-200 px-4 py-3"
-          type="password"
-          inputMode="numeric"
-          maxLength={4}
-          placeholder="PIN 4자리"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          required
-        />
-        {message && <p className="text-sm text-red-600">{message}</p>}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-50"
-        >
-          로그인
-        </button>
-      </form>
-      <p className="text-center text-sm text-neutral-500">
-        아직 계정이 없나요?{" "}
-        <Link
-          href={`/signup?returnTo=${encodeURIComponent(returnTo)}`}
-          className="text-brand-dark underline"
-        >
-          회원가입
-        </Link>
-      </p>
-    </main>
+    <AuthShell>
+      <div className="w-full max-w-md space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-ink">로그인</h1>
+          <p className="text-sm text-ink-muted">
+            점심 결정, 이제 1~2분이면 충분해요.
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormField label="닉네임" htmlFor="login-nickname">
+            <input
+              id="login-nickname"
+              className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              required
+            />
+          </FormField>
+          <FormField label="PIN 4자리" htmlFor="login-pin">
+            <input
+              id="login-pin"
+              className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              required
+            />
+          </FormField>
+          {message && (
+            <div
+              role="alert"
+              className="rounded-control bg-danger-soft px-4 py-3 text-sm text-danger"
+            >
+              {message}
+            </div>
+          )}
+          <Button type="submit" block disabled={isSubmitting} aria-busy={isSubmitting}>
+            {isSubmitting ? "확인하고 있어요" : "로그인"}
+          </Button>
+        </form>
+        <p className="text-center text-sm text-ink-muted">
+          아직 계정이 없나요?{" "}
+          <Link
+            href={`/signup?returnTo=${encodeURIComponent(returnTo)}`}
+            className="font-semibold text-brand-dark underline"
+          >
+            회원가입
+          </Link>
+        </p>
+      </div>
+    </AuthShell>
   );
 }
