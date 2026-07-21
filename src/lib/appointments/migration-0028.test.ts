@@ -5,7 +5,11 @@ const sql = readFileSync("supabase/migrations/0028_appointment_restaurant_search
 
 describe("migration 0028", () => {
   it("defines a bounded service-role-only appointment restaurant search", () => {
-    expect(sql).toMatch(/create or replace function public\.search_appointment_restaurants/i);
+    const signature = "public.search_appointment_restaurants(text, text, integer, boolean, text, integer, integer)";
+
+    expect(sql).toMatch(
+      /create or replace function public\.search_appointment_restaurants\(\s*p_query text,\s*p_category text,\s*p_radius_m integer,\s*p_open_now boolean,\s*p_sort text,\s*p_page integer,\s*p_page_size integer\s*\)/i,
+    );
     expect(sql).toMatch(/security invoker/i);
     expect(sql).toMatch(/r\.is_active = true/i);
     expect(sql).toMatch(/timezone\('Asia\/Seoul', now\(\)\)/i);
@@ -15,9 +19,10 @@ describe("migration 0028", () => {
     expect(sql).toMatch(/order by[\s\S]+r\.id/i);
     expect(sql).toMatch(/limit v_page_size/i);
     expect(sql).toMatch(/offset \(v_page - 1\) \* v_page_size/i);
-    expect(sql).toMatch(/revoke execute on function public\.search_appointment_restaurants[\s\S]+from public/i);
-    expect(sql).toMatch(/from anon/i);
-    expect(sql).toMatch(/from authenticated/i);
-    expect(sql).toMatch(/grant execute on function public\.search_appointment_restaurants[\s\S]+to service_role/i);
+    expect(sql).toMatch(/select c\.total_count into v_total_count from counted c/i);
+    expect(sql).toContain(`revoke execute on function ${signature} from public;`);
+    expect(sql).toContain(`revoke execute on function ${signature} from anon;`);
+    expect(sql).toContain(`revoke execute on function ${signature} from authenticated;`);
+    expect(sql).toContain(`grant execute on function ${signature} to service_role;`);
   });
 });

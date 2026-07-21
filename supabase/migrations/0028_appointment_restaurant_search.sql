@@ -94,7 +94,7 @@ begin
   ), counted as (
     select count(*)::bigint as total_count from filtered
   )
-  select total_count into v_total_count from counted;
+  select c.total_count into v_total_count from counted c;
 
   v_page := least(v_page, greatest(1, ceil(v_total_count::numeric / v_page_size)::integer));
 

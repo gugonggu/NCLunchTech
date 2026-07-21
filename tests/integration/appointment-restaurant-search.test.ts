@@ -52,6 +52,14 @@ describe("search_appointment_restaurants", () => {
         lng: companyLng,
       });
       restaurantIds.push(id);
+      const { error: createdAtError } = await supabase
+        .from("restaurants")
+        .update({ created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString() })
+        .eq("id", id);
+
+      if (createdAtError) {
+        throw new Error(`Failed to set test restaurant creation time: ${createdAtError.message}`);
+      }
       await replaceTestRestaurantHours(id, hours);
     }
 
