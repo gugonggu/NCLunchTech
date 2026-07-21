@@ -4,6 +4,9 @@
 # local isolated worktrees
 /.worktrees/
 
+# agent execution ledger
+/.superpowers/
+
 # next.js
 /.next/
 /out/
