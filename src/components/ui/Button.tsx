@@ -15,7 +15,7 @@ export function buttonStyles(
     "inline-flex min-w-11 items-center justify-center gap-2 rounded-control px-4 font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50",
     size === "default" ? "min-h-12 text-sm" : "min-h-11 text-sm",
     variant === "primary" &&
-      "bg-brand text-white hover:bg-brand-dark active:bg-brand-dark",
+      "bg-brand text-black hover:bg-brand-dark active:bg-brand-dark",
     variant === "secondary" &&
       "border border-line bg-surface text-ink hover:bg-surface-muted",
     variant === "ghost" &&

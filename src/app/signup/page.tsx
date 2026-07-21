@@ -70,6 +70,7 @@ function SignupForm() {
               className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
+              aria-describedby={message ? "signup-error" : undefined}
               required
             />
           </FormField>
@@ -79,6 +80,7 @@ function SignupForm() {
               className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
+              aria-describedby={message ? "signup-error" : undefined}
               required
             />
           </FormField>
@@ -91,6 +93,7 @@ function SignupForm() {
               maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value)}
+              aria-describedby={message ? "signup-error" : undefined}
               required
             />
           </FormField>
@@ -103,11 +106,13 @@ function SignupForm() {
               maxLength={4}
               value={pinConfirm}
               onChange={(e) => setPinConfirm(e.target.value)}
+              aria-describedby={message ? "signup-error" : undefined}
               required
             />
           </FormField>
           {message && (
             <div
+              id="signup-error"
               role="alert"
               className="rounded-control bg-danger-soft px-4 py-3 text-sm text-danger"
             >

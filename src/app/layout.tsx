@@ -18,7 +18,11 @@ export default async function RootLayout({
   return (
     <html lang="ko">
       <body className="antialiased">
-        {employee ? <AppShell>{children}</AppShell> : children}
+        {employee ? (
+          <AppShell>{children}</AppShell>
+        ) : (
+          <div className="flex min-h-screen flex-col">{children}</div>
+        )}
       </body>
     </html>
   );

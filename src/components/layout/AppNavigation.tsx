@@ -14,6 +14,10 @@ export const NAV_ITEMS = [
 ] as const satisfies ReadonlyArray<{ href: string; label: string; icon: AppIconName }>;
 
 function isActivePath(pathname: string, href: string) {
+  if (href === "/appointments/new") {
+    return pathname === href || pathname.startsWith("/appointments/");
+  }
+
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -57,7 +61,7 @@ export function AppNavigation() {
       <header className="hidden border-b border-line bg-surface md:flex">
         <nav aria-label="주요 탐색" className="mx-auto flex w-full max-w-7xl items-center gap-2 px-8 py-3">
           <Link href="/" className="mr-auto text-base font-bold text-brand-dark">
-            엔씨런치테크
+            앤시점심기술
           </Link>
           <div className="hidden items-center gap-1 md:flex">
             <NavigationLinks />

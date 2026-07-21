@@ -27,6 +27,13 @@ describe("shared UI", () => {
     expect(buttonStyles({ size: "compact" })).toContain("min-w-11");
   });
 
+  it("uses a dark foreground across primary brand states", () => {
+    expect(buttonStyles({ variant: "primary" })).toContain("bg-brand");
+    expect(buttonStyles({ variant: "primary" })).toContain("text-black");
+    expect(buttonStyles({ variant: "primary" })).toContain("hover:bg-brand-dark");
+    expect(buttonStyles({ variant: "primary" })).not.toContain("text-white");
+  });
+
   it("connects labels, hints and errors to fields", () => {
     render(
       <FormField

@@ -103,6 +103,11 @@ describe("LoginPage", () => {
       screen.getByRole("button", { name: "로그인" }).closest("form")!,
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("안전한 오류 메시지");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("안전한 오류 메시지");
+    expect(alert).toHaveAttribute("id", "login-error");
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getByLabelText("닉네임")).toHaveAttribute("aria-describedby", "login-error");
+    expect(screen.getByLabelText("PIN 4자리")).toHaveAttribute("aria-describedby", "login-error");
   });
 });

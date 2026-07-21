@@ -120,6 +120,12 @@ describe("SignupPage", () => {
       screen.getByRole("button", { name: "가입하기" }).closest("form")!,
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("안전한 오류 메시지");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("안전한 오류 메시지");
+    expect(alert).toHaveAttribute("id", "signup-error");
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    for (const label of ["초대코드", "닉네임", "PIN 4자리", "PIN 확인"]) {
+      expect(screen.getByLabelText(label)).toHaveAttribute("aria-describedby", "signup-error");
+    }
   });
 });

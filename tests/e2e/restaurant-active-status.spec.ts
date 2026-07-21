@@ -23,10 +23,10 @@ test("비활성 식당은 직원 목록에서 보이지 않고 상세는 404다"
 
     const inviteCode = await getInviteCode();
     await page.goto("/signup");
-    await page.getByPlaceholder("초대코드").fill(inviteCode);
-    await page.getByPlaceholder("닉네임").fill(nickname);
-    await page.getByPlaceholder("PIN 4자리").fill(pin);
-    await page.getByPlaceholder("PIN 확인").fill(pin);
+    await page.getByLabel("초대코드").fill(inviteCode);
+    await page.getByLabel("닉네임").fill(nickname);
+    await page.getByLabel("PIN 4자리").fill(pin);
+    await page.getByLabel("PIN 확인").fill(pin);
     await page.getByRole("button", { name: "가입하기" }).click();
     await expect(page).toHaveURL("/");
 

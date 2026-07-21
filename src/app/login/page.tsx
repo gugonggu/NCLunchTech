@@ -68,6 +68,7 @@ function LoginForm() {
               className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
+              aria-describedby={message ? "login-error" : undefined}
               required
             />
           </FormField>
@@ -80,11 +81,13 @@ function LoginForm() {
               maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value)}
+              aria-describedby={message ? "login-error" : undefined}
               required
             />
           </FormField>
           {message && (
             <div
+              id="login-error"
               role="alert"
               className="rounded-control bg-danger-soft px-4 py-3 text-sm text-danger"
             >
