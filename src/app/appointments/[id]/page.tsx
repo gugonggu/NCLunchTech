@@ -21,8 +21,17 @@ import {
   markParticipantNoShow,
   respondToInvite,
   updateAppointmentSchedule,
+  upsertSettlementAction,
   withdrawParticipation,
 } from "./actions";
+import { getAttendeesForAppointment, getSettlementForAppointment } from "@/lib/settlements/queries";
+import {
+  MAX_SETTLEMENT_AMOUNT,
+  SETTLEMENT_STATUS_MESSAGES,
+  buildSettlementClipboardText,
+  isSettlementStatusCode,
+} from "@/lib/settlements/validation";
+import { SettlementCopyButton } from "../SettlementCopyButton";
 
 const POLL_STATUS_LABELS: Record<string, string> = {
   open: "진행 중",
@@ -52,10 +61,10 @@ export default async function AppointmentDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; settlementStatus?: string }>;
 }) {
   const { id } = await params;
-  const { status } = await searchParams;
+  const { status, settlementStatus } = await searchParams;
 
   const employee = await getCurrentEmployee();
   if (!employee) {
@@ -89,6 +98,13 @@ export default async function AppointmentDetailPage({
     isHost && needsConfirmation && appointment.hostAttendanceStatus === null;
   const participantNeedsConfirmation =
     !isHost && needsConfirmation && myParticipant?.status === "accepted";
+
+  const settlementAttendees = await getAttendeesForAppointment(id);
+  const isSettlementAttendee = settlementAttendees.some((a) => a.employeeId === employee.id);
+  const settlement = settlementAttendees.length > 0 ? await getSettlementForAppointment(id) : null;
+  const settlementFeedback = isSettlementStatusCode(settlementStatus)
+    ? SETTLEMENT_STATUS_MESSAGES[settlementStatus]
+    : null;
 
   const appointmentPolls = await getAppointmentPolls(id);
   let pollableMenuItems: { id: string; name: string; price: number | null }[] = [];
@@ -250,6 +266,99 @@ export default async function AppointmentDetailPage({
             리뷰 남기기
           </Link>
         </div>
+      )}
+
+      {settlementAttendees.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-bold text-brand-dark">정산(N빵)</h2>
+
+          {settlementFeedback && (
+            <p className="rounded-2xl bg-white px-4 py-3 text-sm text-brand-dark shadow-sm">{settlementFeedback}</p>
+          )}
+
+          {settlement ? (
+            <div className="flex flex-col gap-2 rounded-2xl border border-neutral-200 px-4 py-4">
+              <p className="text-sm text-neutral-600">
+                총 {settlement.totalAmount.toLocaleString("ko-KR")}원 / {settlement.shares.length}명
+              </p>
+              <ul className="flex flex-col gap-1">
+                {settlement.shares.map((s) => (
+                  <li key={s.employeeId} className="flex items-center justify-between text-sm">
+                    <span>
+                      {s.employeeNickname}
+                      {s.isPayer ? " (결제자)" : ""}
+                    </span>
+                    <span>{s.amount.toLocaleString("ko-KR")}원</span>
+                  </li>
+                ))}
+              </ul>
+              <SettlementCopyButton
+                text={buildSettlementClipboardText({
+                  restaurantName: appointment.restaurantName,
+                  totalAmount: settlement.totalAmount,
+                  shares: settlement.shares.map((s) => ({
+                    employeeNickname: s.employeeNickname,
+                    amount: s.amount,
+                    isPayer: s.isPayer,
+                  })),
+                })}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-neutral-500">
+              아직 정산 내역이 없어요. 결제한 사람이 총금액을 입력해보세요.
+            </p>
+          )}
+
+          {isSettlementAttendee && (
+            <form action={upsertSettlementAction.bind(null, id)} className="flex flex-col gap-2">
+              <label className="flex flex-col gap-1 text-sm text-neutral-600">
+                결제한 사람
+                <select
+                  name="payerEmployeeId"
+                  defaultValue={settlement?.payerEmployeeId ?? employee.id}
+                  required
+                  className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+                >
+                  {settlementAttendees.map((a) => (
+                    <option key={a.employeeId} value={a.employeeId}>
+                      {a.employeeNickname}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-neutral-600">
+                총 결제 금액
+                <input
+                  type="number"
+                  name="totalAmount"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_SETTLEMENT_AMOUNT}
+                  defaultValue={settlement?.totalAmount}
+                  required
+                  className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-neutral-600">
+                정산 단위
+                <select
+                  name="roundingUnit"
+                  defaultValue={settlement?.roundingUnit ?? 100}
+                  required
+                  className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+                >
+                  <option value={1}>1원</option>
+                  <option value={10}>10원</option>
+                  <option value={100}>100원</option>
+                </select>
+              </label>
+              <button type="submit" className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
+                {settlement ? "정산 다시 계산하기" : "정산하기"}
+              </button>
+            </form>
+          )}
+        </section>
       )}
 
       {isHost && (

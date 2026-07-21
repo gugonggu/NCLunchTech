@@ -17,6 +17,7 @@ import { getRecentStatusReportsForAdmin } from "@/lib/status-reports/queries";
 import { formatMinutesAgo } from "@/lib/status-reports/validation";
 import { getRestaurantPhotosForAdmin } from "@/lib/review-photos/queries";
 import { getRestaurantCommentsForAdmin } from "@/lib/review-comments/queries";
+import { formatTimeToMinute } from "@/lib/restaurants/hours-validation";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -129,7 +130,12 @@ export default async function AdminRestaurantDetailPage({
             const row = hoursByDay.get(day);
             return (
               <li key={day}>
-                {label}: {row?.is_closed ? "휴무" : row ? `${row.open_time}~${row.close_time}` : "미등록"}
+                {label}:{" "}
+                {row?.is_closed
+                  ? "휴무"
+                  : row
+                    ? `${formatTimeToMinute(row.open_time)}~${formatTimeToMinute(row.close_time)}`
+                    : "미등록"}
               </li>
             );
           })}

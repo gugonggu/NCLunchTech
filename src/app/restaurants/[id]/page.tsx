@@ -11,6 +11,8 @@ import { BUSINESS_STATUS_VALUES, CONGESTION_VALUES, formatMinutesAgo } from "@/l
 import { getComments } from "@/lib/review-comments/queries";
 import { getHelpfulCount, hasReacted } from "@/lib/review-reactions/queries";
 import { getRestaurantPhotoGallery } from "@/lib/review-photos/queries";
+import { formatTimeToMinute } from "@/lib/restaurants/hours-validation";
+import { StatusReportForm } from "../StatusReportForm";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
 import {
@@ -128,6 +130,11 @@ export default async function RestaurantDetailPage({
         <p className="text-neutral-700">{restaurant.address}</p>
         {restaurant.phone && <p className="text-neutral-700">{restaurant.phone}</p>}
         {distanceM !== null && <p className="text-neutral-700">KNN타워에서 약 {distanceM}m</p>}
+        {employee && (
+          <Link href={`/reports/new?restaurantId=${restaurant.id}`} className="mt-1 text-sm text-neutral-400 underline">
+            정보가 달라졌나요? 제보하기
+          </Link>
+        )}
       </div>
 
       {forAppointment ? (
@@ -240,15 +247,17 @@ export default async function RestaurantDetailPage({
                 </label>
                 <input
                   type="time"
+                  step={60}
                   name={`open_${day}`}
-                  defaultValue={row?.open_time?.slice(0, 5) ?? ""}
+                  defaultValue={formatTimeToMinute(row?.open_time)}
                   className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
                 />
                 <span>~</span>
                 <input
                   type="time"
+                  step={60}
                   name={`close_${day}`}
-                  defaultValue={row?.close_time?.slice(0, 5) ?? ""}
+                  defaultValue={formatTimeToMinute(row?.close_time)}
                   className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
                 />
               </div>
@@ -397,9 +406,9 @@ export default async function RestaurantDetailPage({
         </section>
       )}
 
-      {photoGallery.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="font-bold text-brand-dark">사진</h2>
+      <section className="flex flex-col gap-3">
+        <h2 className="font-bold text-brand-dark">사진</h2>
+        {photoGallery.length > 0 ? (
           <ul className="grid grid-cols-3 gap-2">
             {photoGallery.map((p) => (
               <li key={p.id}>
@@ -408,8 +417,10 @@ export default async function RestaurantDetailPage({
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="text-sm text-neutral-500">아직 등록된 사진이 없어요. 리뷰를 남길 때 사진을 추가해보세요.</p>
+        )}
+      </section>
 
       <section className="flex flex-col gap-4">
         <h2 className="font-bold text-brand-dark">지금 상태</h2>
@@ -425,19 +436,12 @@ export default async function RestaurantDetailPage({
               </span>
             </p>
           ) : (
-            <p className="text-sm text-neutral-400">정보 없음</p>
+            <p className="text-sm text-neutral-400">
+              아직 오늘의 혼잡 제보가 없어요. 도착했다면 첫 제보를 남겨주세요.
+            </p>
           )}
           {employee && (
-            <div className="flex gap-2">
-              {CONGESTION_VALUES.map((value) => (
-                <form key={value} action={submitStatusReport.bind(null, id, "congestion")} className="flex-1">
-                  <input type="hidden" name="value" value={value} />
-                  <button type="submit" className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold">
-                    {value}
-                  </button>
-                </form>
-              ))}
-            </div>
+            <StatusReportForm values={CONGESTION_VALUES} action={submitStatusReport.bind(null, id, "congestion")} />
           )}
         </div>
 
@@ -454,19 +458,16 @@ export default async function RestaurantDetailPage({
               </span>
             </p>
           ) : (
-            <p className="text-sm text-neutral-400">정보 없음</p>
+            <p className="text-sm text-neutral-400">
+              아직 오늘의 영업 상태 제보가 없어요. 확인했다면 알려주세요.
+            </p>
           )}
           {employee && (
-            <div className="grid grid-cols-2 gap-2">
-              {BUSINESS_STATUS_VALUES.map((value) => (
-                <form key={value} action={submitStatusReport.bind(null, id, "business_status")}>
-                  <input type="hidden" name="value" value={value} />
-                  <button type="submit" className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold">
-                    {value}
-                  </button>
-                </form>
-              ))}
-            </div>
+            <StatusReportForm
+              values={BUSINESS_STATUS_VALUES}
+              action={submitStatusReport.bind(null, id, "business_status")}
+              layout="grid"
+            />
           )}
         </div>
 

@@ -47,6 +47,19 @@ export const restaurantHoursSchema = z.array(dayHoursSchema).length(7);
 
 export type DayHoursInput = z.infer<typeof dayHoursSchema>;
 
+/**
+ * "HH:mm:ss" 또는 "HH:mm"을 화면 표시용 "HH:mm"으로 바꾼다. DB의 Postgres time 컬럼은
+ * "HH:mm:ss"로 내려오는데, 사용자 화면에는 초 단위를 보여주지 않기 위한 공통 함수.
+ * null/undefined/형식이 이상한 값은 빈 문자열로 안전하게 처리한다(throw하지 않음).
+ */
+export function formatTimeToMinute(time: string | null | undefined): string {
+  if (!time) {
+    return "";
+  }
+  const match = /^(\d{2}:\d{2})/.exec(time);
+  return match ? match[1] : "";
+}
+
 const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 export interface OpenNowRow {
@@ -68,7 +81,7 @@ export function isOpenNow(hoursByDay: Map<number, OpenNowRow>, now: Date): boole
   }
 
   // HH:mm은 고정폭 문자열이라 사전식 비교가 곧 시간 비교와 같다(dayHoursSchema와 동일한 가정).
-  const open = row.openTime.slice(0, 5);
-  const close = row.closeTime.slice(0, 5);
+  const open = formatTimeToMinute(row.openTime);
+  const close = formatTimeToMinute(row.closeTime);
   return open <= nowHHMM && nowHHMM < close;
 }

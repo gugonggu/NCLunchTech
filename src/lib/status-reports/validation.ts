@@ -45,6 +45,14 @@ export function shouldEditExistingReport(lastReportedAt: Date, now: Date): boole
   return ageMs >= 0 && ageMs <= REPORT_EDIT_WINDOW_MINUTES * 60 * 1000;
 }
 
+/** 제보 폼(useActionState) 결과 상태. 리다이렉트 없이 같은 화면에서 성공/실패를 안내하기 위함. */
+export interface StatusReportActionState {
+  status: "idle" | "success" | "error";
+  message?: string;
+}
+
+export const STATUS_REPORT_IDLE_STATE: StatusReportActionState = { status: "idle" };
+
 /** 제보 시각을 "N분 전"/"H시간 N분 전"으로 표시한다(음수·미래 시각은 "방금 전"으로 취급). */
 export function formatMinutesAgo(createdAt: Date, now: Date): string {
   const totalMinutes = Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / (60 * 1000)));

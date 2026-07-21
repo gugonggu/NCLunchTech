@@ -9,6 +9,7 @@ import { getStoragePathsForReviews } from "@/lib/review-photos/queries";
 import { REVIEW_PHOTOS_BUCKET } from "@/lib/review-photos/validation";
 import { createNotification } from "@/lib/notifications/queries";
 import { buildReportResolvedMessage, type ReportTargetType } from "@/lib/notifications/validation";
+import { getRestaurantReportCategoryLabel } from "@/lib/reports/validation";
 
 interface ReportContext {
   reporterEmployeeId: string;
@@ -25,7 +26,7 @@ async function getReportContext(
   const { data } = await supabase
     .from("reports")
     .select(
-      "reporter_employee_id, reason, review_id, comment_id, reviews(restaurants(name)), review_comments(reviews(restaurants(name)))"
+      "reporter_employee_id, reason, review_id, comment_id, restaurant_id, category, reviews(restaurants(name)), review_comments(reviews(restaurants(name))), restaurants(name)"
     )
     .eq("id", reportId)
     .eq("status", "pending")
@@ -33,6 +34,20 @@ async function getReportContext(
 
   if (!data) {
     return null;
+  }
+
+  if (data.restaurant_id) {
+    const restaurant = data.restaurants as unknown as { name: string } | null;
+    if (!restaurant) {
+      return null;
+    }
+    const categoryLabel = getRestaurantReportCategoryLabel(data.category ?? "");
+    return {
+      reporterEmployeeId: data.reporter_employee_id,
+      reason: data.reason ? `${categoryLabel} · ${data.reason}` : categoryLabel,
+      targetType: "restaurant",
+      restaurantName: restaurant.name,
+    };
   }
 
   if (data.review_id) {

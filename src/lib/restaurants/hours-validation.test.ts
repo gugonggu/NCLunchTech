@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOpenNow, restaurantHoursSchema, type OpenNowRow } from "./hours-validation";
+import { formatTimeToMinute, isOpenNow, restaurantHoursSchema, type OpenNowRow } from "./hours-validation";
 
 function buildWeek(overrides: Partial<Record<number, Record<string, unknown>>> = {}) {
   return Array.from({ length: 7 }, (_, day) => ({
@@ -93,5 +93,27 @@ describe("isOpenNow", () => {
 
   it("종료 시각 정각은 영업 중이 아니다", () => {
     expect(isOpenNow(hoursMap({ openTime: "09:00:00", closeTime: "12:00:00" }), now)).toBe(false);
+  });
+});
+
+describe("formatTimeToMinute", () => {
+  it("HH:mm:ss는 HH:mm으로 자른다", () => {
+    expect(formatTimeToMinute("09:00:00")).toBe("09:00");
+    expect(formatTimeToMinute("23:59:59")).toBe("23:59");
+  });
+
+  it("이미 HH:mm이면 그대로 둔다", () => {
+    expect(formatTimeToMinute("09:00")).toBe("09:00");
+  });
+
+  it("null/undefined/빈 문자열은 빈 문자열로 안전하게 처리한다", () => {
+    expect(formatTimeToMinute(null)).toBe("");
+    expect(formatTimeToMinute(undefined)).toBe("");
+    expect(formatTimeToMinute("")).toBe("");
+  });
+
+  it("형식이 이상한 값도 예외 없이 빈 문자열을 반환한다", () => {
+    expect(formatTimeToMinute("아무거나")).toBe("");
+    expect(formatTimeToMinute("9")).toBe("");
   });
 });

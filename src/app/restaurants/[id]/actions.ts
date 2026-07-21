@@ -8,7 +8,7 @@ import { getMenuItemInRestaurant } from "@/lib/restaurants/menu-items";
 import { menuItemSchema } from "@/lib/restaurants/menu-validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { submitReport } from "@/lib/status-reports/queries";
-import { isValidReportValue, type ReportType } from "@/lib/status-reports/validation";
+import { isValidReportValue, type ReportType, type StatusReportActionState } from "@/lib/status-reports/validation";
 import { getCommentForOwnershipCheck } from "@/lib/review-comments/queries";
 import { commentContentSchema } from "@/lib/review-comments/validation";
 import { toggleReaction } from "@/lib/review-reactions/queries";
@@ -221,26 +221,41 @@ export async function updateRestaurantHours(restaurantId: string, formData: Form
   revalidatePath(`/restaurants/${restaurantId}`);
 }
 
-export async function submitStatusReport(restaurantId: string, reportType: ReportType, formData: FormData) {
+/**
+ * useActionState용 시그니처: (restaurantId, reportType)를 bind한 뒤 (prevState, formData)로 호출된다.
+ * confirm() 취소 시 클라이언트에서 아예 요청을 보내지 않으므로, 여기 도달했다는 것은 이미 확인을
+ *거쳤다는 뜻이다. 실패도 throw 대신 상태로 반환해 화면에 그대로 이유를 보여준다.
+ */
+export async function submitStatusReport(
+  restaurantId: string,
+  reportType: ReportType,
+  _prevState: StatusReportActionState,
+  formData: FormData
+): Promise<StatusReportActionState> {
   const employee = await getCurrentEmployee();
   if (!employee) {
-    throw new Error("로그인이 필요합니다.");
+    return { status: "error", message: "로그인이 필요합니다." };
   }
 
   const value = String(formData.get("value") ?? "");
   if (!isValidReportValue(reportType, value)) {
-    throw new Error("선택할 수 없는 값입니다.");
+    return { status: "error", message: "선택할 수 없는 값이에요." };
   }
 
-  await submitReport({
-    employeeId: employee.id,
-    restaurantId,
-    reportType,
-    value,
-    now: new Date(),
-  });
+  try {
+    await submitReport({
+      employeeId: employee.id,
+      restaurantId,
+      reportType,
+      value,
+      now: new Date(),
+    });
+  } catch {
+    return { status: "error", message: "제보 저장에 실패했어요. 잠시 후 다시 시도해주세요." };
+  }
 
   revalidatePath(`/restaurants/${restaurantId}`);
+  return { status: "success", message: "제보해주셔서 감사해요." };
 }
 
 export async function createReviewComment(reviewId: string, restaurantId: string, formData: FormData) {

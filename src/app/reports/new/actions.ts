@@ -3,7 +3,11 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { reportReasonSchema } from "@/lib/reports/validation";
+import {
+  reportReasonSchema,
+  restaurantReportCategorySchema,
+  restaurantReportNoteSchema,
+} from "@/lib/reports/validation";
 
 function redirectToForm(reviewId: string, status: string): never {
   redirect(`/reports/new?reviewId=${reviewId}&status=${status}`);
@@ -11,6 +15,10 @@ function redirectToForm(reviewId: string, status: string): never {
 
 function redirectToCommentForm(commentId: string, status: string): never {
   redirect(`/reports/new?commentId=${commentId}&status=${status}`);
+}
+
+function redirectToRestaurantForm(restaurantId: string, status: string): never {
+  redirect(`/reports/new?restaurantId=${restaurantId}&status=${status}`);
 }
 
 export async function createReport(reviewId: string, formData: FormData) {
@@ -52,6 +60,52 @@ export async function createReport(reviewId: string, formData: FormData) {
   }
 
   redirect(`/restaurants/${review.restaurant_id}?reportStatus=submitted`);
+}
+
+/**
+ * 식당 정보 최신성 제보(정보 오래됨/가격 변경/메뉴 삭제/영업시간 변경/폐업 추정/중복 식당).
+ * 자동으로 식당 데이터에 반영되지 않고, 관리자가 검토 후 처리한다.
+ */
+export async function createRestaurantReport(restaurantId: string, formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/reports/new?restaurantId=${restaurantId}`)}`);
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: restaurant } = await supabase
+    .from("restaurants")
+    .select("id")
+    .eq("id", restaurantId)
+    .maybeSingle();
+
+  if (!restaurant) {
+    redirectToRestaurantForm(restaurantId, "not_found");
+  }
+
+  const parsedCategory = restaurantReportCategorySchema.safeParse(formData.get("category"));
+  if (!parsedCategory.success) {
+    redirectToRestaurantForm(restaurantId, "invalid_category");
+  }
+
+  const parsedNote = restaurantReportNoteSchema.safeParse(String(formData.get("note") ?? ""));
+  const note = parsedNote.success ? parsedNote.data : "";
+
+  const { error } = await supabase.from("reports").insert({
+    reporter_employee_id: employee.id,
+    restaurant_id: restaurantId,
+    category: parsedCategory.data,
+    reason: note,
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      redirectToRestaurantForm(restaurantId, "already_reported");
+    }
+    throw new Error("제보 접수에 실패했습니다.");
+  }
+
+  redirectToRestaurantForm(restaurantId, "submitted");
 }
 
 export async function createCommentReport(commentId: string, formData: FormData) {

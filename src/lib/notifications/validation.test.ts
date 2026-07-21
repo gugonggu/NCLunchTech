@@ -6,6 +6,8 @@ import {
   buildPollClosedMessage,
   buildPollDecidedMessage,
   buildReportResolvedMessage,
+  buildSettlementCreatedMessage,
+  buildSettlementUpdatedMessage,
 } from "./validation";
 
 describe("알림 메시지 생성", () => {
@@ -53,5 +55,29 @@ describe("buildReportResolvedMessage", () => {
       outcome: "deleted",
     });
     expect(message).toBe("더차이나 댓글 신고('욕설이 있어요')가 삭제 처리됐어요.");
+  });
+
+  it("식당 정보 신고 기각 메시지는 '식당 정보'를 쓴다", () => {
+    const message = buildReportResolvedMessage({
+      targetType: "restaurant",
+      restaurantName: "더차이나",
+      reason: "가격이 달라요",
+      outcome: "dismissed",
+    });
+    expect(message).toBe("더차이나 식당 정보 신고('가격이 달라요')가 검토 후 기각됐어요.");
+  });
+});
+
+describe("정산 알림 메시지 생성", () => {
+  it("정산 등록 메시지에 식당 이름이 들어간다", () => {
+    expect(buildSettlementCreatedMessage("더차이나")).toBe(
+      "더차이나 약속의 정산이 등록됐어요. 내 부담액을 확인해보세요."
+    );
+  });
+
+  it("정산 변경 메시지에 식당 이름이 들어간다", () => {
+    expect(buildSettlementUpdatedMessage("더차이나")).toBe(
+      "더차이나 약속의 정산 내용이 변경됐어요. 다시 확인해보세요."
+    );
   });
 });

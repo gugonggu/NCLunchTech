@@ -12,15 +12,23 @@ import {
   buildAppointmentCancelledMessage,
   buildAppointmentUpdatedMessage,
   buildPollInvitedMessage,
+  buildSettlementCreatedMessage,
+  buildSettlementUpdatedMessage,
 } from "@/lib/notifications/validation";
 import { getAppointmentDetail, getMyParticipant } from "@/lib/appointments/queries";
 import { canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
 import { getAttendanceTiming } from "@/lib/appointments/attendance";
 import { closeOpenPollsForAppointment } from "@/lib/polls/queries";
 import { MAX_POLL_OPTIONS, dedupeIds, sanitizeCustomLabels } from "@/lib/polls/validation";
+import { calculateSettlementShares, settlementInputSchema } from "@/lib/settlements/validation";
+import { getAttendeesForAppointment, upsertSettlement } from "@/lib/settlements/queries";
 
 function redirectWithStatus(appointmentId: string, status: string): never {
   redirect(`/appointments/${appointmentId}?status=${status}`);
+}
+
+function redirectWithSettlementStatus(appointmentId: string, status: string): never {
+  redirect(`/appointments/${appointmentId}?settlementStatus=${status}`);
 }
 
 async function notifyActiveParticipants(
@@ -500,4 +508,74 @@ export async function createAppointmentMenuPoll(appointmentId: string, formData:
   );
 
   redirectWithStatus(appointmentId, "poll_created");
+}
+
+/**
+ * N빵 정산 등록/수정. 실제 참석자(방문 확인 완료자)만 등록할 수 있고, 결제자도 실제 참석자 중에서만 고를 수 있다.
+ * 약속당 정산은 하나만 유지하며, 다시 저장하면 기존 정산을 덮어쓴다.
+ */
+export async function upsertSettlementAction(appointmentId: string, formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  const appointment = await getAppointmentDetail(appointmentId);
+  if (!appointment) {
+    redirectWithSettlementStatus(appointmentId, "not_found");
+  }
+
+  const attendees = await getAttendeesForAppointment(appointmentId);
+  if (attendees.length === 0) {
+    redirectWithSettlementStatus(appointmentId, "no_attendees");
+  }
+  if (!attendees.some((a) => a.employeeId === employee.id)) {
+    redirectWithSettlementStatus(appointmentId, "not_attendee");
+  }
+
+  const parsed = settlementInputSchema.safeParse({
+    payerEmployeeId: formData.get("payerEmployeeId"),
+    totalAmount: formData.get("totalAmount"),
+    roundingUnit: formData.get("roundingUnit"),
+  });
+  if (!parsed.success) {
+    redirectWithSettlementStatus(appointmentId, "invalid_input");
+  }
+
+  if (!attendees.some((a) => a.employeeId === parsed.data.payerEmployeeId)) {
+    redirectWithSettlementStatus(appointmentId, "invalid_payer");
+  }
+
+  const shares = calculateSettlementShares({
+    totalAmount: parsed.data.totalAmount,
+    participantIds: attendees.map((a) => a.employeeId),
+    payerEmployeeId: parsed.data.payerEmployeeId,
+    roundingUnit: parsed.data.roundingUnit,
+  });
+
+  const { isNew } = await upsertSettlement({
+    appointmentId,
+    createdBy: employee.id,
+    payerEmployeeId: parsed.data.payerEmployeeId,
+    totalAmount: parsed.data.totalAmount,
+    roundingUnit: parsed.data.roundingUnit,
+    shares,
+  });
+
+  const message = isNew
+    ? buildSettlementCreatedMessage(appointment.restaurantName)
+    : buildSettlementUpdatedMessage(appointment.restaurantName);
+  const recipientIds = attendees.map((a) => a.employeeId).filter((id) => id !== employee.id);
+  await Promise.all(
+    recipientIds.map((employeeId) =>
+      createNotification({
+        employeeId,
+        type: isNew ? "settlement_created" : "settlement_updated",
+        message,
+        relatedAppointmentId: appointmentId,
+      })
+    )
+  );
+
+  redirectWithSettlementStatus(appointmentId, "saved");
 }

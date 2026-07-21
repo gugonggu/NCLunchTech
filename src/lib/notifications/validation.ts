@@ -6,7 +6,9 @@ export type NotificationType =
   | "review_commented"
   | "poll_closed"
   | "poll_decided"
-  | "report_resolved";
+  | "report_resolved"
+  | "settlement_created"
+  | "settlement_updated";
 
 export function buildAppointmentInvitedMessage(restaurantName: string): string {
   return `${restaurantName}에서의 약속에 초대되었어요.`;
@@ -36,12 +38,13 @@ export function buildPollDecidedMessage(restaurantName: string, decidedLabel: st
   return `${restaurantName} 약속의 메뉴가 '${decidedLabel}'(으)로 결정됐어요.`;
 }
 
-export type ReportTargetType = "review" | "comment";
+export type ReportTargetType = "review" | "comment" | "restaurant";
 export type ReportOutcome = "dismissed" | "deleted";
 
 const REPORT_TARGET_LABELS: Record<ReportTargetType, string> = {
   review: "리뷰",
   comment: "댓글",
+  restaurant: "식당 정보",
 };
 
 /** 신고 처리 결과 알림(사유·내용 포함). 신고자 본인에게만 발송한다. */
@@ -54,4 +57,12 @@ export function buildReportResolvedMessage(params: {
   const targetLabel = REPORT_TARGET_LABELS[params.targetType];
   const outcomeLabel = params.outcome === "deleted" ? "삭제 처리됐어요" : "검토 후 기각됐어요";
   return `${params.restaurantName} ${targetLabel} 신고('${params.reason}')가 ${outcomeLabel}.`;
+}
+
+export function buildSettlementCreatedMessage(restaurantName: string): string {
+  return `${restaurantName} 약속의 정산이 등록됐어요. 내 부담액을 확인해보세요.`;
+}
+
+export function buildSettlementUpdatedMessage(restaurantName: string): string {
+  return `${restaurantName} 약속의 정산 내용이 변경됐어요. 다시 확인해보세요.`;
 }
