@@ -59,39 +59,39 @@ export default async function NewReportPage({
 
     return (
       <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-neutral-500">
+        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
 
         <h1 className="text-xl font-bold text-brand-dark">식당 정보 제보</h1>
-        <p className="text-neutral-700">{restaurant.name}</p>
+        <p className="text-ink">{restaurant.name}</p>
 
         {restaurantFeedbackMessage && <p className="text-sm text-brand-dark">{restaurantFeedbackMessage}</p>}
 
         <form action={createRestaurantReport.bind(null, restaurantId)} className="flex flex-col gap-3">
           <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm text-neutral-600">무엇이 달라졌나요?</legend>
+            <legend className="text-sm text-ink-muted">무엇이 달라졌나요?</legend>
             {RESTAURANT_REPORT_CATEGORIES.map((c) => (
               <label
                 key={c.value}
-                className="flex items-center gap-2 rounded-2xl border border-neutral-200 px-4 py-3"
+                className="flex items-center gap-2 rounded-card border border-line px-4 py-3"
               >
                 <input type="radio" name="category" value={c.value} required />
                 {c.label}
               </label>
             ))}
           </fieldset>
-          <label className="flex flex-col gap-1 text-sm text-neutral-600">
+          <label className="flex flex-col gap-1 text-sm text-ink-muted">
             추가 메모(선택, 최대 200자)
             <textarea
               name="note"
               maxLength={200}
               rows={3}
               placeholder="예: 3층으로 이전한 것 같아요"
-              className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+              className="rounded-control border border-line px-4 py-3 text-base text-ink"
             />
           </label>
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             제보하기
           </button>
         </form>
@@ -123,11 +123,11 @@ export default async function NewReportPage({
     if (comment.employee_id === employee.id) {
       return (
         <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-          <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-neutral-500">
+          <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
             ← 뒤로
           </Link>
           <h1 className="text-xl font-bold text-brand-dark">댓글 신고</h1>
-          <p className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
+          <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
             본인이 작성한 댓글은 신고할 수 없어요.
           </p>
         </main>
@@ -136,19 +136,19 @@ export default async function NewReportPage({
 
     return (
       <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-neutral-500">
+        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
 
         <h1 className="text-xl font-bold text-brand-dark">댓글 신고</h1>
-        <p className="text-neutral-700">{restaurant.name}</p>
+        <p className="text-ink">{restaurant.name}</p>
 
         {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
 
-        <p className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">{comment.content}</p>
+        <p className="rounded-card border border-line px-4 py-3 text-sm text-ink">{comment.content}</p>
 
         <form action={createCommentReport.bind(null, commentId)} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-neutral-600">
+          <label className="flex flex-col gap-1 text-sm text-ink-muted">
             신고 사유(최대 200자)
             <textarea
               name="reason"
@@ -156,10 +156,10 @@ export default async function NewReportPage({
               rows={3}
               required
               placeholder="예: 허위 정보로 보여요"
-              className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+              className="rounded-control border border-line px-4 py-3 text-base text-ink"
             />
           </label>
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             신고하기
           </button>
         </form>
@@ -185,11 +185,11 @@ export default async function NewReportPage({
   if (review.employee_id === employee.id) {
     return (
       <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-neutral-500">
+        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
         <h1 className="text-xl font-bold text-brand-dark">리뷰 신고</h1>
-        <p className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
+        <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
           본인이 작성한 리뷰는 신고할 수 없어요.
         </p>
       </main>
@@ -198,23 +198,23 @@ export default async function NewReportPage({
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-      <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-neutral-500">
+      <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
         ← 뒤로
       </Link>
 
       <h1 className="text-xl font-bold text-brand-dark">리뷰 신고</h1>
-      <p className="text-neutral-700">{restaurant.name}</p>
+      <p className="text-ink">{restaurant.name}</p>
 
       {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
 
       {review.one_line_review && (
-        <p className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
+        <p className="rounded-card border border-line px-4 py-3 text-sm text-ink">
           {review.one_line_review}
         </p>
       )}
 
       <form action={createReport.bind(null, reviewId as string)} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm text-neutral-600">
+        <label className="flex flex-col gap-1 text-sm text-ink-muted">
           신고 사유(최대 200자)
           <textarea
             name="reason"
@@ -222,10 +222,10 @@ export default async function NewReportPage({
             rows={3}
             required
             placeholder="예: 허위 정보로 보여요"
-            className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+            className="rounded-control border border-line px-4 py-3 text-base text-ink"
           />
         </label>
-        <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
           신고하기
         </button>
       </form>

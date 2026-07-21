@@ -69,7 +69,7 @@ export default async function CollectionPage({
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-      <Link href="/" className="text-sm text-neutral-500">
+      <Link href="/" className="text-sm text-ink-muted">
         ← 홈으로
       </Link>
 
@@ -79,8 +79,8 @@ export default async function CollectionPage({
         <h2 className="font-bold text-brand-dark">분류별 현황</h2>
         <ul className="grid grid-cols-3 gap-2">
           {breakdown.map((b) => (
-            <li key={b.category} className="rounded-2xl border border-neutral-200 px-3 py-2 text-center">
-              <p className="text-xs text-neutral-500">{b.category}</p>
+            <li key={b.category} className="rounded-card border border-line px-3 py-2 text-center">
+              <p className="text-xs text-ink-muted">{b.category}</p>
               <p className="text-sm font-semibold text-brand-dark">
                 {b.visitedCount}/{b.totalCount}
               </p>
@@ -97,15 +97,15 @@ export default async function CollectionPage({
               <li key={r.id}>
                 <Link
                   href={`/restaurants/${r.id}`}
-                  className="block rounded-2xl border border-neutral-200 px-4 py-3"
+                  className="block rounded-card border border-line px-4 py-3"
                 >
                   <p className="font-semibold">{r.name}</p>
-                  <p className="text-sm text-neutral-500">
+                  <p className="text-sm text-ink-muted">
                     {r.category}
                     {visitedIds.has(r.id) ? " · 방문 완료" : " · 미방문"}
                   </p>
                   {latestMealRecords.get(r.id) && (
-                    <p className="text-sm text-neutral-600">
+                    <p className="text-sm text-ink-muted">
                       {latestMealRecords.get(r.id)!.menuName} ·{" "}
                       {latestMealRecords.get(r.id)!.paidPrice.toLocaleString("ko-KR")}원
                     </p>
@@ -124,7 +124,7 @@ export default async function CollectionPage({
           <select
             name="category"
             defaultValue={category}
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           >
             <option value="">전체 분류</option>
             {RESTAURANT_CATEGORIES.map((c) => (
@@ -136,22 +136,22 @@ export default async function CollectionPage({
           <select
             name="visited"
             defaultValue={visited}
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           >
             <option value="">전체</option>
             <option value="visited">방문한 곳만</option>
             <option value="unvisited">미방문만</option>
           </select>
-          <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <label className="flex items-center gap-2 text-sm text-ink-muted">
             <input type="checkbox" name="favoritesOnly" defaultChecked={favoritesOnly} />
             즐겨찾기만 보기
           </label>
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             적용
           </button>
         </form>
 
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-muted">
           {total}건 중 {visible.length}건 표시
           {total > RESULT_LIMIT && " (분류나 필터로 좁혀보세요)"}
         </p>
@@ -160,16 +160,16 @@ export default async function CollectionPage({
           {visible.map((r) => (
             <li
               key={r.id}
-              className="flex items-center justify-between rounded-2xl border border-neutral-200 px-4 py-3"
+              className="flex items-center justify-between rounded-card border border-line px-4 py-3"
             >
               <Link href={`/restaurants/${r.id}`} className="flex-1">
                 <p className="font-semibold">{r.name}</p>
-                <p className="text-sm text-neutral-500">
+                <p className="text-sm text-ink-muted">
                   {r.category}
                   {visitedIds.has(r.id) ? " · 방문 완료" : " · 미방문"}
                 </p>
                 {latestMealRecords.get(r.id) && (
-                  <p className="text-sm text-neutral-600">
+                  <p className="text-sm text-ink-muted">
                     {latestMealRecords.get(r.id)!.menuName} ·{" "}
                     {latestMealRecords.get(r.id)!.paidPrice.toLocaleString("ko-KR")}원
                   </p>

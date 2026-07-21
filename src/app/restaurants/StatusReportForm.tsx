@@ -1,12 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useActionState } from "react";
 import { STATUS_REPORT_IDLE_STATE, type StatusReportActionState } from "@/lib/status-reports/validation";
 
 /**
- * 혼잡도/영업 상태 제보 버튼들을 감싸는 확인창 + 진행 상태 + 결과 안내 컴포넌트.
- * 버튼 자체가 name="value"인 submit 버튼이라 어떤 값을 눌렀는지가 FormData에 그대로 실린다.
- * confirm()에서 취소하면 preventDefault로 폼 제출 자체가 발생하지 않아 서버 요청이 안 나간다.
+ * 혼잡도/영업 상태 제보 버튼들을 감싸는 인라인 확인 + 진행 상태 + 결과 안내 컴포넌트.
+ * 버튼을 누르면 바로 제출하지 않고 인라인 확인 문구를 보여준 뒤, "제보하기"를 눌러야 실제 폼이 제출된다.
  */
 export function StatusReportForm({
   values,
@@ -18,44 +18,59 @@ export function StatusReportForm({
   layout?: "row" | "grid";
 }) {
   const [state, formAction, isPending] = useActionState(action, STATUS_REPORT_IDLE_STATE);
+  const [pendingValue, setPendingValue] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-    const value = submitter?.value;
-    if (!value) {
-      e.preventDefault();
-      return;
+  useEffect(() => {
+    if (state.status !== "idle") {
+      setPendingValue(null);
     }
-    const confirmed = window.confirm(
-      `"${value}" 상태로 제보할까요?\n직원 제보 정보이므로 실제 상태와 다를 수 있어요.`
+  }, [state]);
+
+  if (pendingValue) {
+    return (
+      <div className="flex flex-col gap-2 rounded-control border border-line bg-surface-muted p-3 text-sm">
+        <p className="text-ink">
+          &ldquo;{pendingValue}&rdquo; 상태로 제보할까요?
+          <br />
+          직원 제보 정보이므로 실제 상태와 다를 수 있어요.
+        </p>
+        <form action={formAction} className="flex gap-2">
+          <input type="hidden" name="value" value={pendingValue} />
+          <button
+            type="submit"
+            disabled={isPending}
+            className="flex-1 rounded-control bg-brand px-3 py-2 text-sm font-semibold text-black disabled:opacity-50"
+          >
+            {isPending ? "저장 중..." : "제보하기"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPendingValue(null)}
+            className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink"
+          >
+            취소
+          </button>
+        </form>
+      </div>
     );
-    if (!confirmed) {
-      e.preventDefault();
-    }
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <form
-        action={formAction}
-        onSubmit={handleSubmit}
-        className={layout === "grid" ? "grid grid-cols-2 gap-2" : "flex gap-2"}
-      >
+      <div className={layout === "grid" ? "grid grid-cols-2 gap-2" : "flex gap-2"}>
         {values.map((value) => (
           <button
             key={value}
-            type="submit"
-            name="value"
-            value={value}
-            disabled={isPending}
-            className={`${layout === "row" ? "flex-1" : ""} rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold disabled:opacity-50`}
+            type="button"
+            onClick={() => setPendingValue(value)}
+            className={`${layout === "row" ? "flex-1" : ""} rounded-xl bg-surface-muted px-3 py-2 text-sm font-semibold transition-colors hover:bg-line`}
           >
-            {isPending ? "저장 중..." : value}
+            {value}
           </button>
         ))}
-      </form>
-      {state.status === "success" && <p className="text-xs text-green-700">{state.message}</p>}
-      {state.status === "error" && <p className="text-xs text-red-600">{state.message}</p>}
+      </div>
+      {state.status === "success" && <p className="text-xs text-success">{state.message}</p>}
+      {state.status === "error" && <p className="text-xs text-danger">{state.message}</p>}
     </div>
   );
 }

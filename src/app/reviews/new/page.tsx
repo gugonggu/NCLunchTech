@@ -60,14 +60,14 @@ export default async function NewReviewPage({
   if (!visited) {
     return (
       <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-neutral-500">
+        <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
         <h1 className="text-xl font-bold text-brand-dark">리뷰 작성</h1>
-        <p className="text-neutral-700">
+        <p className="text-ink">
           {restaurant.name} · {restaurant.category}
         </p>
-        <p className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
+        <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
           방문한 적 있는 식당만 리뷰를 남길 수 있어요.
         </p>
       </main>
@@ -96,12 +96,12 @@ export default async function NewReviewPage({
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-      <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-neutral-500">
+      <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
         ← 뒤로
       </Link>
 
       <h1 className="text-xl font-bold text-brand-dark">{existing ? "리뷰 수정" : "리뷰 작성"}</h1>
-      <p className="text-neutral-700">
+      <p className="text-ink">
         {restaurant.name} · {restaurant.category}
       </p>
 
@@ -133,13 +133,13 @@ export default async function NewReviewPage({
               ["soloFitRating", "혼밥 적합성", existing?.soloFitRating],
             ] as const
           ).map(([name, label, value]) => (
-            <label key={name} className="flex items-center justify-between text-sm text-neutral-600">
+            <label key={name} className="flex items-center justify-between text-sm text-ink-muted">
               {label}
               <select
                 name={name}
                 defaultValue={value ?? 5}
                 required
-                className="rounded-xl border border-neutral-200 px-3 py-2 text-base text-neutral-900"
+                className="rounded-xl border border-line px-3 py-2 text-base text-ink"
               >
                 {RATING_OPTIONS.map((n) => (
                   <option key={n} value={n}>
@@ -150,13 +150,13 @@ export default async function NewReviewPage({
             </label>
           ))}
 
-          <label className="flex items-center justify-between text-sm text-neutral-600">
+          <label className="flex items-center justify-between text-sm text-ink-muted">
             재방문 의향
             <select
               name="revisitIntent"
               defaultValue={existing?.revisitIntent ?? "again"}
               required
-              className="rounded-xl border border-neutral-200 px-3 py-2 text-base text-neutral-900"
+              className="rounded-xl border border-line px-3 py-2 text-base text-ink"
             >
               <option value="again">다시 갈래요</option>
               <option value="maybe">고민</option>
@@ -176,12 +176,12 @@ export default async function NewReviewPage({
               ["cleanlinessRating", "청결", existing?.cleanlinessRating],
             ] as const
           ).map(([name, label, value]) => (
-            <label key={name} className="flex items-center justify-between text-sm text-neutral-600">
+            <label key={name} className="flex items-center justify-between text-sm text-ink-muted">
               {label}
               <select
                 name={name}
                 defaultValue={value ?? ""}
-                className="rounded-xl border border-neutral-200 px-3 py-2 text-base text-neutral-900"
+                className="rounded-xl border border-line px-3 py-2 text-base text-ink"
               >
                 <option value="">선택 안 함</option>
                 {RATING_OPTIONS.map((n) => (
@@ -195,27 +195,27 @@ export default async function NewReviewPage({
         </fieldset>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="text-sm text-neutral-600">태그(선택, 여러 개 가능)</legend>
+          <legend className="text-sm text-ink-muted">태그(선택, 여러 개 가능)</legend>
           {REVIEW_TAGS.map((tag) => (
-            <label key={tag} className="flex items-center gap-2 text-sm text-neutral-700">
+            <label key={tag} className="flex items-center gap-2 text-sm text-ink">
               <input type="checkbox" name="tags" value={tag} defaultChecked={existing?.tags?.includes(tag) ?? false} />
               {tag}
             </label>
           ))}
         </fieldset>
 
-        <label className="flex flex-col gap-1 text-sm text-neutral-600">
+        <label className="flex flex-col gap-1 text-sm text-ink-muted">
           한 줄 후기(선택, 최대 200자)
           <textarea
             name="oneLineReview"
             maxLength={200}
             rows={2}
             defaultValue={existing?.oneLineReview ?? ""}
-            className="rounded-2xl border border-neutral-200 px-4 py-3 text-base text-neutral-900"
+            className="rounded-control border border-line px-4 py-3 text-base text-ink"
           />
         </label>
 
-        <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
           {existing ? "리뷰 수정 저장" : "리뷰 저장"}
         </button>
       </form>
@@ -231,9 +231,9 @@ export default async function NewReviewPage({
               {photos.map((p) => (
                 <li key={p.id} className="flex flex-col gap-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.url} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                  <img src={p.url} alt="내가 올린 리뷰 사진" className="aspect-square w-full rounded-xl object-cover" />
                   <form action={deleteReviewPhoto.bind(null, p.id, restaurantId)}>
-                    <button type="submit" className="w-full rounded-lg bg-neutral-100 px-2 py-1 text-xs">
+                    <button type="submit" className="w-full rounded-lg bg-surface-muted px-2 py-1 text-xs">
                       삭제
                     </button>
                   </form>
@@ -249,9 +249,9 @@ export default async function NewReviewPage({
                 name="photo"
                 accept="image/jpeg,image/png,image/webp"
                 required
-                className="text-sm text-neutral-600"
+                className="text-sm text-ink-muted"
               />
-              <button type="submit" className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
+              <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
                 사진 추가
               </button>
             </form>

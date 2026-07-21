@@ -37,11 +37,11 @@ export function SyncKakaoButton() {
       <button
         onClick={handleSync}
         disabled={isSyncing}
-        className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-50"
+        className="rounded-control bg-brand px-4 py-3 font-semibold text-black disabled:opacity-50"
       >
         {isSyncing ? "가져오는 중..." : "카카오에서 식당 가져오기"}
       </button>
-      {message && <p className="text-sm text-neutral-600">{message}</p>}
+      {message && <p className="text-sm text-ink-muted">{message}</p>}
     </div>
   );
 }

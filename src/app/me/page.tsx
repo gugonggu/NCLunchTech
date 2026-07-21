@@ -103,17 +103,17 @@ export default async function MePage() {
   return (
     <main className="flex flex-1 flex-col gap-5 bg-brand-bg px-6 py-8">
       <div>
-        <p className="text-sm text-neutral-500">내 정보</p>
+        <p className="text-sm text-ink-muted">내 정보</p>
         <h1 className="mt-1 text-2xl font-bold text-brand-dark">{employee.nickname}</h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-ink-muted">
           {joinedAtFormatter.format(new Date(profileResult.data.created_at))} 가입
         </p>
       </div>
 
       <section className="grid grid-cols-2 gap-3" aria-label="활동 통계">
         {stats.map((stat) => (
-          <div key={stat.label} className="rounded-2xl bg-white px-4 py-4 shadow-sm">
-            <p className="text-sm text-neutral-500">{stat.label}</p>
+          <div key={stat.label} className="rounded-card bg-surface px-4 py-4 shadow-card">
+            <p className="text-sm text-ink-muted">{stat.label}</p>
             <p className="mt-1 text-2xl font-bold text-brand-dark">{stat.value}</p>
           </div>
         ))}
@@ -121,17 +121,17 @@ export default async function MePage() {
 
       <Link
         href="/notifications"
-        className="rounded-2xl bg-white px-4 py-4 font-semibold text-brand-dark shadow-sm"
+        className="rounded-card bg-surface px-4 py-4 font-semibold text-brand-dark shadow-card"
       >
         알림 보기
       </Link>
 
       {myRanks.length > 0 && (
-        <section className="rounded-2xl bg-white px-4 py-4 shadow-sm" aria-label="이번 달 내 순위">
-          <p className="text-sm font-semibold text-neutral-500">{leaderboard.label} 내 순위</p>
+        <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="이번 달 내 순위">
+          <p className="text-sm font-semibold text-ink-muted">{leaderboard.label} 내 순위</p>
           <ul className="mt-2 flex flex-col gap-1">
             {myRanks.map((row) => (
-              <li key={row.label} className="flex items-center justify-between text-sm text-neutral-700">
+              <li key={row.label} className="flex items-center justify-between text-sm text-ink">
                 <span>{row.label}</span>
                 <span className="font-semibold text-brand-dark">
                   {row.myRank!.rank}위 ({row.myRank!.score})
@@ -144,7 +144,7 @@ export default async function MePage() {
 
       <Link
         href="/leaderboard"
-        className="rounded-2xl bg-white px-4 py-4 font-semibold text-brand-dark shadow-sm"
+        className="rounded-card bg-surface px-4 py-4 font-semibold text-brand-dark shadow-card"
       >
         월간 배지·리더보드
       </Link>

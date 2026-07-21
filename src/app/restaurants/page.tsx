@@ -168,14 +168,14 @@ export default async function RestaurantsPage({
       header={<div className="flex flex-col gap-2 px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-brand-dark">식당 찾기</h1>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ink-muted">
             {total}건 중 {visible.length}건
             {total > RESULT_LIMIT && " (검색어로 좁혀보세요)"}
           </p>
         </div>
 
         {forAppointment && (
-          <p className="rounded-xl bg-neutral-100 px-3 py-2 text-xs text-neutral-600">
+          <p className="rounded-xl bg-surface-muted px-3 py-2 text-xs text-ink-muted">
             약속의 식당을 변경할 곳을 골라주세요.
           </p>
         )}
@@ -188,14 +188,14 @@ export default async function RestaurantsPage({
               name="q"
               defaultValue={query}
               placeholder="식당 이름 검색"
-              className="flex-1 rounded-2xl border border-neutral-200 px-4 py-2 text-sm"
+              className="flex-1 rounded-control border border-line px-4 py-2 text-sm"
             />
-            <button type="submit" className="rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white">
+            <button type="submit" className="rounded-control bg-brand px-4 py-2 text-sm font-semibold text-black">
               검색
             </button>
           </div>
 
-          <details className="text-sm text-neutral-600">
+          <details className="text-sm text-ink-muted">
             <summary className="cursor-pointer select-none py-1">필터 · 정렬</summary>
             <div className="mt-2 flex flex-col gap-2">
               <div>
@@ -205,10 +205,10 @@ export default async function RestaurantsPage({
                   defaultValue={menuQuery}
                   placeholder="메뉴 이름 검색"
                   disabled={!hasMenuData}
-                  className="w-full rounded-2xl border border-neutral-200 px-4 py-2 text-sm disabled:bg-neutral-100 disabled:text-neutral-400"
+                  className="w-full rounded-control border border-line px-4 py-2 text-sm disabled:bg-surface-muted disabled:text-ink-muted"
                 />
                 {!hasMenuData && (
-                  <p className="mt-1 text-xs text-neutral-400">
+                  <p className="mt-1 text-xs text-ink-muted">
                     등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
                   </p>
                 )}
@@ -216,7 +216,7 @@ export default async function RestaurantsPage({
               <select
                 name="category"
                 defaultValue={category}
-                className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm"
+                className="rounded-control border border-line px-4 py-2 text-sm"
               >
                 <option value="">전체 분류</option>
                 {RESTAURANT_CATEGORIES.map((c) => (
@@ -228,7 +228,7 @@ export default async function RestaurantsPage({
               <select
                 name="radius"
                 defaultValue={String(radius)}
-                className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm"
+                className="rounded-control border border-line px-4 py-2 text-sm"
               >
                 {RADIUS_OPTIONS_M.map((r) => (
                   <option key={r} value={r}>
@@ -245,28 +245,28 @@ export default async function RestaurantsPage({
                   defaultValue={maxPrice ?? ""}
                   placeholder="희망 가격(원) 이하"
                   disabled={!hasMenuData}
-                  className="w-full rounded-2xl border border-neutral-200 px-4 py-2 text-sm disabled:bg-neutral-100 disabled:text-neutral-400"
+                  className="w-full rounded-control border border-line px-4 py-2 text-sm disabled:bg-surface-muted disabled:text-ink-muted"
                 />
                 {!hasMenuData && (
-                  <p className="mt-1 text-xs text-neutral-400">
+                  <p className="mt-1 text-xs text-ink-muted">
                     등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다.
                   </p>
                 )}
               </div>
-              <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <label className="flex items-center gap-2 text-sm text-ink-muted">
                 <input type="checkbox" name="openNow" defaultChecked={openNowOnly} />
                 지금 영업 중인 곳만
               </label>
-              <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <label className="flex items-center gap-2 text-sm text-ink-muted">
                 <input type="checkbox" name="excludeRecent" defaultChecked={excludeRecent} />
                 최근 방문 제외(최근 {RECENT_VISIT_WINDOW_DAYS}일 이내 다녀온 식당 제외)
               </label>
-              <select name="sort" defaultValue={sort} className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm">
+              <select name="sort" defaultValue={sort} className="rounded-control border border-line px-4 py-2 text-sm">
                 <option value="distance">가까운순</option>
                 <option value="new">신규순</option>
                 <option value="reviews">리뷰 많은순</option>
               </select>
-              <button type="submit" className="rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white">
+              <button type="submit" className="rounded-control bg-brand px-4 py-2 text-sm font-semibold text-black">
                 이 조건으로 검색
               </button>
             </div>

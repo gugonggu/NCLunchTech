@@ -26,7 +26,7 @@ export default async function AdminEmployeesPage({ searchParams }: { searchParam
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">
-      <Link href="/admin" className="text-sm text-neutral-500">
+      <Link href="/admin" className="text-sm text-ink-muted">
         ← 관리자 홈으로
       </Link>
 
@@ -36,12 +36,12 @@ export default async function AdminEmployeesPage({ searchParams }: { searchParam
 
       <ul className="flex flex-col gap-3">
         {employees.map((e) => (
-          <li key={e.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
+          <li key={e.id} className="rounded-card border border-line px-4 py-3">
             <p className="font-semibold">
               {e.nickname}
               {!e.is_active && <span className="ml-2 text-xs text-red-600">비활성화됨</span>}
               {e.locked_until && new Date(e.locked_until) > new Date() && (
-                <span className="ml-2 text-xs text-neutral-500">로그인 잠김</span>
+                <span className="ml-2 text-xs text-ink-muted">로그인 잠김</span>
               )}
             </p>
 
@@ -54,15 +54,15 @@ export default async function AdminEmployeesPage({ searchParams }: { searchParam
                 pattern="[0-9]{4}"
                 placeholder="새 PIN 4자리"
                 required
-                className="w-24 rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                className="w-24 rounded-control border border-line px-3 py-2 text-sm"
               />
-              <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+              <button type="submit" className="rounded-control bg-surface-muted px-3 py-2 text-sm">
                 PIN 초기화
               </button>
             </form>
 
             <form action={setEmployeeActive.bind(null, e.id, !e.is_active)} className="mt-2">
-              <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+              <button type="submit" className="rounded-control bg-surface-muted px-3 py-2 text-sm">
                 {e.is_active ? "비활성화" : "재활성화"}
               </button>
             </form>

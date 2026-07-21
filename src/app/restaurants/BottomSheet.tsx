@@ -83,7 +83,7 @@ export function BottomSheet({
       id="restaurant-results-sheet"
       role="region"
       aria-label="식당 목록"
-      className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.12)] transition-[height] duration-300 ease-out ${HEIGHT_CLASSES[snap]}`}
+      className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-card bg-surface shadow-[0_-4px_16px_rgba(0,0,0,0.12)] transition-[height] duration-300 ease-out ${HEIGHT_CLASSES[snap]}`}
     >
       <div className="flex shrink-0 items-center px-2 py-2">
         <button
@@ -95,7 +95,7 @@ export function BottomSheet({
           onClick={handleClick}
           className="flex min-h-11 min-w-11 flex-1 cursor-grab touch-none flex-col items-center justify-center active:cursor-grabbing"
         >
-          <span aria-hidden className="h-1 w-10 rounded-full bg-neutral-300" />
+          <span aria-hidden className="h-1 w-10 rounded-full bg-line" />
         </button>
         <button
           type="button"
@@ -103,7 +103,7 @@ export function BottomSheet({
           aria-controls="restaurant-results-sheet"
           aria-expanded="true"
           aria-label="식당 목록 숨기기"
-          className="min-h-11 min-w-11 text-sm text-neutral-500"
+          className="min-h-11 min-w-11 text-sm text-ink-muted"
         >
           숨기기
         </button>

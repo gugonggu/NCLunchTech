@@ -57,7 +57,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">
-      <Link href="/admin" className="text-sm text-neutral-500">
+      <Link href="/admin" className="text-sm text-ink-muted">
         ← 관리자 홈으로
       </Link>
 
@@ -66,13 +66,13 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       {feedbackMessage && <p className="text-sm text-brand-dark">{feedbackMessage}</p>}
 
       {repeatReporters.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-2xl bg-neutral-100 px-4 py-3">
+        <section className="flex flex-col gap-2 rounded-card bg-surface-muted px-4 py-3">
           <h2 className="text-sm font-bold text-brand-dark">
             반복 신고자(최근 {REPEAT_REPORTER_WINDOW_DAYS}일, {REPEAT_REPORTER_MIN_COUNT}건 이상)
           </h2>
           <ul className="flex flex-col gap-1">
             {repeatReporters.map((r) => (
-              <li key={r.employeeId} className="flex items-center justify-between text-sm text-neutral-700">
+              <li key={r.employeeId} className="flex items-center justify-between text-sm text-ink">
                 <span>{r.employeeNickname}</span>
                 <span className="font-semibold">{r.count}건</span>
               </li>
@@ -84,7 +84,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">리뷰 신고</h2>
         {(!reviewReports || reviewReports.length === 0) && (
-          <p className="text-sm text-neutral-500">대기 중인 리뷰 신고가 없어요.</p>
+          <p className="text-sm text-ink-muted">대기 중인 리뷰 신고가 없어요.</p>
         )}
         <ul className="flex flex-col gap-3">
           {(reviewReports ?? []).map((r) => {
@@ -100,20 +100,20 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
             }
 
             return (
-              <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
-                <p className="text-sm text-neutral-500">
+              <li key={r.id} className="rounded-card border border-line px-4 py-3">
+                <p className="text-sm text-ink-muted">
                   {review.restaurants.name} · 신고자 {reporter?.nickname ?? "(알 수 없음)"}
                 </p>
                 <p className="mt-1 font-semibold">{review.one_line_review ?? "(한 줄 후기 없음)"}</p>
-                <p className="mt-1 text-sm text-neutral-600">사유: {r.reason}</p>
+                <p className="mt-1 text-sm text-ink-muted">사유: {r.reason}</p>
                 <div className="mt-2 flex gap-2">
                   <form action={dismissReport.bind(null, r.id)} className="flex-1">
-                    <button type="submit" className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                    <button type="submit" className="w-full rounded-control bg-surface-muted px-3 py-2 text-sm">
                       기각
                     </button>
                   </form>
                   <form action={deleteReportedReview.bind(null, r.id)} className="flex-1">
-                    <button type="submit" className="w-full rounded-xl bg-white px-3 py-2 text-sm text-red-600 shadow-sm">
+                    <button type="submit" className="w-full rounded-control bg-surface px-3 py-2 text-sm text-red-600 shadow-card">
                       리뷰 삭제
                     </button>
                   </form>
@@ -127,7 +127,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">댓글 신고</h2>
         {(!commentReports || commentReports.length === 0) && (
-          <p className="text-sm text-neutral-500">대기 중인 댓글 신고가 없어요.</p>
+          <p className="text-sm text-ink-muted">대기 중인 댓글 신고가 없어요.</p>
         )}
         <ul className="flex flex-col gap-3">
           {(commentReports ?? []).map((r) => {
@@ -144,20 +144,20 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
             }
 
             return (
-              <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
-                <p className="text-sm text-neutral-500">
+              <li key={r.id} className="rounded-card border border-line px-4 py-3">
+                <p className="text-sm text-ink-muted">
                   {restaurant.name} · 신고자 {reporter?.nickname ?? "(알 수 없음)"}
                 </p>
                 <p className="mt-1 font-semibold">{comment.content}</p>
-                <p className="mt-1 text-sm text-neutral-600">사유: {r.reason}</p>
+                <p className="mt-1 text-sm text-ink-muted">사유: {r.reason}</p>
                 <div className="mt-2 flex gap-2">
                   <form action={dismissReport.bind(null, r.id)} className="flex-1">
-                    <button type="submit" className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                    <button type="submit" className="w-full rounded-control bg-surface-muted px-3 py-2 text-sm">
                       기각
                     </button>
                   </form>
                   <form action={deleteReportedComment.bind(null, r.id)} className="flex-1">
-                    <button type="submit" className="w-full rounded-xl bg-white px-3 py-2 text-sm text-red-600 shadow-sm">
+                    <button type="submit" className="w-full rounded-control bg-surface px-3 py-2 text-sm text-red-600 shadow-card">
                       댓글 삭제
                     </button>
                   </form>
@@ -171,7 +171,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">식당 정보 신고</h2>
         {(!restaurantReports || restaurantReports.length === 0) && (
-          <p className="text-sm text-neutral-500">대기 중인 식당 정보 신고가 없어요.</p>
+          <p className="text-sm text-ink-muted">대기 중인 식당 정보 신고가 없어요.</p>
         )}
         <ul className="flex flex-col gap-3">
           {(restaurantReports ?? []).map((r) => {
@@ -183,16 +183,16 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
             }
 
             return (
-              <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
-                <p className="text-sm text-neutral-500">
+              <li key={r.id} className="rounded-card border border-line px-4 py-3">
+                <p className="text-sm text-ink-muted">
                   {restaurant.name} · 신고자 {reporter?.nickname ?? "(알 수 없음)"} ·{" "}
                   {new Date(r.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
                 </p>
                 <p className="mt-1 font-semibold">{getRestaurantReportCategoryLabel(r.category ?? "")}</p>
-                {r.reason && <p className="mt-1 text-sm text-neutral-600">메모: {r.reason}</p>}
+                {r.reason && <p className="mt-1 text-sm text-ink-muted">메모: {r.reason}</p>}
                 <div className="mt-2 flex gap-2">
                   <form action={dismissReport.bind(null, r.id)} className="flex-1">
-                    <button type="submit" className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                    <button type="submit" className="w-full rounded-control bg-surface-muted px-3 py-2 text-sm">
                       확인 완료
                     </button>
                   </form>

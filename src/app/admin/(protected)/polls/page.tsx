@@ -19,24 +19,24 @@ export default async function AdminPollsPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">
-      <Link href="/admin" className="text-sm text-neutral-500">
+      <Link href="/admin" className="text-sm text-ink-muted">
         ← 관리자 홈으로
       </Link>
 
       <h1 className="text-xl font-bold text-brand-dark">투표 상태 확인</h1>
-      <p className="text-sm text-neutral-500">최근 생성된 투표 최대 50개(읽기 전용).</p>
+      <p className="text-sm text-ink-muted">최근 생성된 투표 최대 50개(읽기 전용).</p>
 
       {polls.length === 0 ? (
-        <p className="text-sm text-neutral-500">아직 생성된 투표가 없어요.</p>
+        <p className="text-sm text-ink-muted">아직 생성된 투표가 없어요.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {polls.map((p) => (
-            <li key={p.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
+            <li key={p.id} className="rounded-card border border-line px-4 py-3 text-sm">
               <p className="font-semibold">
                 {p.pollType === "restaurant" ? "식당 투표" : "메뉴 투표"}
                 {p.restaurantName && ` · ${p.restaurantName}`}
               </p>
-              <p className="text-neutral-500">
+              <p className="text-ink-muted">
                 {STATUS_LABELS[p.status] ?? p.status} · {p.totalVotes}표 · 생성자 {p.creatorNickname}
                 {p.isAppointmentLinked ? " · 약속 연결" : " · 독립 투표"}
               </p>

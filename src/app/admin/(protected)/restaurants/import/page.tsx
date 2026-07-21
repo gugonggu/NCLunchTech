@@ -19,7 +19,7 @@ export default async function CsvImportPage({
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-12">
-      <Link href="/admin/restaurants" className="text-sm text-neutral-500">
+      <Link href="/admin/restaurants" className="text-sm text-ink-muted">
         ← 식당 관리로
       </Link>
 
@@ -29,13 +29,13 @@ export default async function CsvImportPage({
 
       <section className="flex flex-col gap-2">
         <h2 className="font-bold text-brand-dark">메뉴·가격</h2>
-        <p className="text-xs text-neutral-500">헤더: kakao_place_id,name,price (price는 비워도 됩니다)</p>
+        <p className="text-xs text-ink-muted">헤더: kakao_place_id,name,price (price는 비워도 됩니다)</p>
         <Link href="/templates/menu-import-template.csv" download className="text-sm font-semibold text-brand underline">
           메뉴 CSV 템플릿 받기
         </Link>
         <form action={uploadMenuCsv} className="flex flex-col gap-2" encType="multipart/form-data">
           <input type="file" name="file" accept=".csv,text/csv" required className="text-sm" />
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             업로드하고 미리보기
           </button>
         </form>
@@ -43,7 +43,7 @@ export default async function CsvImportPage({
 
       <section className="flex flex-col gap-2">
         <h2 className="font-bold text-brand-dark">영업시간</h2>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-ink-muted">
           헤더: kakao_place_id,day_of_week,is_closed,open_time,close_time (day_of_week는 0=일요일~6=토요일)
         </p>
         <Link href="/templates/hours-import-template.csv" download className="text-sm font-semibold text-brand underline">
@@ -51,7 +51,7 @@ export default async function CsvImportPage({
         </Link>
         <form action={uploadHoursCsv} className="flex flex-col gap-2" encType="multipart/form-data">
           <input type="file" name="file" accept=".csv,text/csv" required className="text-sm" />
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             업로드하고 미리보기
           </button>
         </form>

@@ -35,7 +35,7 @@ export function LogoutButton() {
       <button
         onClick={handleLogout}
         disabled={isSubmitting}
-        className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-50"
+        className="rounded-control bg-brand px-4 py-3 font-semibold text-black disabled:opacity-50"
       >
         {isSubmitting ? "로그아웃 중..." : "로그아웃"}
       </button>

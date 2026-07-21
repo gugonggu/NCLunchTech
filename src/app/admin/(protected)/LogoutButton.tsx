@@ -14,7 +14,7 @@ export function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white"
+      className="rounded-control bg-brand px-4 py-3 font-semibold text-black"
     >
       로그아웃
     </button>

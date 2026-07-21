@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
       <h1 className="text-xl font-bold text-brand-dark">관리자 로그인</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
-          className="rounded-2xl border border-neutral-200 px-4 py-3"
+          className="rounded-control border border-line px-4 py-3"
           type="email"
           placeholder="이메일"
           value={email}
@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
           required
         />
         <input
-          className="rounded-2xl border border-neutral-200 px-4 py-3"
+          className="rounded-control border border-line px-4 py-3"
           type="password"
           placeholder="비밀번호"
           value={password}
@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-50"
+          className="rounded-control bg-brand px-4 py-3 font-semibold text-black disabled:opacity-50"
         >
           로그인
         </button>

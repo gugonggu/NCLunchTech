@@ -19,7 +19,7 @@ export function SettlementCopyButton({ text }: { text: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold"
+        className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold"
       >
         정산 결과 복사하기
       </button>

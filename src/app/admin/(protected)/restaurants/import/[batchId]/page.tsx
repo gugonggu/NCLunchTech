@@ -53,7 +53,7 @@ export default async function CsvBatchPreviewPage({
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">
-      <Link href="/admin/restaurants/import" className="text-sm text-neutral-500">
+      <Link href="/admin/restaurants/import" className="text-sm text-ink-muted">
         ← 업로드로
       </Link>
 
@@ -61,16 +61,16 @@ export default async function CsvBatchPreviewPage({
 
       {feedbackMessage && <p className="text-sm text-brand-dark">{feedbackMessage}</p>}
 
-      <p className="text-sm text-neutral-600">
+      <p className="text-sm text-ink-muted">
         신규 {newCount}건 · 수정 {updateCount}건 · 오류 {errorCount}건
       </p>
 
       {batch.status === "applied" ? (
-        <p className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
+        <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
           이미 반영된 업로드예요({batch.appliedAt}).
         </p>
       ) : errorCount > 0 ? (
-        <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p className="rounded-card bg-red-50 px-4 py-3 text-sm text-red-600">
           오류 행을 수정한 CSV를 다시 업로드해야 전체 내용을 반영할 수 있어요.
         </p>
       ) : (
@@ -78,7 +78,7 @@ export default async function CsvBatchPreviewPage({
           <button
             type="submit"
             disabled={validCount === 0}
-            className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="rounded-control bg-brand px-4 py-3 font-semibold text-black disabled:opacity-50"
           >
             반영({validCount}건)
           </button>
@@ -90,8 +90,8 @@ export default async function CsvBatchPreviewPage({
           ? menuRows.map((row) => (
               <li
                 key={row.rowNumber}
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  row.errors.length > 0 ? "border-red-300 bg-red-50" : "border-neutral-200"
+                className={`rounded-card border px-4 py-3 text-sm ${
+                  row.errors.length > 0 ? "border-red-300 bg-red-50" : "border-line"
                 }`}
               >
                 <p className="font-semibold">
@@ -109,8 +109,8 @@ export default async function CsvBatchPreviewPage({
           : hoursRows.map((row) => (
               <li
                 key={row.rowNumber}
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  row.errors.length > 0 ? "border-red-300 bg-red-50" : "border-neutral-200"
+                className={`rounded-card border px-4 py-3 text-sm ${
+                  row.errors.length > 0 ? "border-red-300 bg-red-50" : "border-line"
                 }`}
               >
                 <p className="font-semibold">

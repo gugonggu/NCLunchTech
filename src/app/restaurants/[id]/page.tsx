@@ -105,12 +105,12 @@ export default async function RestaurantDetailPage({
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
-      <Link href="/restaurants" className="text-sm text-neutral-500">
+      <Link href="/restaurants" className="text-sm text-ink-muted">
         ← 목록으로
       </Link>
 
       {reportFeedbackMessage && (
-        <p className="rounded-2xl bg-white px-4 py-3 text-sm text-brand-dark shadow-sm">
+        <p className="rounded-card bg-surface px-4 py-3 text-sm text-brand-dark shadow-card">
           {reportFeedbackMessage}
         </p>
       )}
@@ -126,12 +126,12 @@ export default async function RestaurantDetailPage({
             </form>
           )}
         </div>
-        <p className="text-neutral-700">{restaurant.category}</p>
-        <p className="text-neutral-700">{restaurant.address}</p>
-        {restaurant.phone && <p className="text-neutral-700">{restaurant.phone}</p>}
-        {distanceM !== null && <p className="text-neutral-700">KNN타워에서 약 {distanceM}m</p>}
+        <p className="text-ink">{restaurant.category}</p>
+        <p className="text-ink">{restaurant.address}</p>
+        {restaurant.phone && <p className="text-ink">{restaurant.phone}</p>}
+        {distanceM !== null && <p className="text-ink">KNN타워에서 약 {distanceM}m</p>}
         {employee && (
-          <Link href={`/reports/new?restaurantId=${restaurant.id}`} className="mt-1 text-sm text-neutral-400 underline">
+          <Link href={`/reports/new?restaurantId=${restaurant.id}`} className="mt-1 text-sm text-ink-muted underline">
             정보가 달라졌나요? 제보하기
           </Link>
         )}
@@ -141,7 +141,7 @@ export default async function RestaurantDetailPage({
         <form action={changeAppointmentRestaurant.bind(null, forAppointment, restaurant.id)}>
           <button
             type="submit"
-            className="w-full rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+            className="w-full rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
           >
             이 약속의 식당으로 변경
           </button>
@@ -151,14 +151,14 @@ export default async function RestaurantDetailPage({
           <form action={decideRestaurant.bind(null, restaurant.id)}>
             <button
               type="submit"
-              className="w-full rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+              className="w-full rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
             >
               혼자 결정하기
             </button>
           </form>
           <Link
             href={`/appointments/new?restaurantId=${restaurant.id}`}
-            className="block w-full rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
+            className="block w-full rounded-control bg-surface px-4 py-3 text-center font-semibold text-brand-dark shadow-card"
           >
             동료와 함께
           </Link>
@@ -169,7 +169,7 @@ export default async function RestaurantDetailPage({
         href={kakaoMapUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-2xl bg-white px-4 py-3 text-center font-semibold text-brand-dark shadow-sm"
+        className="rounded-control bg-surface px-4 py-3 text-center font-semibold text-brand-dark shadow-card"
       >
         카카오맵에서 보기
       </a>
@@ -178,11 +178,11 @@ export default async function RestaurantDetailPage({
         <h2 className="font-bold text-brand-dark">메뉴</h2>
         <ul className="flex flex-col gap-2">
           {(menuItems ?? []).map((item) => (
-            <li key={item.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
+            <li key={item.id} className="rounded-card border border-line px-4 py-3">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{item.name}</span>
                 {item.is_sold_out && (
-                  <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs">품절</span>
+                  <span className="rounded-full bg-line px-2 py-0.5 text-xs">품절</span>
                 )}
               </div>
               <div className="mt-2 flex items-center gap-2">
@@ -193,14 +193,14 @@ export default async function RestaurantDetailPage({
                     min={0}
                     defaultValue={item.price ?? ""}
                     placeholder="가격 정보 없음"
-                    className="w-32 rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                    className="w-32 rounded-xl border border-line px-3 py-2 text-sm"
                   />
-                  <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                  <button type="submit" className="rounded-xl bg-surface-muted px-3 py-2 text-sm">
                     가격 저장
                   </button>
                 </form>
                 <form action={toggleMenuSoldOut.bind(null, item.id, id, !item.is_sold_out)}>
-                  <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                  <button type="submit" className="rounded-xl bg-surface-muted px-3 py-2 text-sm">
                     {item.is_sold_out ? "품절 해제" : "품절 처리"}
                   </button>
                 </form>
@@ -215,16 +215,16 @@ export default async function RestaurantDetailPage({
             name="name"
             placeholder="메뉴 이름"
             required
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           />
           <input
             type="number"
             name="price"
             min={0}
             placeholder="가격(선택)"
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           />
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             메뉴 추가
           </button>
         </form>
@@ -238,7 +238,7 @@ export default async function RestaurantDetailPage({
             return (
               <div
                 key={day}
-                className="flex items-center gap-2 rounded-2xl border border-neutral-200 px-4 py-3"
+                className="flex items-center gap-2 rounded-card border border-line px-4 py-3"
               >
                 <span className="w-6 font-semibold">{label}</span>
                 <label className="flex items-center gap-1 text-sm">
@@ -250,7 +250,7 @@ export default async function RestaurantDetailPage({
                   step={60}
                   name={`open_${day}`}
                   defaultValue={formatTimeToMinute(row?.open_time)}
-                  className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
+                  className="rounded-xl border border-line px-2 py-1 text-sm"
                 />
                 <span>~</span>
                 <input
@@ -258,12 +258,12 @@ export default async function RestaurantDetailPage({
                   step={60}
                   name={`close_${day}`}
                   defaultValue={formatTimeToMinute(row?.close_time)}
-                  className="rounded-xl border border-neutral-200 px-2 py-1 text-sm"
+                  className="rounded-xl border border-line px-2 py-1 text-sm"
                 />
               </div>
             );
           })}
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             영업시간 저장
           </button>
         </form>
@@ -275,10 +275,10 @@ export default async function RestaurantDetailPage({
 
           {reviewSummary ? (
             <>
-              <p className="text-sm text-neutral-500">리뷰 {reviewSummary.count}개</p>
+              <p className="text-sm text-ink-muted">리뷰 {reviewSummary.count}개</p>
               <ul className="flex flex-col gap-1">
                 {RATING_LABELS.map(({ key, label }) => (
-                  <li key={key} className="flex items-center justify-between text-sm text-neutral-700">
+                  <li key={key} className="flex items-center justify-between text-sm text-ink">
                     <span>{label}</span>
                     <span>{reviewSummary[key].toFixed(1)}점</span>
                   </li>
@@ -289,18 +289,18 @@ export default async function RestaurantDetailPage({
                   {reviewDetails.map(({ review: r, comments, helpfulCount, iReacted }) => {
                     const isOwnReview = employee?.id === r.employeeId;
                     return (
-                      <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
+                      <li key={r.id} className="rounded-card border border-line px-4 py-3 text-sm text-ink">
                         {r.oneLineReview && <p>{r.oneLineReview}</p>}
                         {r.tags && r.tags.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {r.tags.map((tag) => (
-                              <span key={tag} className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                              <span key={tag} className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-ink-muted">
                                 {tag}
                               </span>
                             ))}
                           </div>
                         )}
-                        <div className="mt-1 flex items-center justify-between text-xs text-neutral-400">
+                        <div className="mt-1 flex items-center justify-between text-xs text-ink-muted">
                           <span>{r.employeeNickname}</span>
                           {employee && !isOwnReview && (
                             <Link href={`/reports/new?reviewId=${r.id}`} className="underline">
@@ -315,7 +315,7 @@ export default async function RestaurantDetailPage({
                               <button
                                 type="submit"
                                 className={`rounded-xl px-3 py-1.5 text-xs font-semibold ${
-                                  iReacted ? "bg-brand text-white" : "bg-neutral-100 text-neutral-700"
+                                  iReacted ? "bg-brand text-black" : "bg-surface-muted text-ink-muted"
                                 }`}
                               >
                                 도움돼요 {helpfulCount > 0 && helpfulCount}
@@ -324,13 +324,13 @@ export default async function RestaurantDetailPage({
                           </form>
                         )}
                         {!employee && helpfulCount > 0 && (
-                          <p className="mt-2 text-xs text-neutral-400">도움돼요 {helpfulCount}</p>
+                          <p className="mt-2 text-xs text-ink-muted">도움돼요 {helpfulCount}</p>
                         )}
 
                         {comments.length > 0 && (
-                          <ul className="mt-3 flex flex-col gap-2 border-t border-neutral-100 pt-2">
+                          <ul className="mt-3 flex flex-col gap-2 border-t border-line pt-2">
                             {comments.map((c) => (
-                              <li key={c.id} className="text-xs text-neutral-600">
+                              <li key={c.id} className="text-xs text-ink-muted">
                                 {employee?.id === c.employeeId ? (
                                   <form action={updateReviewComment.bind(null, c.id, id)} className="flex flex-col gap-1">
                                     <textarea
@@ -338,18 +338,18 @@ export default async function RestaurantDetailPage({
                                       defaultValue={c.content}
                                       maxLength={300}
                                       rows={2}
-                                      className="rounded-xl border border-neutral-200 px-3 py-2 text-xs text-neutral-900"
+                                      className="rounded-xl border border-line px-3 py-2 text-xs text-ink"
                                     />
                                     <div className="flex items-center justify-between">
-                                      <span className="text-neutral-400">{c.employeeNickname}</span>
+                                      <span className="text-ink-muted">{c.employeeNickname}</span>
                                       <div className="flex gap-2">
-                                        <button type="submit" className="rounded-lg bg-neutral-100 px-2 py-1">
+                                        <button type="submit" className="rounded-lg bg-surface-muted px-2 py-1">
                                           수정
                                         </button>
                                         <button
                                           type="submit"
                                           formAction={deleteReviewComment.bind(null, c.id, id)}
-                                          className="rounded-lg bg-white px-2 py-1 text-red-600 shadow-sm"
+                                          className="rounded-lg bg-surface px-2 py-1 text-red-600 shadow-card"
                                         >
                                           삭제
                                         </button>
@@ -378,9 +378,9 @@ export default async function RestaurantDetailPage({
                               maxLength={300}
                               rows={2}
                               placeholder="댓글 남기기"
-                              className="rounded-xl border border-neutral-200 px-3 py-2 text-xs text-neutral-900"
+                              className="rounded-xl border border-line px-3 py-2 text-xs text-ink"
                             />
-                            <button type="submit" className="self-end rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold">
+                            <button type="submit" className="self-end rounded-lg bg-surface-muted px-3 py-1.5 text-xs font-semibold">
                               댓글 등록
                             </button>
                           </form>
@@ -392,13 +392,13 @@ export default async function RestaurantDetailPage({
               )}
             </>
           ) : (
-            <p className="text-sm text-neutral-500">아직 등록된 리뷰가 없어요.</p>
+            <p className="text-sm text-ink-muted">아직 등록된 리뷰가 없어요.</p>
           )}
 
           {canReview && (
             <Link
               href={`/reviews/new?restaurantId=${id}`}
-              className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+              className="rounded-control bg-surface px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-card"
             >
               리뷰 남기기
             </Link>
@@ -413,12 +413,12 @@ export default async function RestaurantDetailPage({
             {photoGallery.map((p) => (
               <li key={p.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                <img src={p.url} alt={`${restaurant.name} 방문 사진`} className="aspect-square w-full rounded-xl object-cover" />
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-neutral-500">아직 등록된 사진이 없어요. 리뷰를 남길 때 사진을 추가해보세요.</p>
+          <p className="text-sm text-ink-muted">아직 등록된 사진이 없어요. 리뷰를 남길 때 사진을 추가해보세요.</p>
         )}
       </section>
 
@@ -426,17 +426,17 @@ export default async function RestaurantDetailPage({
         <h2 className="font-bold text-brand-dark">지금 상태</h2>
 
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold text-neutral-600">혼잡도</p>
+          <p className="text-sm font-semibold text-ink-muted">혼잡도</p>
           {statusSummary.congestion ? (
-            <p className="text-sm text-neutral-700">
+            <p className="text-sm text-ink">
               {statusSummary.congestion.latestValue} · {formatMinutesAgo(new Date(statusSummary.congestion.latestAt), now)}
-              <span className="text-neutral-400">
+              <span className="text-ink-muted">
                 {" "}
                 (최근 {statusSummary.congestion.freshCount}건, {statusSummary.congestion.distinctReporterCount}명 참여)
               </span>
             </p>
           ) : (
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-ink-muted">
               아직 오늘의 혼잡 제보가 없어요. 도착했다면 첫 제보를 남겨주세요.
             </p>
           )}
@@ -446,19 +446,19 @@ export default async function RestaurantDetailPage({
         </div>
 
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold text-neutral-600">영업 상태</p>
+          <p className="text-sm font-semibold text-ink-muted">영업 상태</p>
           {statusSummary.businessStatus ? (
-            <p className="text-sm text-neutral-700">
+            <p className="text-sm text-ink">
               {statusSummary.businessStatus.latestValue} ·{" "}
               {formatMinutesAgo(new Date(statusSummary.businessStatus.latestAt), now)}
-              <span className="text-neutral-400">
+              <span className="text-ink-muted">
                 {" "}
                 (최근 {statusSummary.businessStatus.freshCount}건, {statusSummary.businessStatus.distinctReporterCount}명
                 참여)
               </span>
             </p>
           ) : (
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-ink-muted">
               아직 오늘의 영업 상태 제보가 없어요. 확인했다면 알려주세요.
             </p>
           )}
@@ -471,7 +471,7 @@ export default async function RestaurantDetailPage({
           )}
         </div>
 
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-ink-muted">
           제보는 여러 직원의 최근 의견을 참고용으로 모은 것이라, 한 사람의 제보만으로 확정된 사실은 아니에요.
         </p>
       </section>

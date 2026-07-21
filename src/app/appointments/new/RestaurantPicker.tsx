@@ -37,11 +37,11 @@ function Pagination({ state }: { state: Extract<AppointmentRestaurantSearchState
           이전
         </Link>
       ) : (
-        <span aria-disabled="true" className="inline-flex min-h-11 items-center text-sm text-neutral-400">
+        <span aria-disabled="true" className="inline-flex min-h-11 items-center text-sm text-ink-muted">
           이전
         </span>
       )}
-      <p className="text-sm text-neutral-600">
+      <p className="text-sm text-ink-muted">
         총 {state.totalCount}개 · {state.page}/{state.totalPages}페이지
       </p>
       {nextHref ? (
@@ -49,7 +49,7 @@ function Pagination({ state }: { state: Extract<AppointmentRestaurantSearchState
           다음
         </Link>
       ) : (
-        <span aria-disabled="true" className="inline-flex min-h-11 items-center text-sm text-neutral-400">
+        <span aria-disabled="true" className="inline-flex min-h-11 items-center text-sm text-ink-muted">
           다음
         </span>
       )}
@@ -60,7 +60,7 @@ function Pagination({ state }: { state: Extract<AppointmentRestaurantSearchState
 function SearchForm({ filters }: { filters: NormalizedAppointmentRestaurantSearch }) {
   return (
     <form method="get" className="grid gap-3 rounded-card border border-line bg-surface p-4 sm:grid-cols-2">
-      <label className="flex flex-col gap-1 text-sm text-neutral-700 sm:col-span-2">
+      <label className="flex flex-col gap-1 text-sm text-ink sm:col-span-2">
         식당 이름
         <input
           type="text"
@@ -69,7 +69,7 @@ function SearchForm({ filters }: { filters: NormalizedAppointmentRestaurantSearc
           className="min-h-11 rounded-control border border-line px-3 text-base text-ink"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-neutral-700">
+      <label className="flex flex-col gap-1 text-sm text-ink">
         음식 분류
         <select name="category" defaultValue={filters.category} className="min-h-11 rounded-control border border-line px-3 text-base text-ink">
           <option value="">전체</option>
@@ -78,7 +78,7 @@ function SearchForm({ filters }: { filters: NormalizedAppointmentRestaurantSearc
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm text-neutral-700">
+      <label className="flex flex-col gap-1 text-sm text-ink">
         거리
         <select name="radius" defaultValue={String(filters.radius)} className="min-h-11 rounded-control border border-line px-3 text-base text-ink">
           {RADIUS_OPTIONS_M.map((radius) => (
@@ -86,7 +86,7 @@ function SearchForm({ filters }: { filters: NormalizedAppointmentRestaurantSearc
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm text-neutral-700">
+      <label className="flex flex-col gap-1 text-sm text-ink">
         정렬
         <select name="sort" defaultValue={filters.sort} className="min-h-11 rounded-control border border-line px-3 text-base text-ink">
           {SORT_OPTIONS.map(([value, label]) => (
@@ -95,7 +95,7 @@ function SearchForm({ filters }: { filters: NormalizedAppointmentRestaurantSearc
         </select>
       </label>
       <div className="flex items-end justify-between gap-3">
-        <label className="flex min-h-11 items-center gap-2 text-sm text-neutral-700">
+        <label className="flex min-h-11 items-center gap-2 text-sm text-ink">
           <input type="checkbox" name="openNow" value="on" defaultChecked={filters.openNow} />
           영업 중만
         </label>
@@ -123,8 +123,8 @@ export function RestaurantPicker({ state }: { state: AppointmentRestaurantSearch
                 className="flex min-h-11 flex-col gap-1 rounded-card border border-line bg-surface p-4 text-ink hover:bg-surface-muted"
               >
                 <span className="font-semibold">{restaurant.name}</span>
-                <span className="text-sm text-neutral-600">{restaurant.category} · {restaurant.address}</span>
-                <span className="text-sm text-neutral-600">
+                <span className="text-sm text-ink-muted">{restaurant.category} · {restaurant.address}</span>
+                <span className="text-sm text-ink-muted">
                   {Math.round(restaurant.distanceM)}m · {restaurant.isOpenNow ? "영업 중" : "영업 종료"}
                 </span>
               </Link>

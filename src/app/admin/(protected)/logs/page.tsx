@@ -30,7 +30,7 @@ export default async function AdminLogsPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">
-      <Link href="/admin" className="text-sm text-neutral-500">
+      <Link href="/admin" className="text-sm text-ink-muted">
         ← 관리자 홈으로
       </Link>
 
@@ -40,12 +40,12 @@ export default async function AdminLogsPage() {
         {(logs ?? []).map((log) => {
           const admin = log.admins as unknown as { display_name: string | null } | null;
           return (
-            <li key={log.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
+            <li key={log.id} className="rounded-card border border-line px-4 py-3 text-sm">
               <p>
                 {admin?.display_name ?? "관리자"} · {log.action}
                 {log.target_type && ` · ${log.target_type}`}
               </p>
-              <p className="text-xs text-neutral-400">{displayFormatter.format(new Date(log.created_at))}</p>
+              <p className="text-xs text-ink-muted">{displayFormatter.format(new Date(log.created_at))}</p>
             </li>
           );
         })}

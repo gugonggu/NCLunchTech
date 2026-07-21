@@ -52,7 +52,7 @@ export default async function PollDetailPage({
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-      <Link href="/" className="text-sm text-neutral-500">
+      <Link href="/" className="text-sm text-ink-muted">
         ← 홈으로
       </Link>
 
@@ -60,19 +60,19 @@ export default async function PollDetailPage({
         {poll.pollType === "restaurant" ? "식당 투표" : "메뉴 투표"}
       </h1>
       {poll.pollType === "menu" && poll.restaurantName && (
-        <p className="text-neutral-700">{poll.restaurantName}</p>
+        <p className="text-ink">{poll.restaurantName}</p>
       )}
       {poll.appointmentId && (
-        <Link href={`/appointments/${poll.appointmentId}`} className="text-sm text-neutral-500 underline">
+        <Link href={`/appointments/${poll.appointmentId}`} className="text-sm text-ink-muted underline">
           연결된 약속 보기
         </Link>
       )}
 
       {feedbackMessage && (
-        <p className="rounded-2xl bg-white px-4 py-3 text-sm text-brand-dark shadow-sm">{feedbackMessage}</p>
+        <p className="rounded-card bg-surface px-4 py-3 text-sm text-brand-dark shadow-card">{feedbackMessage}</p>
       )}
 
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-ink-muted">
         {poll.status === "open" && `${displayFormatter.format(new Date(poll.closesAt))}에 마감`}
         {poll.status === "closed" && "마감됨 · 결과 확정 대기 중"}
         {poll.status === "decided" && "결과가 확정됐어요"}
@@ -87,8 +87,8 @@ export default async function PollDetailPage({
           return (
             <li key={option.id}>
               <div
-                className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
-                  isDecided ? "border-brand bg-brand-bg" : isMine ? "border-brand" : "border-neutral-200"
+                className={`flex items-center justify-between rounded-card border px-4 py-3 ${
+                  isDecided ? "border-brand bg-brand-bg" : isMine ? "border-brand" : "border-line"
                 }`}
               >
                 <span>
@@ -96,14 +96,14 @@ export default async function PollDetailPage({
                   {isMine && <span className="ml-2 text-xs text-brand-dark">내 선택</span>}
                   {isDecided && <span className="ml-2 text-xs font-semibold text-brand-dark">결정됨</span>}
                   {!isDecided && poll.status !== "open" && isWinning && (
-                    <span className="ml-2 text-xs text-neutral-500">공동 1위</span>
+                    <span className="ml-2 text-xs text-ink-muted">공동 1위</span>
                   )}
                 </span>
                 <span className="flex items-center gap-3">
-                  <span className="text-sm text-neutral-500">{option.voteCount}표</span>
+                  <span className="text-sm text-ink-muted">{option.voteCount}표</span>
                   {isOpen && canVote && (
                     <form action={voteInPoll.bind(null, poll.id, option.id)}>
-                      <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-1.5 text-xs font-semibold">
+                      <button type="submit" className="rounded-xl bg-surface-muted px-3 py-1.5 text-xs font-semibold">
                         {isMine ? "다시 선택" : "투표"}
                       </button>
                     </form>
@@ -112,7 +112,7 @@ export default async function PollDetailPage({
                     <form action={decidePoll.bind(null, poll.id, option.id)}>
                       <button
                         type="submit"
-                        className="rounded-xl bg-brand px-3 py-1.5 text-xs font-semibold text-white"
+                        className="rounded-xl bg-brand px-3 py-1.5 text-xs font-semibold text-black"
                       >
                         이 결과로 결정
                       </button>
@@ -129,7 +129,7 @@ export default async function PollDetailPage({
         <form action={cancelVote.bind(null, poll.id)}>
           <button
             type="submit"
-            className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-neutral-600 shadow-sm"
+            className="w-full rounded-control bg-surface px-4 py-3 text-sm font-semibold text-ink-muted shadow-card"
           >
             투표 취소
           </button>
@@ -137,12 +137,12 @@ export default async function PollDetailPage({
       )}
 
       {isOpen && employee && poll.appointmentId && !canVote && (
-        <p className="text-sm text-neutral-500">이 약속에서 수락한 참여자만 투표할 수 있어요.</p>
+        <p className="text-sm text-ink-muted">이 약속에서 수락한 참여자만 투표할 수 있어요.</p>
       )}
 
       {isOpen && isCreator && (
         <form action={closePoll.bind(null, poll.id)}>
-          <button type="submit" className="w-full rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
+          <button type="submit" className="w-full rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
             지금 마감하기
           </button>
         </form>
@@ -151,7 +151,7 @@ export default async function PollDetailPage({
       {canBridgeToAppointment && (
         <Link
           href={`/appointments/new?restaurantId=${decidedOptionRestaurantId}&fromPollId=${poll.id}`}
-          className="rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+          className="rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
         >
           이 식당으로 약속 만들기
         </Link>
@@ -160,7 +160,7 @@ export default async function PollDetailPage({
       {!employee && (
         <Link
           href={`/login?returnTo=${encodeURIComponent(`/polls/${poll.id}`)}`}
-          className="rounded-2xl bg-brand px-4 py-3 text-center font-semibold text-white"
+          className="rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
         >
           로그인하고 투표하기
         </Link>

@@ -27,7 +27,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-12">
-      <Link href="/admin" className="text-sm text-neutral-500">
+      <Link href="/admin" className="text-sm text-ink-muted">
         ← 관리자 홈으로
       </Link>
 
@@ -45,9 +45,9 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             required
             minLength={4}
             maxLength={64}
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           />
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             저장
           </button>
         </form>
@@ -65,7 +65,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             required
             min={-90}
             max={90}
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           />
           <input
             type="number"
@@ -76,13 +76,13 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             required
             min={-180}
             max={180}
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           />
           <select
             name="defaultRadiusM"
             defaultValue={settings?.default_radius_m ?? 800}
             required
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           >
             <option value={300}>300m</option>
             <option value={500}>500m</option>
@@ -90,7 +90,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             <option value={1200}>1.2km</option>
             <option value={2000}>2km</option>
           </select>
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             저장
           </button>
         </form>
@@ -105,9 +105,9 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             maxLength={200}
             defaultValue={settings?.announcement ?? ""}
             placeholder="홈 화면 상단에 표시할 공지(비우면 숨김)"
-            className="rounded-2xl border border-neutral-200 px-4 py-3"
+            className="rounded-control border border-line px-4 py-3"
           />
-          <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
             저장
           </button>
         </form>

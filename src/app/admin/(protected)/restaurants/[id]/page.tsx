@@ -74,7 +74,7 @@ export default async function AdminRestaurantDetailPage({
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-12">
-      <Link href="/admin/restaurants" className="text-sm text-neutral-500">
+      <Link href="/admin/restaurants" className="text-sm text-ink-muted">
         ← 식당 관리로
       </Link>
 
@@ -82,15 +82,15 @@ export default async function AdminRestaurantDetailPage({
 
       <div>
         <h1 className="text-xl font-bold text-brand-dark">{restaurant.name}</h1>
-        <p className="text-neutral-700">
+        <p className="text-ink">
           {restaurant.category} · {restaurant.address}
         </p>
-        <p className="text-xs text-neutral-400">kakao_place_id: {restaurant.kakao_place_id}</p>
+        <p className="text-xs text-ink-muted">kakao_place_id: {restaurant.kakao_place_id}</p>
       </div>
 
       <div className="flex gap-2">
         <form action={setRestaurantActive.bind(null, id, !restaurant.is_active)} className="flex-1">
-          <button type="submit" className="w-full rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
+          <button type="submit" className="w-full rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
             {restaurant.is_active ? "비활성화" : "활성화"}
           </button>
         </form>
@@ -98,7 +98,7 @@ export default async function AdminRestaurantDetailPage({
           action={setExcludedFromRecommend.bind(null, id, !restaurant.excluded_from_recommend)}
           className="flex-1"
         >
-          <button type="submit" className="w-full rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-semibold">
+          <button type="submit" className="w-full rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
             {restaurant.excluded_from_recommend ? "추천 제외 해제" : "추천에서 제외"}
           </button>
         </form>
@@ -108,13 +108,13 @@ export default async function AdminRestaurantDetailPage({
         <h2 className="font-bold text-brand-dark">메뉴</h2>
         <ul className="flex flex-col gap-2">
           {(menuItems ?? []).map((item) => (
-            <li key={item.id} className="rounded-2xl border border-neutral-200 px-4 py-3">
+            <li key={item.id} className="rounded-card border border-line px-4 py-3">
               <p className="font-semibold">
                 {item.name} · {item.price !== null ? `${item.price}원` : "가격 없음"}
                 {item.is_sold_out && " · 품절"}
               </p>
               <form action={restoreMenuItem.bind(null, id, item.id)} className="mt-2">
-                <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+                <button type="submit" className="rounded-control bg-surface-muted px-3 py-2 text-sm">
                   직전 값으로 복구
                 </button>
               </form>
@@ -125,7 +125,7 @@ export default async function AdminRestaurantDetailPage({
 
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">영업시간</h2>
-        <ul className="flex flex-col gap-1 text-sm text-neutral-700">
+        <ul className="flex flex-col gap-1 text-sm text-ink">
           {DAY_LABELS.map((label, day) => {
             const row = hoursByDay.get(day);
             return (
@@ -141,7 +141,7 @@ export default async function AdminRestaurantDetailPage({
           })}
         </ul>
         <form action={restoreRestaurantHours.bind(null, id)}>
-          <button type="submit" className="rounded-xl bg-neutral-100 px-3 py-2 text-sm">
+          <button type="submit" className="rounded-control bg-surface-muted px-3 py-2 text-sm">
             영업시간 직전 값으로 복구
           </button>
         </form>
@@ -150,21 +150,21 @@ export default async function AdminRestaurantDetailPage({
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">최근 혼잡·영업 상태 제보</h2>
         {recentStatusReports.length === 0 ? (
-          <p className="text-sm text-neutral-500">아직 제보가 없어요.</p>
+          <p className="text-sm text-ink-muted">아직 제보가 없어요.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {recentStatusReports.map((r) => (
-              <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
+              <li key={r.id} className="rounded-card border border-line px-4 py-3 text-sm">
                 <p className="font-semibold">
                   {r.reportType === "congestion" ? "혼잡도" : "영업 상태"} · {r.value}
                   {r.invalidatedAt && <span className="ml-2 text-xs text-red-600">(무효화됨)</span>}
                 </p>
-                <p className="text-neutral-500">
+                <p className="text-ink-muted">
                   {r.employeeNickname} · {formatMinutesAgo(new Date(r.createdAt), now)}
                 </p>
                 {!r.invalidatedAt && (
                   <form action={invalidateStatusReportAction.bind(null, id, r.id)} className="mt-2">
-                    <button type="submit" className="rounded-lg bg-white px-2 py-1 text-xs text-red-600 shadow-sm">
+                    <button type="submit" className="rounded-control bg-surface px-2 py-1 text-xs text-red-600 shadow-card">
                       무효화
                     </button>
                   </form>
@@ -178,18 +178,22 @@ export default async function AdminRestaurantDetailPage({
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">최근 사진</h2>
         {recentPhotos.length === 0 ? (
-          <p className="text-sm text-neutral-500">아직 등록된 사진이 없어요.</p>
+          <p className="text-sm text-ink-muted">아직 등록된 사진이 없어요.</p>
         ) : (
           <ul className="grid grid-cols-3 gap-2">
             {recentPhotos.map((p) => (
               <li key={p.id} className="flex flex-col gap-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt="" className="aspect-square w-full rounded-xl object-cover" />
-                <p className="text-xs text-neutral-500">
+                <img
+                  src={p.url}
+                  alt={`${restaurant.name} 사진 · ${p.employeeNickname} 등록`}
+                  className="aspect-square w-full rounded-control object-cover"
+                />
+                <p className="text-xs text-ink-muted">
                   {p.employeeNickname} · {formatMinutesAgo(new Date(p.createdAt), now)}
                 </p>
                 <form action={deleteReviewPhotoAsAdmin.bind(null, id, p.id)}>
-                  <button type="submit" className="w-full rounded-lg bg-white px-2 py-1 text-xs text-red-600 shadow-sm">
+                  <button type="submit" className="w-full rounded-control bg-surface px-2 py-1 text-xs text-red-600 shadow-card">
                     삭제
                   </button>
                 </form>
@@ -202,17 +206,17 @@ export default async function AdminRestaurantDetailPage({
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">최근 댓글</h2>
         {recentComments.length === 0 ? (
-          <p className="text-sm text-neutral-500">아직 등록된 댓글이 없어요.</p>
+          <p className="text-sm text-ink-muted">아직 등록된 댓글이 없어요.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {recentComments.map((c) => (
-              <li key={c.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
+              <li key={c.id} className="rounded-card border border-line px-4 py-3 text-sm">
                 <p>{c.content}</p>
-                <p className="mt-1 text-xs text-neutral-500">
+                <p className="mt-1 text-xs text-ink-muted">
                   {c.employeeNickname} · {formatMinutesAgo(new Date(c.createdAt), now)}
                 </p>
                 <form action={deleteReviewCommentAsAdmin.bind(null, id, c.id)} className="mt-2">
-                  <button type="submit" className="rounded-lg bg-white px-2 py-1 text-xs text-red-600 shadow-sm">
+                  <button type="submit" className="rounded-control bg-surface px-2 py-1 text-xs text-red-600 shadow-card">
                     삭제
                   </button>
                 </form>

@@ -18,10 +18,18 @@ export default async function RootLayout({
   return (
     <html lang="ko">
       <body className="antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-brand focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black"
+        >
+          본문 바로가기
+        </a>
         {employee ? (
           <AppShell>{children}</AppShell>
         ) : (
-          <div className="flex min-h-screen flex-col">{children}</div>
+          <div id="main-content" className="flex min-h-dvh flex-col">
+            {children}
+          </div>
         )}
       </body>
     </html>

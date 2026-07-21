@@ -29,7 +29,7 @@ export default async function AdminRestaurantsPage({
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-12">
-      <Link href="/admin" className="text-sm text-neutral-500">
+      <Link href="/admin" className="text-sm text-ink-muted">
         ← 관리자 홈으로
       </Link>
 
@@ -41,7 +41,7 @@ export default async function AdminRestaurantsPage({
         <SyncKakaoButton />
         <Link
           href="/admin/restaurants/import"
-          className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-sm"
+          className="rounded-card bg-surface px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-card"
         >
           CSV 업로드
         </Link>
@@ -53,14 +53,14 @@ export default async function AdminRestaurantsPage({
           name="q"
           defaultValue={query}
           placeholder="식당 이름 검색"
-          className="flex-1 rounded-2xl border border-neutral-200 px-4 py-3"
+          className="flex-1 rounded-control border border-line px-4 py-3"
         />
-        <button type="submit" className="rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
           검색
         </button>
       </form>
 
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-ink-muted">
         {filtered.length}건 중 {visible.length}건 표시
         {filtered.length > RESULT_LIMIT && " (검색어로 좁혀보세요)"}
       </p>
@@ -70,10 +70,10 @@ export default async function AdminRestaurantsPage({
           <li key={r.id}>
             <Link
               href={`/admin/restaurants/${r.id}`}
-              className="block rounded-2xl border border-neutral-200 px-4 py-3"
+              className="block rounded-card border border-line px-4 py-3"
             >
               <p className="font-semibold">{r.name}</p>
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-ink-muted">
                 {r.category} · {r.address}
                 {!r.is_active && " · 비활성"}
                 {r.excluded_from_recommend && " · 추천 제외"}

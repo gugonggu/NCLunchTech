@@ -128,10 +128,10 @@ export function RestaurantsMapView({
 
   return (
     <div className="absolute inset-0">
-      <div ref={mapContainerRef} className="absolute inset-0 bg-neutral-100" />
+      <div ref={mapContainerRef} className="absolute inset-0 bg-surface-muted" />
 
       {mapError && (
-        <div className="absolute inset-x-0 top-0 z-20 bg-white px-4 py-3 text-center text-sm text-neutral-600 shadow-sm">
+        <div className="absolute inset-x-0 top-0 z-20 bg-surface px-4 py-3 text-center text-sm text-ink-muted shadow-card">
           {mapError}
         </div>
       )}
@@ -142,7 +142,7 @@ export function RestaurantsMapView({
           onClick={() => setSheetSnap("half")}
           aria-controls="restaurant-results-sheet"
           aria-expanded="false"
-          className="absolute bottom-4 right-4 z-20 min-h-11 min-w-11 rounded-2xl bg-white px-4 text-sm font-semibold text-neutral-700 shadow-md"
+          className="absolute bottom-4 right-4 z-20 min-h-11 min-w-11 rounded-control bg-surface px-4 text-sm font-semibold text-ink shadow-float"
         >
           식당 목록 열기
         </button>
@@ -151,10 +151,10 @@ export function RestaurantsMapView({
       <BottomSheet
         snap={sheetSnap}
         onSnapChange={setSheetSnap}
-        header={<p className="text-sm font-semibold text-neutral-600">{restaurants.length}개 식당</p>}
+        header={<p className="text-sm font-semibold text-ink-muted">{restaurants.length}개 식당</p>}
       >
         {restaurants.length === 0 ? (
-          <p className="text-sm text-neutral-500">조건에 맞는 식당이 없어요.</p>
+          <p className="text-sm text-ink-muted">조건에 맞는 식당이 없어요.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {restaurants.map((r) => (
@@ -162,12 +162,12 @@ export function RestaurantsMapView({
                 <button
                   type="button"
                   onClick={() => handleSelectFromList(r.id)}
-                  className={`w-full rounded-2xl border px-4 py-3 text-left ${
-                    selectedId === r.id ? "border-brand bg-brand-bg" : "border-neutral-200"
+                  className={`w-full rounded-card border px-4 py-3 text-left ${
+                    selectedId === r.id ? "border-brand bg-brand-bg" : "border-line"
                   }`}
                 >
                   <p className="font-semibold">{r.name}</p>
-                  <p className="text-sm text-neutral-500">
+                  <p className="text-sm text-ink-muted">
                     {r.category}
                     {r.address && ` · ${r.address}`}
                     {r.distanceM !== null && ` · ${r.distanceM}m`}
@@ -178,7 +178,7 @@ export function RestaurantsMapView({
                   href={
                     forAppointment ? `/restaurants/${r.id}?forAppointment=${forAppointment}` : `/restaurants/${r.id}`
                   }
-                  className="mt-1 block text-xs text-neutral-400 underline"
+                  className="mt-1 block text-xs text-ink-muted underline"
                 >
                   상세 보기
                 </Link>
