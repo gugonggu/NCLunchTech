@@ -1,11 +1,52 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #f28c28;
-  --color-brand-dark: #d96f12;
-  --color-brand-bg: #fff4e8;
+  --color-brand: #f47c20;
+  --color-brand-dark: #d9600b;
+  --color-brand-soft: #fff0e2;
+  --color-canvas: #fbf8f4;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f5f1ec;
+  --color-ink: #292521;
+  --color-ink-muted: #6f6861;
+  --color-line: #e8e1d9;
+  --color-success: #287a4b;
+  --color-success-soft: #e8f5ed;
+  --color-warning: #996515;
+  --color-warning-soft: #fff5d9;
+  --color-danger: #b33a34;
+  --color-danger-soft: #fdecea;
+  --color-info: #326aa8;
+  --color-info-soft: #eaf2fb;
+  --radius-control: 0.875rem;
+  --radius-card: 1.25rem;
+  --shadow-card: 0 8px 28px rgb(69 52 37 / 0.07);
+  --shadow-float: 0 18px 50px rgb(69 52 37 / 0.14);
+}
+
+html {
+  background: var(--color-canvas);
 }
 
 body {
-  @apply bg-white text-neutral-900;
+  min-width: 320px;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-brand) 38%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
