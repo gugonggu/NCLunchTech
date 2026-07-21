@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth/session", () => ({
@@ -98,8 +98,46 @@ describe("HomePage", () => {
     expect(screen.getByText("테스트닉네임님, 안녕하세요.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "오늘 뭐 먹지?" })).toHaveAttribute("href", "/recommend");
     expect(screen.getByRole("link", { name: "식당 찾기" })).toHaveAttribute("href", "/restaurants");
-    expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "로그인" })).not.toBeInTheDocument();
+  });
+
+  it("열린 투표와 오늘의 결정이 함께 있으면 투표를 Hero로 우선한다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue({
+      id: "visit-1",
+      restaurantId: "r-1",
+      status: "planned",
+      restaurantName: "테스트식당",
+      restaurantCategory: "한식",
+      restaurantLat: 35.171,
+      restaurantLng: 129.131,
+      updatedAt: new Date().toISOString(),
+    });
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(getRelevantPolls).mockResolvedValue([
+      {
+        id: "poll-1",
+        pollType: "restaurant",
+        label: "오늘 점심 투표",
+        status: "open",
+        closesAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      },
+    ]);
+
+    const ui = await renderHome();
+    render(ui);
+
+    const hero = screen.getByLabelText("오늘 가장 중요한 일");
+    expect(within(hero).getByRole("link", { name: /오늘 점심 투표/ })).toHaveAttribute(
+      "href",
+      "/polls/poll-1",
+    );
+    expect(within(hero).queryByText("오늘의 점심")).not.toBeInTheDocument();
+
+    const timeline = screen.getByLabelText("오늘 일정");
+    expect(within(timeline).getByText("오늘의 점심")).toBeInTheDocument();
+    expect(screen.getAllByText("오늘의 점심")).toHaveLength(1);
   });
 
   it("결정 후 1시간 전인 planned 방문은 오늘의 점심 카드로 보여준다", async () => {

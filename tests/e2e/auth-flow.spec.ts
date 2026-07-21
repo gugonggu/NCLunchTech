@@ -9,6 +9,8 @@ test("직원 인증 흐름: 비로그인 → 가입 → 식당찾기 접근 → 
   let employeeId: string | null = null;
 
   try {
+    await page.setViewportSize({ width: 390, height: 844 });
+
     await test.step("비로그인 사용자는 홈에서 로그인·회원가입 링크를 볼 수 있다", async () => {
       await page.goto("/");
       await expect(page.getByRole("link", { name: "로그인" })).toBeVisible();
@@ -28,6 +30,10 @@ test("직원 인증 흐름: 비로그인 → 가입 → 식당찾기 접근 → 
       await expect(page).toHaveURL("/");
       await expect(page.getByText(`${nickname}님, 안녕하세요.`)).toBeVisible();
       await expect(page.getByRole("link", { name: "식당 찾기" })).toBeVisible();
+      const mobileNavigation = page.getByRole("navigation", { name: "하단 탐색" });
+      for (const label of ["홈", "식당", "함께 먹기", "알림", "내 정보"]) {
+        await expect(mobileNavigation.getByRole("link", { name: label })).toBeVisible();
+      }
 
       employeeId = await findEmployeeIdByNickname(nickname);
       expect(employeeId).not.toBeNull();
@@ -42,7 +48,7 @@ test("직원 인증 흐름: 비로그인 → 가입 → 식당찾기 접근 → 
     });
 
     await test.step("로그아웃하면 홈이 비로그인 화면으로 바뀐다", async () => {
-      await page.goto("/");
+      await page.goto("/me");
       await page.getByRole("button", { name: "로그아웃" }).click();
       await expect(page.getByRole("link", { name: "로그인" })).toBeVisible();
     });
