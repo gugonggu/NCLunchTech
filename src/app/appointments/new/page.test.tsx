@@ -8,6 +8,9 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   select: vi.fn(),
   eq: vi.fn(),
+  selectedIdEq: vi.fn(),
+  selectedActiveEq: vi.fn(),
+  selectedMaybeSingle: vi.fn(),
   maybeSingle: vi.fn(),
   order: vi.fn(),
   notFound: vi.fn(),
@@ -35,6 +38,14 @@ function mockQueryBuilder() {
   mocks.from.mockReturnValue({ select: mocks.select });
   mocks.select.mockReturnValue({ eq: mocks.eq });
   mocks.eq.mockReturnValue({ eq: mocks.eq, maybeSingle: mocks.maybeSingle, order: mocks.order });
+}
+
+function mockSelectedRestaurantQuery(restaurant: { id: string; name: string; category: string } | null) {
+  mocks.from.mockReturnValue({ select: mocks.select });
+  mocks.select.mockReturnValue({ eq: mocks.selectedIdEq });
+  mocks.selectedIdEq.mockReturnValue({ eq: mocks.selectedActiveEq });
+  mocks.selectedActiveEq.mockReturnValue({ maybeSingle: mocks.selectedMaybeSingle });
+  mocks.selectedMaybeSingle.mockResolvedValue({ data: restaurant });
 }
 
 function resetMocks() {
@@ -134,12 +145,30 @@ describe("NewAppointmentPage", () => {
 
   it.each(["missing", "inactive"])("invokes notFound for a %s selected restaurant", async () => {
     mocks.maybeEmployee.mockResolvedValue({ id: "employee-1" });
-    mocks.maybeSingle.mockResolvedValue({ data: null });
+    mockSelectedRestaurantQuery(null);
 
     await expect(
-      NewAppointmentPage({ searchParams: Promise.resolve({ restaurantId: "r1" }) }),
+      NewAppointmentPage({ searchParams: Promise.resolve({ restaurantId: "restaurant-42" }) }),
     ).rejects.toBe(mocks.notFoundSignal);
 
+    expect(mocks.from).toHaveBeenCalledOnce();
+    expect(mocks.from).toHaveBeenCalledWith("restaurants");
+    expect(mocks.select).toHaveBeenCalledOnce();
+    expect(mocks.select).toHaveBeenCalledWith("id, name, category");
+    expect(mocks.selectedIdEq).toHaveBeenCalledOnce();
+    expect(mocks.selectedIdEq).toHaveBeenCalledWith("id", "restaurant-42");
+    expect(mocks.selectedActiveEq).toHaveBeenCalledOnce();
+    expect(mocks.selectedActiveEq).toHaveBeenCalledWith("is_active", true);
+    expect(mocks.selectedMaybeSingle).toHaveBeenCalledOnce();
+    expect(mocks.selectedIdEq.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.selectedActiveEq.mock.invocationCallOrder[0],
+    );
+    expect(mocks.selectedActiveEq.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.selectedMaybeSingle.mock.invocationCallOrder[0],
+    );
+    expect(mocks.selectedMaybeSingle.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.notFound.mock.invocationCallOrder[0],
+    );
     expect(mocks.notFound).toHaveBeenCalledOnce();
   });
 
