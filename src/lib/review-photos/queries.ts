@@ -120,3 +120,31 @@ export async function getStoragePathsForReviews(reviewIds: string[]): Promise<st
   const { data } = await supabase.from("review_photos").select("storage_path").in("review_id", reviewIds);
   return (data ?? []).map((row) => row.storage_path);
 }
+
+export async function getRepresentativeRestaurantPhotoMap(
+  restaurantIds: string[],
+): Promise<Map<string, string>> {
+  if (restaurantIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("review_photos")
+    .select("storage_path, reviews!inner(restaurant_id)")
+    .in("reviews.restaurant_id", restaurantIds)
+    .order("created_at", { ascending: false })
+    .limit(Math.max(20, restaurantIds.length * 4));
+
+  const result = new Map<string, string>();
+  for (const row of data ?? []) {
+    const review = row.reviews as unknown as {
+      restaurant_id: string;
+    } | null;
+    if (review && !result.has(review.restaurant_id)) {
+      result.set(review.restaurant_id, toPublicUrl(row.storage_path));
+    }
+  }
+
+  return result;
+}
