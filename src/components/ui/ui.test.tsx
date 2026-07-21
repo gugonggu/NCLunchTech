@@ -22,7 +22,9 @@ describe("shared UI", () => {
 
   it("keeps default and compact buttons at accessible click sizes", () => {
     expect(buttonStyles()).toContain("min-h-12");
+    expect(buttonStyles()).toContain("min-w-11");
     expect(buttonStyles({ size: "compact" })).toContain("min-h-11");
+    expect(buttonStyles({ size: "compact" })).toContain("min-w-11");
   });
 
   it("connects labels, hints and errors to fields", () => {
@@ -77,6 +79,7 @@ describe("shared UI", () => {
     expect(screen.getByRole("link", { name: "추천 받기" })).toHaveClass(
       "inline-flex",
       "min-h-11",
+      "min-w-11",
       "existing-action",
     );
   });
