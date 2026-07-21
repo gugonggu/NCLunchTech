@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { BottomNavigation } from "./BottomNavigation";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,10 +18,7 @@ export default async function RootLayout({
   return (
     <html lang="ko">
       <body className="antialiased">
-        <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white">
-          {children}
-          {employee && <BottomNavigation />}
-        </div>
+        {employee ? <AppShell>{children}</AppShell> : children}
       </body>
     </html>
   );
