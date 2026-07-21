@@ -17,4 +17,12 @@ describe("AppNavigation", () => {
       expect(link).toHaveAttribute("aria-current", "page");
     }
   });
+
+  it("uses a hidden md:flex desktop header variant", () => {
+    render(<AppNavigation />);
+
+    const desktopHeader = screen.getByRole("banner");
+    expect(desktopHeader).toHaveClass("hidden");
+    expect(desktopHeader).toHaveClass("md:flex");
+  });
 });

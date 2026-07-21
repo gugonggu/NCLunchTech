@@ -54,7 +54,7 @@ export function AppNavigation() {
 
   return (
     <>
-      <header className="hidden border-b border-line bg-surface md:block">
+      <header className="hidden border-b border-line bg-surface md:flex">
         <nav aria-label="주요 탐색" className="mx-auto flex w-full max-w-7xl items-center gap-2 px-8 py-3">
           <Link href="/" className="mr-auto text-base font-bold text-brand-dark">
             엔씨런치테크
