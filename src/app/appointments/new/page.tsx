@@ -39,7 +39,7 @@ export default async function NewAppointmentPage({
   const supabase = createServiceRoleClient();
 
   if (!restaurantId) {
-    const { data: restaurants } = await supabase
+    const { data: restaurants, error } = await supabase
       .from("restaurants")
       .select("id, name, category")
       .eq("is_active", true)
@@ -48,8 +48,16 @@ export default async function NewAppointmentPage({
     return (
       <main className="flex flex-1 flex-col gap-4 px-6 py-8">
         <h1 className="text-xl font-bold text-brand-dark">함께 먹기</h1>
+        <p className="text-neutral-700">함께할 식당을 먼저 골라 주세요.</p>
 
-        {restaurants?.length ? (
+        {error ? (
+          <FeedbackState
+            tone="error"
+            title="식당 목록을 불러오지 못했어요"
+            description="잠시 후 다시 시도해 주세요."
+            action={<Link href="/appointments/new">다시 시도</Link>}
+          />
+        ) : restaurants?.length ? (
           <div className="flex flex-col gap-3">
             {restaurants.map((restaurant) => (
               <Card key={restaurant.id} padding="none" className="overflow-hidden">
@@ -94,7 +102,7 @@ export default async function NewAppointmentPage({
         ← 뒤로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">동료와 함께</h1>
+      <h1 className="text-xl font-bold text-brand-dark">함께 먹기</h1>
       <p className="text-neutral-700">
         {restaurant.name} · {restaurant.category}
       </p>
