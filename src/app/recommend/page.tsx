@@ -236,7 +236,12 @@ export default async function RecommendPage({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <ResponsiveFilterPanel summary={filterSummary}>
-          <RecommendationFilters conditions={conditions} radius={radius} hasMenuData={hasMenuData} />
+          <RecommendationFilters
+            idPrefix="recommend-filter"
+            conditions={conditions}
+            radius={radius}
+            hasMenuData={hasMenuData}
+          />
         </ResponsiveFilterPanel>
 
         <section className="flex flex-col gap-4 lg:col-start-1 lg:row-span-2 lg:row-start-1" aria-label="추천 결과">

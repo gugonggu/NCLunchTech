@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RecommendationCard } from "./RecommendationCard";
 import { RestaurantVisual } from "./RestaurantVisual";
@@ -73,28 +73,36 @@ describe("RecommendationCard", () => {
     );
   });
 
-  it("keeps alternative cards compact and omits the decision form", () => {
+  it("keeps all alternative actions available with low emphasis", () => {
+    const decideAction = vi.fn();
     const { container } = render(
       <RecommendationCard
         restaurant={restaurant}
         photoUrl={null}
         reviewCount={0}
         variant="alternative"
-        decideAction={vi.fn()}
+        decideAction={decideAction}
       />,
     );
 
     const card = screen.getByRole("article", {
       name: "아주 긴 이름의 테스트 한식당 추천",
     });
+    const decideButton = screen.getByRole("button", { name: "여기로 결정" });
+    const appointmentLink = screen.getByRole("link", { name: "동료와 함께" });
     const detailLink = screen.getByRole("link", { name: "상세 보기" });
 
     expect(card).toHaveClass("bg-surface");
+    expect(decideButton).toHaveClass("min-h-11", "border", "border-line", "bg-surface");
+    expect(appointmentLink).toHaveClass("min-h-11", "bg-transparent", "text-ink-muted");
     expect(detailLink).toHaveClass("min-h-11", "min-w-11", "w-full");
-    expect(
-      screen.queryByRole("button", { name: "여기로 결정" }),
-    ).not.toBeInTheDocument();
-    expect(container.querySelector("form")).not.toBeInTheDocument();
+    expect(appointmentLink).toHaveAttribute("href", "/appointments/new?restaurantId=r1");
+    expect(detailLink).toHaveAttribute("href", "/restaurants/r1");
+
+    const decisionForm = container.querySelector("form");
+    expect(decisionForm).not.toBeNull();
+    fireEvent.submit(decisionForm as HTMLFormElement);
+    expect(decideAction).toHaveBeenCalledTimes(1);
   });
 
   it("uses an accessible category fallback when there is no photo", () => {

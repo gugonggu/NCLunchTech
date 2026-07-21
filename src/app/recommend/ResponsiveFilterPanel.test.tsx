@@ -1,8 +1,29 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RecommendationFilters } from "./RecommendationFilters";
 import { ResponsiveFilterPanel } from "./ResponsiveFilterPanel";
+
+const mediaListeners = new Set<(event: MediaQueryListEvent) => void>();
+
+beforeEach(() => {
+  mediaListeners.clear();
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+        mediaListeners.add(listener);
+      },
+      removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+        mediaListeners.delete(listener);
+      },
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
 
 afterEach(() => {
   document.body.style.overflow = "";
@@ -57,7 +78,76 @@ describe("ResponsiveFilterPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "추천 조건 닫기" }));
     expect(screen.getByRole("dialog", { name: "추천 조건" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "추천 조건 배경 닫기" }));
+    expect(screen.getByRole("dialog", { name: "추천 조건" })).toBeInTheDocument();
     expect(trigger).not.toHaveFocus();
+  });
+
+  it("traps Tab and Shift+Tab at both modal focus edges", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "추천 조건 열기" }));
+
+    const dialog = screen.getByRole("dialog", { name: "추천 조건" });
+    const closeButton = within(dialog).getByRole("button", { name: "추천 조건 닫기" });
+    const submitButton = within(dialog).getByRole("button", { name: "적용" });
+
+    expect(closeButton).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(submitButton).toHaveFocus();
+
+    submitButton.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(closeButton).toHaveFocus();
+  });
+
+  it("closes and restores page state when the viewport reaches md", () => {
+    document.body.style.overflow = "clip";
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: "추천 조건 열기" });
+    fireEvent.click(trigger);
+
+    expect(mediaListeners.size).toBeGreaterThan(0);
+    act(() => {
+      for (const listener of mediaListeners) {
+        listener({ matches: true } as MediaQueryListEvent);
+      }
+    });
+
+    expect(screen.queryByRole("dialog", { name: "추천 조건" })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("clip");
+    expect(trigger).toHaveFocus();
+  });
+
+  it("renders one namespaced filter form with correctly associated labels", () => {
+    const { container } = render(
+      <ResponsiveFilterPanel summary="전체 음식 · 800m">
+        <RecommendationFilters
+          idPrefix="recommend-filter"
+          conditions={{}}
+          radius={800}
+          hasMenuData
+        />
+      </ResponsiveFilterPanel>,
+    );
+
+    expect(container.querySelectorAll("form")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "추천 조건 열기" }));
+    expect(container.querySelectorAll("form")).toHaveLength(1);
+
+    const dialog = screen.getByRole("dialog", { name: "추천 조건" });
+    const labeledControls = [
+      ["식당 이름", "restaurant-name"],
+      ["메뉴 이름", "menu-name"],
+      ["음식 분류", "category"],
+      ["거리", "radius"],
+      ["희망 가격", "max-price"],
+    ] as const;
+
+    for (const [label, suffix] of labeledControls) {
+      const control = within(dialog).getByLabelText(label);
+      expect(control).toHaveAttribute("id", `recommend-filter-${suffix}`);
+      expect(dialog.querySelector(`label[for="recommend-filter-${suffix}"]`)).not.toBeNull();
+    }
   });
 });
 

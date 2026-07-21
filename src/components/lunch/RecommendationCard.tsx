@@ -92,12 +92,25 @@ export function RecommendationCard({
             </Link>
           </div>
         ) : (
-          <Link
-            href={`/restaurants/${restaurant.id}`}
-            className={`${buttonStyles({ variant: "ghost", size: "compact", block: true })} mt-4`}
-          >
-            상세 보기
-          </Link>
+          <div className="mt-4 flex flex-col gap-2">
+            <form action={decideAction}>
+              <Button type="submit" variant="secondary" size="compact" block>
+                여기로 결정
+              </Button>
+            </form>
+            <Link
+              href={`/appointments/new?restaurantId=${restaurant.id}`}
+              className={buttonStyles({ variant: "ghost", size: "compact", block: true })}
+            >
+              동료와 함께
+            </Link>
+            <Link
+              href={`/restaurants/${restaurant.id}`}
+              className={buttonStyles({ variant: "ghost", size: "compact", block: true })}
+            >
+              상세 보기
+            </Link>
+          </div>
         )}
       </div>
     </Card>

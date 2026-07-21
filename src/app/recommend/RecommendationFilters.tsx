@@ -1,8 +1,8 @@
 import { useId } from "react";
-import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { RECENT_VISIT_WINDOW_DAYS, type RecommendConditions } from "@/lib/recommend/engine";
 import { RADIUS_OPTIONS_M, RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
+import { RecommendationFilterSubmit } from "./RecommendationFilterSubmit";
 
 const fieldClassName =
   "min-h-12 w-full rounded-control border border-line bg-surface px-4 py-3 text-ink disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-ink-muted";
@@ -30,15 +30,18 @@ function CheckboxField({
 }
 
 export function RecommendationFilters({
+  idPrefix,
   conditions,
   radius,
   hasMenuData,
 }: {
+  idPrefix?: string;
   conditions: RecommendConditions;
   radius: number;
   hasMenuData: boolean;
 }) {
-  const formId = useId();
+  const generatedId = useId();
+  const formId = idPrefix ?? generatedId;
   const unavailableHint = !hasMenuData
     ? "등록된 메뉴·가격 정보가 없어 현재 사용할 수 없습니다."
     : undefined;
@@ -149,9 +152,7 @@ export function RecommendationFilters({
         />
       </fieldset>
 
-      <Button type="submit" block>
-        이 조건으로 추천받기
-      </Button>
+      <RecommendationFilterSubmit />
     </form>
   );
 }

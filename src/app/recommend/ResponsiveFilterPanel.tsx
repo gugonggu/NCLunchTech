@@ -32,6 +32,18 @@ export function ResponsiveFilterPanel({
   }, [hasBusySubmit]);
 
   useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    const handleBreakpointChange = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        setIsOpen(false);
+      }
+    };
+
+    desktopQuery.addEventListener("change", handleBreakpointChange);
+    return () => desktopQuery.removeEventListener("change", handleBreakpointChange);
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) {
       return;
     }
@@ -43,6 +55,25 @@ export function ResponsiveFilterPanel({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         close();
+        return;
+      }
+
+      if (event.key === "Tab" && dialogRef.current) {
+        const focusableElements = Array.from(
+          dialogRef.current.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        );
+        const first = focusableElements[0];
+        const last = focusableElements.at(-1);
+
+        if (first && last && event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (first && last && !event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -73,13 +104,20 @@ export function ResponsiveFilterPanel({
         </button>
 
         {isOpen ? (
-          <div className="fixed inset-0 z-50 flex items-end bg-ink/40 px-3 pt-12">
+          <div className="fixed inset-0 z-50 flex items-end px-3 pt-12">
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="추천 조건 배경 닫기"
+              className="absolute inset-0 bg-ink/40"
+              onClick={close}
+            />
             <div
               ref={dialogRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="recommend-filter-title"
-              className="max-h-[calc(100dvh-3rem)] w-full overflow-y-auto rounded-t-card bg-surface p-5 shadow-card"
+              className="relative max-h-[calc(100dvh-3rem)] w-full overflow-y-auto rounded-t-card bg-surface p-5 shadow-card"
             >
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
@@ -104,13 +142,15 @@ export function ResponsiveFilterPanel({
         ) : null}
       </div>
 
-      <Card className="hidden md:block">
-        <div className="mb-5">
-          <h2 className="text-lg font-bold text-ink">추천 조건</h2>
-          <p className="mt-1 text-sm text-ink-muted">{summary}</p>
-        </div>
-        {children}
-      </Card>
+      {!isOpen ? (
+        <Card className="hidden md:block">
+          <div className="mb-5">
+            <h2 className="text-lg font-bold text-ink">추천 조건</h2>
+            <p className="mt-1 text-sm text-ink-muted">{summary}</p>
+          </div>
+          {children}
+        </Card>
+      ) : null}
     </div>
   );
 }
