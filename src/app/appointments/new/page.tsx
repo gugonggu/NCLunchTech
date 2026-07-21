@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Badge } from "@/components/ui/Badge";
-import { buttonStyles } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { FeedbackState } from "@/components/ui/FeedbackState";
 import { getCurrentEmployee } from "@/lib/auth/session";
+import { searchAppointmentRestaurants } from "@/lib/appointments/restaurant-search";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   APPOINTMENT_STATUS_MESSAGES,
@@ -13,11 +10,18 @@ import {
   isAppointmentStatusCode,
 } from "@/lib/appointments/validation";
 import { createAppointment } from "./actions";
+import { RestaurantPicker } from "./RestaurantPicker";
 
 interface NewAppointmentSearchParams {
   restaurantId?: string;
   status?: string;
   fromPollId?: string;
+  q?: string;
+  category?: string;
+  radius?: string;
+  openNow?: string;
+  sort?: string;
+  page?: string;
 }
 
 export default async function NewAppointmentPage({
@@ -25,7 +29,8 @@ export default async function NewAppointmentPage({
 }: {
   searchParams: Promise<NewAppointmentSearchParams>;
 }) {
-  const { restaurantId, status, fromPollId } = await searchParams;
+  const params = await searchParams;
+  const { restaurantId, status, fromPollId } = params;
 
   const employee = await getCurrentEmployee();
   if (!employee) {
@@ -39,52 +44,16 @@ export default async function NewAppointmentPage({
   const supabase = createServiceRoleClient();
 
   if (!restaurantId) {
-    const { data: restaurants, error } = await supabase
-      .from("restaurants")
-      .select("id, name, category")
-      .eq("is_active", true)
-      .order("name", { ascending: true });
-
     return (
       <main className="flex flex-1 flex-col gap-4 px-6 py-8">
-        <h1 className="text-xl font-bold text-brand-dark">함께 먹기</h1>
-        <p className="text-neutral-700">함께할 식당을 먼저 골라 주세요.</p>
-
-        {error ? (
-          <FeedbackState
-            tone="error"
-            title="식당 목록을 불러오지 못했어요"
-            description="잠시 후 다시 시도해 주세요."
-            action={<Link href="/appointments/new">다시 시도</Link>}
-          />
-        ) : restaurants?.length ? (
-          <div className="flex flex-col gap-3">
-            {restaurants.map((restaurant) => (
-              <Card key={restaurant.id} padding="none" className="overflow-hidden">
-                <Link
-                  href={`/appointments/new?restaurantId=${restaurant.id}`}
-                  className={buttonStyles({ variant: "secondary", block: true })}
-                >
-                  <span>{restaurant.name}</span>
-                  <Badge>{restaurant.category}</Badge>
-                </Link>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <FeedbackState
-            title="선택할 수 있는 식당이 없어요"
-            description="식당 목록을 확인하거나 관리자에게 활성 식당 등록을 요청해 주세요."
-            action={<Link href="/restaurants">식당 둘러보기</Link>}
-          />
-        )}
+        <RestaurantPicker state={await searchAppointmentRestaurants(params)} />
       </main>
     );
   }
 
   const { data: restaurant } = await supabase
     .from("restaurants")
-    .select("id, name, category")
+    .select("id, kakao_place_id, name, category")
     .eq("id", restaurantId)
     .eq("is_active", true)
     .maybeSingle();
@@ -106,6 +75,17 @@ export default async function NewAppointmentPage({
       <p className="text-neutral-700">
         {restaurant.name} · {restaurant.category}
       </p>
+
+      {restaurant.kakao_place_id ? (
+        <a
+          href={`https://place.map.kakao.com/${restaurant.kakao_place_id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-dark underline"
+        >
+          카카오맵에서 보기
+        </a>
+      ) : null}
 
       {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
       {fromPollId && (
