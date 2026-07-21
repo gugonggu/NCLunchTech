@@ -3,7 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
+  deleteReviewCommentAsAdmin,
   deleteReviewPhotoAsAdmin,
+  invalidateStatusReportAction,
   restoreMenuItem,
   restoreRestaurantHours,
   setExcludedFromRecommend,
@@ -14,6 +16,7 @@ import { adminUuidSchema } from "@/lib/admin/validation";
 import { getRecentStatusReportsForAdmin } from "@/lib/status-reports/queries";
 import { formatMinutesAgo } from "@/lib/status-reports/validation";
 import { getRestaurantPhotosForAdmin } from "@/lib/review-photos/queries";
+import { getRestaurantCommentsForAdmin } from "@/lib/review-comments/queries";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -65,6 +68,7 @@ export default async function AdminRestaurantDetailPage({
   const hoursByDay = new Map((hoursRows ?? []).map((h) => [h.day_of_week, h]));
   const recentStatusReports = await getRecentStatusReportsForAdmin(id);
   const recentPhotos = await getRestaurantPhotosForAdmin(id);
+  const recentComments = await getRestaurantCommentsForAdmin(id);
   const now = new Date();
 
   return (
@@ -147,10 +151,18 @@ export default async function AdminRestaurantDetailPage({
               <li key={r.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
                 <p className="font-semibold">
                   {r.reportType === "congestion" ? "혼잡도" : "영업 상태"} · {r.value}
+                  {r.invalidatedAt && <span className="ml-2 text-xs text-red-600">(무효화됨)</span>}
                 </p>
                 <p className="text-neutral-500">
                   {r.employeeNickname} · {formatMinutesAgo(new Date(r.createdAt), now)}
                 </p>
+                {!r.invalidatedAt && (
+                  <form action={invalidateStatusReportAction.bind(null, id, r.id)} className="mt-2">
+                    <button type="submit" className="rounded-lg bg-white px-2 py-1 text-xs text-red-600 shadow-sm">
+                      무효화
+                    </button>
+                  </form>
+                )}
               </li>
             ))}
           </ul>
@@ -172,6 +184,29 @@ export default async function AdminRestaurantDetailPage({
                 </p>
                 <form action={deleteReviewPhotoAsAdmin.bind(null, id, p.id)}>
                   <button type="submit" className="w-full rounded-lg bg-white px-2 py-1 text-xs text-red-600 shadow-sm">
+                    삭제
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-bold text-brand-dark">최근 댓글</h2>
+        {recentComments.length === 0 ? (
+          <p className="text-sm text-neutral-500">아직 등록된 댓글이 없어요.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {recentComments.map((c) => (
+              <li key={c.id} className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
+                <p>{c.content}</p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {c.employeeNickname} · {formatMinutesAgo(new Date(c.createdAt), now)}
+                </p>
+                <form action={deleteReviewCommentAsAdmin.bind(null, id, c.id)} className="mt-2">
+                  <button type="submit" className="rounded-lg bg-white px-2 py-1 text-xs text-red-600 shadow-sm">
                     삭제
                   </button>
                 </form>

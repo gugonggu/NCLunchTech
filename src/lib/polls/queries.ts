@@ -228,3 +228,43 @@ export async function getRelevantPolls(employeeId: string): Promise<RelevantPoll
     (a, b) => new Date(a.closesAt).getTime() - new Date(b.closesAt).getTime()
   );
 }
+
+export interface AdminPollSummary {
+  id: string;
+  pollType: PollType;
+  status: PollStatus;
+  closesAt: string;
+  createdAt: string;
+  creatorNickname: string;
+  restaurantName: string | null;
+  totalVotes: number;
+  isAppointmentLinked: boolean;
+}
+
+/** 관리자용 전체 투표 목록(최근 생성순, 읽기 전용 — 상태 확인이 목적이라 수정 기능은 없음). */
+export async function getPollsForAdmin(limit = 50): Promise<AdminPollSummary[]> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("polls")
+    .select(
+      "id, poll_type, status, closes_at, created_at, appointment_id, employees(nickname), restaurants(name), poll_votes(id)"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return (data ?? []).map((row) => {
+    const creator = row.employees as unknown as { nickname: string } | null;
+    const restaurant = row.restaurants as unknown as { name: string } | null;
+    return {
+      id: row.id,
+      pollType: row.poll_type as PollType,
+      status: row.status as PollStatus,
+      closesAt: row.closes_at,
+      createdAt: row.created_at,
+      creatorNickname: creator?.nickname ?? "(알 수 없음)",
+      restaurantName: restaurant?.name ?? null,
+      totalVotes: (row.poll_votes ?? []).length,
+      isAppointmentLinked: row.appointment_id !== null,
+    };
+  });
+}

@@ -32,6 +32,7 @@ async function fetchRecentReports(restaurantId: string, reportType: ReportType, 
     .select("value, employee_id, created_at")
     .eq("restaurant_id", restaurantId)
     .eq("report_type", reportType)
+    .is("invalidated_at", null)
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false });
 
@@ -152,6 +153,7 @@ export async function getExcludingBusinessStatusMap(
     .select("restaurant_id, value, created_at")
     .in("restaurant_id", restaurantIds)
     .eq("report_type", "business_status")
+    .is("invalidated_at", null)
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false });
 
@@ -180,6 +182,7 @@ export async function getFreshCongestionValueMap(restaurantIds: string[], now: D
     .select("restaurant_id, value, created_at")
     .in("restaurant_id", restaurantIds)
     .eq("report_type", "congestion")
+    .is("invalidated_at", null)
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false });
 
@@ -198,9 +201,10 @@ export interface AdminStatusReportRow {
   value: string;
   employeeNickname: string;
   createdAt: string;
+  invalidatedAt: string | null;
 }
 
-/** 관리자 식당 상세용 최근 제보 목록(읽기 전용, 제보자 닉네임 노출). */
+/** 관리자 식당 상세용 최근 제보 목록(무효화된 것도 함께 보여줌, 제보자 닉네임 노출). */
 export async function getRecentStatusReportsForAdmin(
   restaurantId: string,
   limit = 20
@@ -208,7 +212,7 @@ export async function getRecentStatusReportsForAdmin(
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("restaurant_status_reports")
-    .select("id, report_type, value, created_at, employees(nickname)")
+    .select("id, report_type, value, created_at, invalidated_at, employees(nickname)")
     .eq("restaurant_id", restaurantId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -221,6 +225,45 @@ export async function getRecentStatusReportsForAdmin(
       value: row.value,
       employeeNickname: employee?.nickname ?? "(알 수 없음)",
       createdAt: row.created_at,
+      invalidatedAt: row.invalidated_at,
     };
   });
+}
+
+/** 관리자가 부적절하거나 잘못된 제보를 무효화한다(삭제하지 않고 감사용으로 보존). */
+export async function invalidateStatusReport(reportId: string, adminId: string): Promise<boolean> {
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase
+    .from("restaurant_status_reports")
+    .update({ invalidated_at: new Date().toISOString(), invalidated_by: adminId })
+    .eq("id", reportId)
+    .is("invalidated_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("제보 무효화에 실패했습니다.");
+  }
+  return !!data;
+}
+
+/** Asia/Seoul 기준 오늘 자정(00:00)을 UTC Date로 계산한다. */
+function startOfTodaySeoul(now: Date): Date {
+  const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
+  const seoul = new Date(now.getTime() + SEOUL_OFFSET_MS);
+  const startOfDaySeoulUtcMs = Date.UTC(seoul.getUTCFullYear(), seoul.getUTCMonth(), seoul.getUTCDate());
+  return new Date(startOfDaySeoulUtcMs - SEOUL_OFFSET_MS);
+}
+
+/** 운영 통계용: 오늘(Asia/Seoul 자정 이후) 등록된 유효(무효화되지 않은) 제보 수. */
+export async function countTodayStatusReports(now: Date): Promise<number> {
+  const supabase = createServiceRoleClient();
+
+  const { count } = await supabase
+    .from("restaurant_status_reports")
+    .select("*", { count: "exact", head: true })
+    .is("invalidated_at", null)
+    .gte("created_at", startOfTodaySeoul(now).toISOString());
+
+  return count ?? 0;
 }

@@ -49,3 +49,32 @@ export async function getCommentForOwnershipCheck(commentId: string): Promise<Co
 
   return data ? { id: data.id, reviewId: data.review_id, employeeId: data.employee_id } : null;
 }
+
+export interface AdminReviewComment {
+  id: string;
+  content: string;
+  employeeNickname: string;
+  createdAt: string;
+}
+
+/** 관리자 식당 상세용: 그 식당 리뷰들에 달린 최근 댓글(삭제되지 않은 것만, 임의 삭제 대상 확인용). */
+export async function getRestaurantCommentsForAdmin(restaurantId: string, limit = 20): Promise<AdminReviewComment[]> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("review_comments")
+    .select("id, content, created_at, employees(nickname), reviews!inner(restaurant_id)")
+    .eq("reviews.restaurant_id", restaurantId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return (data ?? []).map((row) => {
+    const employee = row.employees as unknown as { nickname: string } | null;
+    return {
+      id: row.id,
+      content: row.content,
+      employeeNickname: employee?.nickname ?? "(알 수 없음)",
+      createdAt: row.created_at,
+    };
+  });
+}

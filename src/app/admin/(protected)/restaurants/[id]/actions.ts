@@ -6,6 +6,7 @@ import { getCurrentAdmin } from "@/lib/auth/admin";
 import { logAdminAction } from "@/lib/auth/admin-log";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { REVIEW_PHOTOS_BUCKET } from "@/lib/review-photos/validation";
+import { invalidateStatusReport } from "@/lib/status-reports/queries";
 
 export async function setRestaurantActive(restaurantId: string, isActive: boolean) {
   const admin = await getCurrentAdmin();
@@ -226,6 +227,63 @@ export async function deleteReviewPhotoAsAdmin(restaurantId: string, photoId: st
   await logAdminAction(admin.id, "delete_review_photo", {
     targetType: "review_photo",
     targetId: photoId,
+  });
+
+  redirect(`/admin/restaurants/${restaurantId}?status=updated`);
+}
+
+export async function deleteReviewCommentAsAdmin(restaurantId: string, commentId: string) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    redirect("/admin/login");
+  }
+
+  if (!adminUuidSchema.safeParse(restaurantId).success || !adminUuidSchema.safeParse(commentId).success) {
+    redirect("/admin/restaurants?status=invalid_target");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase
+    .from("review_comments")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", commentId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("댓글 삭제에 실패했습니다.");
+  }
+  if (!data) {
+    redirect(`/admin/restaurants/${restaurantId}?status=target_not_found`);
+  }
+
+  await logAdminAction(admin.id, "delete_review_comment", {
+    targetType: "review_comment",
+    targetId: commentId,
+  });
+
+  redirect(`/admin/restaurants/${restaurantId}?status=updated`);
+}
+
+export async function invalidateStatusReportAction(restaurantId: string, reportId: string) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    redirect("/admin/login");
+  }
+
+  if (!adminUuidSchema.safeParse(restaurantId).success || !adminUuidSchema.safeParse(reportId).success) {
+    redirect("/admin/restaurants?status=invalid_target");
+  }
+
+  const wasInvalidated = await invalidateStatusReport(reportId, admin.id);
+  if (!wasInvalidated) {
+    redirect(`/admin/restaurants/${restaurantId}?status=target_not_found`);
+  }
+
+  await logAdminAction(admin.id, "invalidate_status_report", {
+    targetType: "restaurant_status_report",
+    targetId: reportId,
   });
 
   redirect(`/admin/restaurants/${restaurantId}?status=updated`);

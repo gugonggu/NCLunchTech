@@ -4,6 +4,11 @@ import { getCurrentAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { deleteReportedComment, deleteReportedReview, dismissReport } from "./actions";
 import { getAdminStatusMessage, REPORT_STATUS_MESSAGES } from "@/lib/admin/status-messages";
+import { getRepeatReporters } from "@/lib/reports/queries";
+
+/** 반복 신고자 판정 기준(스펙에 구체적 수치가 없어 임의로 잡음, 필요시 조정). */
+const REPEAT_REPORTER_WINDOW_DAYS = 30;
+const REPEAT_REPORTER_MIN_COUNT = 3;
 
 export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const admin = await getCurrentAdmin();
@@ -13,6 +18,9 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
 
   const { status } = await searchParams;
   const feedbackMessage = getAdminStatusMessage(REPORT_STATUS_MESSAGES, status);
+
+  const sinceDate = new Date(new Date().getTime() - REPEAT_REPORTER_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const repeatReporters = await getRepeatReporters(sinceDate, REPEAT_REPORTER_MIN_COUNT);
 
   const supabase = createServiceRoleClient();
   const [{ data: reviewReports, error: reviewReportsError }, { data: commentReports, error: commentReportsError }] =
@@ -46,6 +54,22 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       <h1 className="text-xl font-bold text-brand-dark">신고 처리</h1>
 
       {feedbackMessage && <p className="text-sm text-brand-dark">{feedbackMessage}</p>}
+
+      {repeatReporters.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-2xl bg-neutral-100 px-4 py-3">
+          <h2 className="text-sm font-bold text-brand-dark">
+            반복 신고자(최근 {REPEAT_REPORTER_WINDOW_DAYS}일, {REPEAT_REPORTER_MIN_COUNT}건 이상)
+          </h2>
+          <ul className="flex flex-col gap-1">
+            {repeatReporters.map((r) => (
+              <li key={r.employeeId} className="flex items-center justify-between text-sm text-neutral-700">
+                <span>{r.employeeNickname}</span>
+                <span className="font-semibold">{r.count}건</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="font-bold text-brand-dark">리뷰 신고</h2>
