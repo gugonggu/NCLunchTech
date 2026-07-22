@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
+import { getMonthlySummary } from "@/lib/monthly-summary-queries";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { LogoutButton } from "../LogoutButton";
@@ -98,7 +99,7 @@ export default async function MePage() {
     { label: "즐겨찾기", value: favoritesResult.count ?? 0 },
   ];
 
-  const leaderboard = await getMonthlyLeaderboard(employee.id);
+  const [leaderboard, monthlySummary] = await Promise.all([getMonthlyLeaderboard(employee.id), getMonthlySummary(employee.id)]);
   const myRanks = (Object.entries(RANK_CATEGORY_LABELS) as [keyof typeof RANK_CATEGORY_LABELS, string][])
     .map(([key, label]) => ({ label, myRank: leaderboard.categories[key].myRank }))
     .filter((row) => row.myRank !== null);
@@ -126,6 +127,17 @@ export default async function MePage() {
       <Link href="/notifications" className={buttonStyles({ variant: "secondary", block: true })}>
         알림 보기
       </Link>
+
+      <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="이번 달 점심 결산">
+        <p className="text-sm font-semibold text-brand-dark">{monthlySummary.label} 점심 결산</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-ink-muted">
+          <p>완료 방문 <strong className="text-brand-dark">{monthlySummary.completedVisitCount}</strong>회</p>
+          <p>새 식당 <strong className="text-brand-dark">{monthlySummary.newRestaurantCount}</strong>곳</p>
+          <p>리뷰 <strong className="text-brand-dark">{monthlySummary.reviewCount}</strong>개</p>
+          <p>메뉴 기록 <strong className="text-brand-dark">{monthlySummary.mealRecordCount}</strong>개</p>
+        </div>
+        {monthlySummary.mostVisitedRestaurant && <p className="mt-3 text-sm text-ink-muted">가장 자주 간 곳 · <span className="font-semibold text-ink">{monthlySummary.mostVisitedRestaurant.name}</span> {monthlySummary.mostVisitedRestaurant.count}회</p>}
+      </section>
 
       {myRanks.length > 0 && (
         <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="이번 달 내 순위">

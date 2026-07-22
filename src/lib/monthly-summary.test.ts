@@ -1,0 +1,6 @@
+import { expect, it } from "vitest";
+import { buildMonthlySummary } from "./monthly-summary";
+
+it("이번 달 활동과 최다 방문 식당을 집계한다", () => {
+  expect(buildMonthlySummary({ visits: [{ restaurantId: "r1", occurredAt: "2026-07-10T03:00:00.000Z" }, { restaurantId: "r1", occurredAt: "2026-07-11T03:00:00.000Z" }], reviews: ["2026-07-12T03:00:00.000Z"], meals: ["2026-07-13T03:00:00.000Z"] }, new Map([["r1", "복만당"]]), new Date("2026-07-20T03:00:00.000Z"))).toMatchObject({ completedVisitCount: 2, newRestaurantCount: 1, reviewCount: 1, mealRecordCount: 1, mostVisitedRestaurant: { name: "복만당", count: 2 } });
+});
