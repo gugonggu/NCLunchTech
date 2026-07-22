@@ -8,7 +8,7 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
     // 통합/E2E 테스트(테스트 전용 Supabase 필요)는 기본 unit 테스트 실행에서 제외한다.
-    exclude: [...configDefaults.exclude, "tests/**"],
+    exclude: [...configDefaults.exclude, "tests/**", ".worktrees/**"],
   },
   resolve: {
     alias: {
