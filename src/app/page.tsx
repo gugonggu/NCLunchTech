@@ -10,8 +10,10 @@ import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
 import { getLunchAvailabilities } from "@/lib/lunch-availability/queries";
+import { getRestaurantOfTheMonth } from "@/lib/restaurant-of-the-month-queries";
 import { HomeHero } from "@/components/lunch/HomeHero";
 import { LunchAvailabilityCard } from "@/components/lunch/LunchAvailabilityCard";
+import { RestaurantOfTheMonthCard } from "@/components/lunch/RestaurantOfTheMonthCard";
 import { TodayTimeline } from "@/components/lunch/TodayTimeline";
 import { selectHomeHero } from "@/components/lunch/home-state";
 import { buttonStyles } from "@/components/ui/Button";
@@ -80,6 +82,7 @@ export default async function HomePage({
   const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
   const relevantPolls = await getRelevantPolls(employee.id);
   const lunchAvailabilities = await getLunchAvailabilities(today);
+  const restaurantOfTheMonth = await getRestaurantOfTheMonth(now);
 
   const soloNeedsConfirmation =
     todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
@@ -173,6 +176,12 @@ export default async function HomePage({
       <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "190ms" }}>
         <LunchAvailabilityCard employeeId={employee.id} availabilities={lunchAvailabilities} />
       </div>
+
+      {restaurantOfTheMonth && (
+        <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "205ms" }}>
+          <RestaurantOfTheMonthCard restaurant={restaurantOfTheMonth} />
+        </div>
+      )}
 
       {publicRecruitingAppointments.length > 0 && (
         <section className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-3" style={{ animationDelay: "210ms" }}>

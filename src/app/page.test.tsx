@@ -41,6 +41,10 @@ vi.mock("@/lib/lunch-availability/queries", () => ({
   getLunchAvailabilities: vi.fn(),
 }));
 
+vi.mock("@/lib/restaurant-of-the-month-queries", () => ({
+  getRestaurantOfTheMonth: vi.fn(),
+}));
+
 const { mockSettingsMaybeSingle } = vi.hoisted(() => ({
   mockSettingsMaybeSingle: vi.fn(),
 }));
@@ -64,6 +68,7 @@ import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
 import { getLunchAvailabilities } from "@/lib/lunch-availability/queries";
+import { getRestaurantOfTheMonth } from "@/lib/restaurant-of-the-month-queries";
 import HomePage from "./page";
 
 function mockDefaults() {
@@ -72,6 +77,7 @@ function mockDefaults() {
   vi.mocked(getRelevantPolls).mockResolvedValue([]);
   vi.mocked(getLunchAvailabilities).mockResolvedValue([]);
   vi.mocked(getPublicRecruitingAppointments).mockResolvedValue([]);
+  vi.mocked(getRestaurantOfTheMonth).mockResolvedValue(null);
   mockSettingsMaybeSingle.mockResolvedValue({
     data: { company_lat: 35.17, company_lng: 129.13, announcement: null },
   });
@@ -82,6 +88,38 @@ function renderHome(searchParams: Record<string, string> = {}) {
 }
 
 describe("HomePage", () => {
+  it("이번 달의 식당을 오늘 같이 먹기 아래에 표시한다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(getRestaurantOfTheMonth).mockResolvedValue({
+      restaurantId: "r-1",
+      restaurantName: "복만당",
+      restaurantCategory: "중식",
+      completedVisitCount: 3,
+      averageTasteRating: 4.5,
+      latestCompletedAt: "2026-07-15T03:00:00.000Z",
+      selectionReason: "most_completed_visits",
+    });
+
+    render(await renderHome());
+
+    expect(screen.getByRole("heading", { name: "이번 달의 식당" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /복만당/ })).toHaveAttribute("href", "/restaurants/r-1");
+  });
+
+  it("이번 달 완료 방문 후보가 없으면 식당 카드를 숨긴다", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+
+    render(await renderHome());
+
+    expect(screen.queryByRole("heading", { name: "이번 달의 식당" })).not.toBeInTheDocument();
+  });
+
   it("renders public appointments that the employee can apply to", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트" });
     mockDefaults();

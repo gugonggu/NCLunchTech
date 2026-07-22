@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
+import { getRestaurantOfTheMonth } from "@/lib/restaurant-of-the-month-queries";
+import { RestaurantOfTheMonthCard } from "@/components/lunch/RestaurantOfTheMonthCard";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 
 const CATEGORY_META = {
@@ -14,7 +16,10 @@ export default async function LeaderboardPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/login?returnTo=%2Fleaderboard");
 
-  const leaderboard = await getMonthlyLeaderboard(employee.id);
+  const [leaderboard, restaurantOfTheMonth] = await Promise.all([
+    getMonthlyLeaderboard(employee.id),
+    getRestaurantOfTheMonth(),
+  ]);
 
   return (
     <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 overflow-hidden px-6 py-8">
@@ -26,6 +31,8 @@ export default async function LeaderboardPage() {
         <h1 className={`mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>월간 배지·리더보드</h1>
         <p className="mt-1 text-sm text-ink-muted">집계 기간 · {leaderboard.label}</p>
       </div>
+
+      {restaurantOfTheMonth && <RestaurantOfTheMonthCard restaurant={restaurantOfTheMonth} compact />}
 
       {(Object.keys(CATEGORY_META) as Array<keyof typeof CATEGORY_META>).map((key) => {
         const meta = CATEGORY_META[key];
