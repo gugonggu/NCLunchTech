@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { resolveEmployeesByNickname } from "@/lib/appointments/queries";
-import { memoSchema, parseNicknameList, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
+import { memoSchema, parseNicknameList, parsePublicAppointmentInput, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
 import { createNotification } from "@/lib/notifications/queries";
 import { buildAppointmentInvitedMessage } from "@/lib/notifications/validation";
 import { getPollDetail } from "@/lib/polls/queries";
@@ -45,6 +45,11 @@ export async function createAppointment(restaurantId: string, formData: FormData
     redirectToNewForm(restaurantId, "invalid_memo");
   }
 
+  const publicInput = parsePublicAppointmentInput(formData);
+  if (!publicInput) {
+    redirectToNewForm(restaurantId, "invalid_input");
+  }
+
   // 독립 식당 투표가 결정된 결과로 약속을 만드는 경우: 그 투표가 실제로 이 식당으로
   // 결정됐고 아직 다른 약속에 연결되지 않았는지 서버에서 재검증한다(주소창 조작 방지).
   const fromPollId = String(formData.get("fromPollId") ?? "").trim();
@@ -73,6 +78,8 @@ export async function createAppointment(restaurantId: string, formData: FormData
       restaurant_id: restaurantId,
       scheduled_at: scheduledAt.toISOString(),
       memo: parsedMemo.data ?? null,
+      is_public: publicInput.isPublic,
+      capacity: publicInput.capacity,
     })
     .select("id")
     .single();
@@ -89,7 +96,7 @@ export async function createAppointment(restaurantId: string, formData: FormData
       .is("appointment_id", null);
   }
 
-  const nicknames = parseNicknameList(String(formData.get("participantNicknames") ?? ""));
+  const nicknames = publicInput.isPublic ? [] : parseNicknameList(String(formData.get("participantNicknames") ?? ""));
   if (nicknames.length > 0) {
     const matchedEmployees = await resolveEmployeesByNickname(nicknames, employee.id);
     if (matchedEmployees.length > 0) {

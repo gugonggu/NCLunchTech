@@ -2,7 +2,7 @@ import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getSeoulDateString } from "@/lib/visits/validation";
-import type { AppointmentStatus, HostAttendanceStatus, ParticipantStatus } from "./validation";
+import { canAcceptPublicApplicant, type AppointmentStatus, type HostAttendanceStatus, type ParticipantStatus } from "./validation";
 
 export interface AppointmentDetail {
   id: string;
@@ -14,6 +14,8 @@ export interface AppointmentDetail {
   memo: string | null;
   status: AppointmentStatus;
   hostAttendanceStatus: HostAttendanceStatus | null;
+  isPublic: boolean;
+  capacity: number | null;
 }
 
 export async function getAppointmentDetail(appointmentId: string): Promise<AppointmentDetail | null> {
@@ -21,7 +23,7 @@ export async function getAppointmentDetail(appointmentId: string): Promise<Appoi
   const { data } = await supabase
     .from("appointments")
     .select(
-      "id, host_employee_id, restaurant_id, scheduled_at, memo, status, host_attendance_status, restaurants(name, category)"
+      "id, host_employee_id, restaurant_id, scheduled_at, memo, status, host_attendance_status, is_public, capacity, restaurants(name, category)"
     )
     .eq("id", appointmentId)
     .maybeSingle();
@@ -45,7 +47,52 @@ export async function getAppointmentDetail(appointmentId: string): Promise<Appoi
     memo: data.memo,
     status: data.status as AppointmentStatus,
     hostAttendanceStatus: data.host_attendance_status as HostAttendanceStatus | null,
+    isPublic: data.is_public,
+    capacity: data.capacity,
   };
+}
+
+export interface PublicRecruitingAppointment {
+  id: string;
+  restaurantName: string;
+  scheduledAt: string;
+  capacity: number;
+  acceptedParticipantCount: number;
+}
+
+export async function getPublicRecruitingAppointments(
+  employeeId: string,
+  now: Date
+): Promise<PublicRecruitingAppointment[]> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("appointments")
+    .select("id, host_employee_id, scheduled_at, capacity, restaurants(name), appointment_participants(employee_id, status)")
+    .eq("is_public", true)
+    .eq("status", "active")
+    .gt("scheduled_at", now.toISOString())
+    .order("scheduled_at");
+
+  return (data ?? []).flatMap((appointment) => {
+    const restaurant = appointment.restaurants as unknown as { name: string } | null;
+    const participants = appointment.appointment_participants as unknown as {
+      employee_id: string;
+      status: ParticipantStatus;
+    }[];
+    const capacity = appointment.capacity;
+    const acceptedParticipantCount = participants.filter((participant) => participant.status === "accepted").length;
+    if (
+      !restaurant ||
+      capacity === null ||
+      appointment.host_employee_id === employeeId ||
+      participants.some((participant) => participant.employee_id === employeeId) ||
+      !canAcceptPublicApplicant({ capacity, acceptedParticipantCount })
+    ) {
+      return [];
+    }
+
+    return [{ id: appointment.id, restaurantName: restaurant.name, scheduledAt: appointment.scheduled_at, capacity, acceptedParticipantCount }];
+  });
 }
 
 export interface ParticipantRow {

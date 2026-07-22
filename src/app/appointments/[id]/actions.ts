@@ -16,12 +16,17 @@ import {
   buildSettlementUpdatedMessage,
 } from "@/lib/notifications/validation";
 import { getAppointmentDetail, getMyParticipant } from "@/lib/appointments/queries";
-import { canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
+import { canAcceptPublicApplicant, canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
 import { getAttendanceTiming } from "@/lib/appointments/attendance";
 import { closeOpenPollsForAppointment } from "@/lib/polls/queries";
 import { MAX_POLL_OPTIONS, dedupeIds, sanitizeCustomLabels } from "@/lib/polls/validation";
 import { calculateSettlementShares, settlementInputSchema } from "@/lib/settlements/validation";
 import { getAttendeesForAppointment, upsertSettlement } from "@/lib/settlements/queries";
+import {
+  buildPublicAppointmentApplicationAcceptedMessage,
+  buildPublicAppointmentApplicationDeclinedMessage,
+  buildPublicAppointmentApplicationMessage,
+} from "@/lib/notifications/validation";
 
 function redirectWithStatus(appointmentId: string, status: string): never {
   redirect(`/appointments/${appointmentId}?status=${status}`);
@@ -110,6 +115,127 @@ export async function respondToInvite(appointmentId: string, response: "accepted
   }
 
   redirectWithStatus(appointmentId, response);
+}
+
+export async function applyToPublicAppointment(appointmentId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  const appointment = await requireOpenAppointment(appointmentId);
+  if (!appointment.isPublic || appointment.capacity === null) {
+    redirectWithStatus(appointmentId, "public_appointment_only");
+  }
+  if (appointment.hostEmployeeId === employee.id) {
+    redirectWithStatus(appointmentId, "not_host");
+  }
+
+  const supabase = createServiceRoleClient();
+  const existing = await getMyParticipant(appointmentId, employee.id);
+  if (existing) {
+    redirectWithStatus(appointmentId, "already_applied");
+  }
+
+  const { count } = await supabase
+    .from("appointment_participants")
+    .select("*", { count: "exact", head: true })
+    .eq("appointment_id", appointmentId)
+    .eq("status", "accepted");
+  if (!canAcceptPublicApplicant({ capacity: appointment.capacity, acceptedParticipantCount: count ?? 0 })) {
+    redirectWithStatus(appointmentId, "capacity_reached");
+  }
+
+  const { error } = await supabase.from("appointment_participants").insert({
+    appointment_id: appointmentId,
+    employee_id: employee.id,
+    status: "pending",
+  });
+  if (error) {
+    if (error.code === "23505") {
+      redirectWithStatus(appointmentId, "already_applied");
+    }
+    throw new Error("참여 신청에 실패했습니다.");
+  }
+
+  await createNotification({
+    employeeId: appointment.hostEmployeeId,
+    type: "appointment_applied",
+    message: buildPublicAppointmentApplicationMessage(appointment.restaurantName),
+    relatedAppointmentId: appointmentId,
+  });
+  redirectWithStatus(appointmentId, "application_submitted");
+}
+
+export async function decidePublicApplicant(
+  appointmentId: string,
+  participantId: string,
+  decision: "accepted" | "declined"
+) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/appointments/${appointmentId}`)}`);
+  }
+
+  const appointment = await requireOpenAppointment(appointmentId);
+  if (!appointment.isPublic) {
+    redirectWithStatus(appointmentId, "public_appointment_only");
+  }
+  if (appointment.hostEmployeeId !== employee.id) {
+    redirectWithStatus(appointmentId, "not_host");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: participant } = await supabase
+    .from("appointment_participants")
+    .select("id, employee_id")
+    .eq("id", participantId)
+    .eq("appointment_id", appointmentId)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (!participant) {
+    redirectWithStatus(appointmentId, "already_responded");
+  }
+
+  if (decision === "accepted") {
+    const { data: approved, error } = await supabase.rpc("approve_public_appointment_applicant", {
+      p_appointment_id: appointmentId,
+      p_participant_id: participantId,
+    });
+    if (error) {
+      throw new Error("참여 승인에 실패했습니다.");
+    }
+    if (!approved) {
+      redirectWithStatus(appointmentId, "capacity_reached");
+    }
+  } else {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("appointment_participants")
+      .update({ status: "declined", responded_at: now, updated_at: now })
+      .eq("id", participantId)
+      .eq("appointment_id", appointmentId)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (error) {
+      throw new Error("참여 신청 처리에 실패했습니다.");
+    }
+    if (!data) {
+      redirectWithStatus(appointmentId, "already_responded");
+    }
+  }
+
+  await createNotification({
+    employeeId: participant.employee_id,
+    type: decision === "accepted" ? "appointment_application_accepted" : "appointment_application_declined",
+    message:
+      decision === "accepted"
+        ? buildPublicAppointmentApplicationAcceptedMessage(appointment.restaurantName)
+        : buildPublicAppointmentApplicationDeclinedMessage(appointment.restaurantName),
+    relatedAppointmentId: appointmentId,
+  });
+  redirectWithStatus(appointmentId, "applicant_decided");
 }
 
 export async function withdrawParticipation(appointmentId: string) {

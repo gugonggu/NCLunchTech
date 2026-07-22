@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAcceptPublicApplicant,
   canParticipantTransition,
   formatSeoulDateTimeLocal,
   getDefaultAppointmentTime,
@@ -102,6 +103,13 @@ describe("parsePublicAppointmentInput", () => {
     formData.set("capacity", "11");
 
     expect(parsePublicAppointmentInput(formData)).toBeNull();
+  });
+});
+
+describe("canAcceptPublicApplicant", () => {
+  it("keeps one host-inclusive seat available", () => {
+    expect(canAcceptPublicApplicant({ capacity: 4, acceptedParticipantCount: 2 })).toBe(true);
+    expect(canAcceptPublicApplicant({ capacity: 4, acceptedParticipantCount: 3 })).toBe(false);
   });
 });
 

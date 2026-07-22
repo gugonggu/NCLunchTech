@@ -3,12 +3,27 @@ import {
   buildAppointmentCancelledMessage,
   buildAppointmentInvitedMessage,
   buildAppointmentUpdatedMessage,
+  buildPublicAppointmentApplicationAcceptedMessage,
+  buildPublicAppointmentApplicationDeclinedMessage,
+  buildPublicAppointmentApplicationMessage,
   buildPollClosedMessage,
   buildPollDecidedMessage,
   buildReportResolvedMessage,
   buildSettlementCreatedMessage,
   buildSettlementUpdatedMessage,
 } from "./validation";
+
+describe("public appointment recruitment notifications", () => {
+  it("includes the restaurant and application state", () => {
+    expect(buildPublicAppointmentApplicationMessage("Bokmandang")).toContain("Bokmandang");
+    expect(buildPublicAppointmentApplicationMessage("Bokmandang")).toContain("참여 신청");
+  });
+
+  it("includes the restaurant in applicant decisions", () => {
+    expect(buildPublicAppointmentApplicationAcceptedMessage("Bokmandang")).toContain("Bokmandang");
+    expect(buildPublicAppointmentApplicationDeclinedMessage("Bokmandang")).toContain("Bokmandang");
+  });
+});
 
 describe("알림 메시지 생성", () => {
   it("초대 메시지에 식당 이름이 들어간다", () => {

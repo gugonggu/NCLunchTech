@@ -31,6 +31,13 @@ export function parsePublicAppointmentInput(formData: FormData): PublicAppointme
   return { isPublic: true, capacity };
 }
 
+export function canAcceptPublicApplicant(input: {
+  capacity: number;
+  acceptedParticipantCount: number;
+}): boolean {
+  return input.acceptedParticipantCount + 1 < input.capacity;
+}
+
 const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 /** Asia/Seoul 기준 약속 기본 시각: 12:30 이전이면 오늘 12:30, 이후면 현재 시각 + 30분. */
@@ -166,6 +173,11 @@ export const APPOINTMENT_STATUS_MESSAGES = {
   too_few_poll_options: "선택지를 1개 이상 골라주세요.",
   too_many_poll_options: `선택지는 최대 ${MAX_POLL_OPTIONS}개까지 가능해요.`,
   invalid_poll_option: "입력값을 다시 확인해주세요.",
+  public_appointment_only: "공개 모집 동행에만 참여 신청할 수 있어요.",
+  already_applied: "이미 참여 신청한 동행이에요.",
+  capacity_reached: "동행 정원이 모두 찼어요.",
+  application_submitted: "참여 신청을 보냈어요.",
+  applicant_decided: "참여 신청을 처리했어요.",
 } as const;
 
 export type AppointmentStatusCode = keyof typeof APPOINTMENT_STATUS_MESSAGES;
