@@ -40,11 +40,10 @@ export default async function CollectionPage({
   const favoritesOnly = params.favoritesOnly === "on";
 
   const supabase = createServiceRoleClient();
-  const allRestaurants = await fetchAllRows((from, to) =>
-    supabase.from("restaurants").select("id, name, category").eq("is_active", true).range(from, to)
-  );
-
-  const [visitedIds, favoriteIds, latestMealRecords, passport] = await Promise.all([
+  const [allRestaurants, visitedIds, favoriteIds, latestMealRecords, passport] = await Promise.all([
+    fetchAllRows((from, to) =>
+      supabase.from("restaurants").select("id, name, category").eq("is_active", true).range(from, to)
+    ),
     getVisitedRestaurantIds(employee.id),
     getFavoriteRestaurantIds(employee.id),
     getLatestMealRecordsByRestaurant(employee.id),

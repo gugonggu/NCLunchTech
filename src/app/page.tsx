@@ -72,17 +72,30 @@ export default async function HomePage({
 
   const now = new Date();
   const today = getSeoulDateString(now);
-  const todayVisit = await getActiveVisitToday(employee.id, today);
+  const supabase = createServiceRoleClient();
+  const [
+    todayVisit,
+    relevantAppointments,
+    publicRecruitingAppointments,
+    unreadNotificationCount,
+    relevantPolls,
+    lunchAvailabilities,
+    restaurantOfTheMonth,
+    settingsResult,
+  ] = await Promise.all([
+    getActiveVisitToday(employee.id, today),
+    getRelevantAppointments(employee.id, now),
+    getPublicRecruitingAppointments(employee.id, now),
+    getUnreadNotificationCount(employee.id),
+    getRelevantPolls(employee.id),
+    getLunchAvailabilities(today),
+    getRestaurantOfTheMonth(now),
+    supabase.from("app_settings").select("company_lat, company_lng, announcement").eq("id", 1).maybeSingle(),
+  ]);
   const todayMealRecord =
     todayVisit?.status === "completed"
       ? await getMealRecordForSource(employee.id, { visitId: todayVisit.id })
       : null;
-  const relevantAppointments = await getRelevantAppointments(employee.id, now);
-  const publicRecruitingAppointments = await getPublicRecruitingAppointments(employee.id, now);
-  const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
-  const relevantPolls = await getRelevantPolls(employee.id);
-  const lunchAvailabilities = await getLunchAvailabilities(today);
-  const restaurantOfTheMonth = await getRestaurantOfTheMonth(now);
 
   const soloNeedsConfirmation =
     todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
@@ -90,12 +103,7 @@ export default async function HomePage({
   const upcomingAppointments = relevantAppointments.filter((appointment) => !appointment.needsConfirmation);
   const hasAnyConfirmation = soloNeedsConfirmation || appointmentsNeedingConfirmation.length > 0;
 
-  const supabase = createServiceRoleClient();
-  const { data: settings } = await supabase
-    .from("app_settings")
-    .select("company_lat, company_lng, announcement")
-    .eq("id", 1)
-    .maybeSingle();
+  const settings = settingsResult.data;
 
   let todayVisitDistanceM: number | null = null;
   if (todayVisit && settings?.company_lat && settings?.company_lng) {
