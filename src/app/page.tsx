@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getHomeAppSettings } from "@/lib/app-settings";
 import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
@@ -72,7 +72,6 @@ export default async function HomePage({
 
   const now = new Date();
   const today = getSeoulDateString(now);
-  const supabase = createServiceRoleClient();
   const [
     todayVisit,
     relevantAppointments,
@@ -81,7 +80,7 @@ export default async function HomePage({
     relevantPolls,
     lunchAvailabilities,
     restaurantOfTheMonth,
-    settingsResult,
+    settings,
   ] = await Promise.all([
     getActiveVisitToday(employee.id, today),
     getRelevantAppointments(employee.id, now),
@@ -90,7 +89,7 @@ export default async function HomePage({
     getRelevantPolls(employee.id),
     getLunchAvailabilities(today),
     getRestaurantOfTheMonth(now),
-    supabase.from("app_settings").select("company_lat, company_lng, announcement").eq("id", 1).maybeSingle(),
+    getHomeAppSettings(),
   ]);
   const todayMealRecord =
     todayVisit?.status === "completed"
@@ -103,7 +102,6 @@ export default async function HomePage({
   const upcomingAppointments = relevantAppointments.filter((appointment) => !appointment.needsConfirmation);
   const hasAnyConfirmation = soloNeedsConfirmation || appointmentsNeedingConfirmation.length > 0;
 
-  const settings = settingsResult.data;
 
   let todayVisitDistanceM: number | null = null;
   if (todayVisit && settings?.company_lat && settings?.company_lng) {
