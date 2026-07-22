@@ -9,11 +9,11 @@ describe("PublicRecruitmentFields", () => {
 
     expect(screen.getByLabelText("공개 모집")).not.toBeChecked();
     expect(screen.queryByLabelText("정원")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("참여자 닉네임")).toBeInTheDocument();
+    expect(screen.getByLabelText("참여자 닉네임 또는 실명")).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("공개 모집"));
 
     expect(screen.getByLabelText("정원")).toHaveValue(4);
-    expect(screen.queryByLabelText("참여자 닉네임")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("참여자 닉네임 또는 실명")).not.toBeInTheDocument();
   });
 });

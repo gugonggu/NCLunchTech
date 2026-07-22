@@ -8,6 +8,7 @@ import { getPublicRecruitingAppointments, getRelevantAppointments } from "@/lib/
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
+import { hasMyReview } from "@/lib/reviews/queries";
 import { getLunchAvailabilities } from "@/lib/lunch-availability/queries";
 import { getRestaurantOfTheMonth } from "@/lib/restaurant-of-the-month-queries";
 import { HomeHero } from "@/components/lunch/HomeHero";
@@ -94,6 +95,7 @@ export default async function HomePage({
     todayVisit?.status === "completed"
       ? await getMealRecordForSource(employee.id, { visitId: todayVisit.id })
       : null;
+  const hasTodayReview = todayVisit ? await hasMyReview(employee.id, todayVisit.restaurantId) : false;
 
   const soloNeedsConfirmation = todayVisit?.status === "planned";
   const appointmentsNeedingConfirmation = relevantAppointments.filter((appointment) => appointment.needsConfirmation);
@@ -169,6 +171,7 @@ export default async function HomePage({
           kind={heroKind}
           todayVisit={todayVisit}
           todayMealRecord={todayMealRecord}
+          hasTodayReview={hasTodayReview}
           soloNeedsConfirmation={soloNeedsConfirmation}
           appointmentsNeedingConfirmation={appointmentsNeedingConfirmation}
           primaryPoll={primaryPoll}
@@ -230,6 +233,7 @@ export default async function HomePage({
           now={now}
           todayVisit={todayVisit}
           todayMealRecord={todayMealRecord}
+          hasTodayReview={hasTodayReview}
           distanceM={todayVisitDistanceM}
           showVisitSummary={showVisitSummary}
         />

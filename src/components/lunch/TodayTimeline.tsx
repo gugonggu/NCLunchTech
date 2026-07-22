@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { cancelTodayVisit, completeTodayVisit } from "@/app/visits/actions";
+import { Button, buttonStyles } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import type { RelevantAppointment } from "@/lib/appointments/queries";
 import type { MealRecord } from "@/lib/meals/queries";
 import type { RelevantPoll } from "@/lib/polls/queries";
 import { isClosingSoon } from "@/lib/polls/validation";
 import type { ActiveVisit } from "@/lib/visits/queries";
-import { Button, buttonStyles } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 
 const upcomingFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -22,8 +22,18 @@ interface TodayTimelineProps {
   now: Date;
   todayVisit: ActiveVisit | null;
   todayMealRecord: MealRecord | null;
+  hasTodayReview: boolean;
   distanceM: number | null;
   showVisitSummary: boolean;
+}
+
+function VisitDistance({ todayVisit, distanceM }: { todayVisit: ActiveVisit; distanceM: number | null }) {
+  return (
+    <p className="text-sm tabular-nums text-ink-muted">
+      {todayVisit.restaurantCategory}
+      {distanceM !== null && ` · ${distanceM}m`}
+    </p>
+  );
 }
 
 export function TodayTimeline({
@@ -32,6 +42,7 @@ export function TodayTimeline({
   now,
   todayVisit,
   todayMealRecord,
+  hasTodayReview,
   distanceM,
   showVisitSummary,
 }: TodayTimelineProps) {
@@ -50,10 +61,7 @@ export function TodayTimeline({
         <Card className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float">
           <p className="text-xs font-semibold text-brand-dark">오늘의 점심</p>
           <p className="mt-1 font-semibold text-ink">{todayVisit.restaurantName}</p>
-          <p className="text-sm tabular-nums text-ink-muted">
-            {todayVisit.restaurantCategory}
-            {distanceM !== null && ` · ${distanceM}m`}
-          </p>
+          <VisitDistance todayVisit={todayVisit} distanceM={distanceM} />
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Link
               href={`/restaurants/${todayVisit.restaurantId}`}
@@ -61,10 +69,7 @@ export function TodayTimeline({
             >
               상세 보기
             </Link>
-            <Link
-              href="/recommend"
-              className={buttonStyles({ variant: "ghost", size: "compact", block: true })}
-            >
+            <Link href="/recommend" className={buttonStyles({ variant: "ghost", size: "compact", block: true })}>
               변경하기
             </Link>
             <form action={cancelTodayVisit}>
@@ -85,21 +90,31 @@ export function TodayTimeline({
         <Card className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float">
           <p className="text-xs font-semibold text-success">오늘 다녀온 식당 · 방문 완료</p>
           <p className="mt-1 font-semibold text-ink">{todayVisit.restaurantName}</p>
-          <p className="text-sm tabular-nums text-ink-muted">
-            {todayVisit.restaurantCategory}
-            {distanceM !== null && ` · ${distanceM}m`}
-          </p>
+          <VisitDistance todayVisit={todayVisit} distanceM={distanceM} />
           {todayMealRecord && (
             <p className="mt-1 text-sm tabular-nums text-ink-muted">
               {todayMealRecord.menuName} · {todayMealRecord.paidPrice.toLocaleString("ko-KR")}원
             </p>
           )}
-          <Link
-            href={`/reviews/new?restaurantId=${todayVisit.restaurantId}&visitId=${todayVisit.id}`}
-            className={`${buttonStyles({ variant: "ghost", size: "compact" })} mt-2`}
-          >
-            리뷰 남기기
-          </Link>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link
+              href={
+                hasTodayReview
+                  ? `/restaurants/${todayVisit.restaurantId}`
+                  : `/reviews/new?restaurantId=${todayVisit.restaurantId}&visitId=${todayVisit.id}`
+              }
+              className={`${buttonStyles({ variant: "ghost", size: "compact", block: true })} ${
+                hasTodayReview ? "hidden" : ""
+              }`}
+            >
+              리뷰 남기기
+            </Link>
+            <form action={cancelTodayVisit}>
+              <Button type="submit" variant="ghost" size="compact" block>
+                방문 취소
+              </Button>
+            </form>
+          </div>
         </Card>
       )}
 
@@ -125,9 +140,7 @@ export function TodayTimeline({
                   </span>
                 )}
               </span>
-              {poll.status !== "open" && (
-                <span className="block text-sm text-ink-muted">마감됨 · 결과 확정 대기</span>
-              )}
+              {poll.status !== "open" && <span className="block text-sm text-ink-muted">마감됨 · 결과 확정 대기</span>}
             </Link>
           ))}
         </div>
@@ -161,7 +174,7 @@ export function TodayTimeline({
         </div>
       )}
 
-      {!hasItems && <p className="rounded-control bg-surface-muted px-4 py-3 text-sm text-ink-muted">추가 일정이 없어요.</p>}
+      {!hasItems && <p className="rounded-control bg-surface-muted px-4 py-3 text-sm text-ink-muted">추가 일정이 없어요</p>}
     </section>
   );
 }

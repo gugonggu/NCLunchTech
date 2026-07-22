@@ -287,8 +287,36 @@ export default async function RestaurantDetailPage({
                   {reviewDetails.map(({ review: r, comments, helpfulCount, iReacted }) => {
                     const isOwnReview = employee?.id === r.employeeId;
                     return (
-                      <li key={r.id} className="rounded-card bg-surface px-4 py-3 text-sm text-ink shadow-card">
-                        {r.oneLineReview && <p>{r.oneLineReview}</p>}
+                      <li key={r.id} className="rounded-card bg-surface px-4 py-4 text-sm text-ink shadow-card">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-ink">{r.employeeNickname}</p>
+                            {r.mealRecord && (
+                              <p className="mt-1 text-xs tabular-nums text-ink-muted">
+                                먹은 메뉴 · {r.mealRecord.menuName} · {r.mealRecord.paidPrice.toLocaleString("ko-KR")}원
+                              </p>
+                            )}
+                          </div>
+                          <span className="shrink-0 rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold tabular-nums text-brand-dark">
+                            맛 {r.tasteRating}점
+                          </span>
+                        </div>
+                        {r.oneLineReview && <p className="mt-3 text-base font-semibold leading-relaxed">{r.oneLineReview}</p>}
+                        <div className="mt-2 flex flex-wrap gap-1 text-xs text-ink-muted">
+                          <span className="rounded-full bg-surface-muted px-2 py-0.5">속도 {r.speedRating}</span>
+                          <span className="rounded-full bg-surface-muted px-2 py-0.5">가격 {r.priceRating}</span>
+                          <span className="rounded-full bg-surface-muted px-2 py-0.5">혼밥 {r.soloFitRating}</span>
+                        </div>
+                        {r.photos.length > 0 && (
+                          <ul className="mt-3 grid grid-cols-2 gap-2">
+                            {r.photos.map((photo) => (
+                              <li key={photo.id}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={photo.url} alt={`${restaurant.name} 리뷰 사진`} className="aspect-square w-full rounded-card bg-surface-muted object-cover" />
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                         {r.tags && r.tags.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {r.tags.map((tag) => (
@@ -298,8 +326,7 @@ export default async function RestaurantDetailPage({
                             ))}
                           </div>
                         )}
-                        <div className="mt-1 flex items-center justify-between text-xs text-ink-muted">
-                          <span>{r.employeeNickname}</span>
+                        <div className="mt-3 flex items-center justify-end text-xs text-ink-muted">
                           {employee && !isOwnReview && (
                             <Link href={`/reports/new?reviewId=${r.id}`} className="underline">
                               신고
@@ -407,11 +434,11 @@ export default async function RestaurantDetailPage({
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-bold tracking-tight text-brand-dark">사진</h2>
         {photoGallery.length > 0 ? (
-          <ul className="grid grid-cols-3 gap-2">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {photoGallery.map((p) => (
               <li key={p.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={`${restaurant.name} 방문 사진`} className="aspect-square w-full rounded-xl object-cover" />
+                <img src={p.url} alt={`${restaurant.name} 방문 사진`} className="aspect-square w-full rounded-card bg-surface-muted object-cover shadow-card" />
               </li>
             ))}
           </ul>

@@ -39,11 +39,11 @@ export function PublicRecruitmentFields() {
         </label>
       ) : (
         <label className="flex flex-col gap-1 text-sm text-ink-muted">
-          참여자 닉네임
+          참여자 닉네임 또는 실명
           <input
             type="text"
             name="participantNicknames"
-            placeholder="예: 김철수, 박영희"
+            placeholder="예: 점심이, 홍길동"
             className="rounded-control border border-line px-4 py-3 text-base text-ink"
           />
         </label>

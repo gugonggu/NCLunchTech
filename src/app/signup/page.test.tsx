@@ -24,34 +24,22 @@ describe("SignupPage", () => {
   it("uses visible labels and preserves the login return path", () => {
     render(<SignupPage />);
 
-    expect(screen.getByLabelText("초대코드")).toBeRequired();
+    expect(screen.getByLabelText("초대 코드")).toBeRequired();
+    expect(screen.getByLabelText("실명")).toBeRequired();
     expect(screen.getByLabelText("닉네임")).toBeRequired();
-    expect(screen.getByLabelText("PIN 4자리")).toHaveAttribute(
-      "inputmode",
-      "numeric",
-    );
-    expect(screen.getByLabelText("PIN 확인")).toHaveAttribute(
-      "maxlength",
-      "4",
-    );
+    expect(screen.getByLabelText("PIN 4자리")).toHaveAttribute("inputmode", "numeric");
+    expect(screen.getByLabelText("PIN 확인")).toHaveAttribute("maxlength", "4");
     expect(screen.getByRole("button", { name: "가입하기" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "로그인" })).toHaveAttribute(
-      "href",
-      "/login?returnTo=%2Frecommend",
-    );
+    expect(screen.getByRole("link", { name: "로그인" })).toHaveAttribute("href", "/login?returnTo=%2Frecommend");
   });
 
   it("makes the login link a 44px touch target", () => {
     render(<SignupPage />);
 
-    expect(screen.getByRole("link", { name: "로그인" })).toHaveClass(
-      "inline-flex",
-      "min-h-11",
-      "min-w-11",
-    );
+    expect(screen.getByRole("link", { name: "로그인" })).toHaveClass("inline-flex", "min-h-11", "min-w-11");
   });
 
-  it("posts signup details and redirects before refreshing after success", async () => {
+  it("posts signup details including real name and redirects before refreshing after success", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValue({
       ok: true,
@@ -59,21 +47,12 @@ describe("SignupPage", () => {
     } as Response);
     render(<SignupPage />);
 
-    fireEvent.change(screen.getByLabelText("초대코드"), {
-      target: { value: "LUNCH" },
-    });
-    fireEvent.change(screen.getByLabelText("닉네임"), {
-      target: { value: "점심이" },
-    });
-    fireEvent.change(screen.getByLabelText("PIN 4자리"), {
-      target: { value: "1234" },
-    });
-    fireEvent.change(screen.getByLabelText("PIN 확인"), {
-      target: { value: "1234" },
-    });
-    fireEvent.submit(
-      screen.getByRole("button", { name: "가입하기" }).closest("form")!,
-    );
+    fireEvent.change(screen.getByLabelText("초대 코드"), { target: { value: "LUNCH" } });
+    fireEvent.change(screen.getByLabelText("실명"), { target: { value: "홍길동" } });
+    fireEvent.change(screen.getByLabelText("닉네임"), { target: { value: "점심이" } });
+    fireEvent.change(screen.getByLabelText("PIN 4자리"), { target: { value: "1234" } });
+    fireEvent.change(screen.getByLabelText("PIN 확인"), { target: { value: "1234" } });
+    fireEvent.submit(screen.getByRole("button", { name: "가입하기" }).closest("form")!);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/auth/signup", {
@@ -81,6 +60,7 @@ describe("SignupPage", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           inviteCode: "LUNCH",
+          realName: "홍길동",
           nickname: "점심이",
           pin: "1234",
           pinConfirm: "1234",
@@ -97,15 +77,10 @@ describe("SignupPage", () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
     render(<SignupPage />);
 
-    fireEvent.submit(
-      screen.getByRole("button", { name: "가입하기" }).closest("form")!,
-    );
+    fireEvent.submit(screen.getByRole("button", { name: "가입하기" }).closest("form")!);
 
     expect(screen.getByRole("button", { name: "가입하고 있어요" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "가입하고 있어요" })).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: "가입하고 있어요" })).toHaveAttribute("aria-busy", "true");
   });
 
   it("renders a failed response message in an alert", async () => {
@@ -116,16 +91,14 @@ describe("SignupPage", () => {
     } as Response);
     render(<SignupPage />);
 
-    fireEvent.submit(
-      screen.getByRole("button", { name: "가입하기" }).closest("form")!,
-    );
+    fireEvent.submit(screen.getByRole("button", { name: "가입하기" }).closest("form")!);
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("안전한 오류 메시지");
     expect(alert).toHaveAttribute("id", "signup-error");
     expect(screen.getAllByRole("alert")).toHaveLength(1);
-    for (const label of ["초대코드", "닉네임", "PIN 4자리", "PIN 확인"]) {
-      expect(screen.getByLabelText(label)).toHaveAttribute("aria-describedby", "signup-error");
+    for (const label of ["초대 코드", "실명", "닉네임", "PIN 4자리", "PIN 확인"]) {
+      expect(screen.getByLabelText(label).getAttribute("aria-describedby")).toContain("signup-error");
     }
   });
 });

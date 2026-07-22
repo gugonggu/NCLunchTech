@@ -28,8 +28,69 @@ function redirectToForm(restaurantId: string, status: string): never {
   redirect(`/reviews/new?restaurantId=${restaurantId}&status=${status}`);
 }
 
-function redirectToPhotoForm(restaurantId: string, status: ReviewPhotoStatusCode): never {
-  redirect(`/reviews/new?restaurantId=${restaurantId}&photoStatus=${status}`);
+function redirectToPhotoForm(
+  restaurantId: string,
+  status: ReviewPhotoStatusCode,
+  visitId?: string,
+  appointmentId?: string
+): never {
+  const params = new URLSearchParams({ restaurantId, photoStatus: status });
+  if (visitId) params.set("visitId", visitId);
+  if (appointmentId) params.set("appointmentId", appointmentId);
+  redirect(`/reviews/new?${params.toString()}`);
+}
+
+function getSelectedPhotoFile(formData: FormData): File | null {
+  const file = formData.get("photo");
+  return file instanceof File && file.size > 0 ? file : null;
+}
+
+async function saveReviewPhoto(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  reviewId: string,
+  employeeId: string,
+  file: File
+): Promise<ReviewPhotoStatusCode | null> {
+  const existingCount = await countReviewPhotos(reviewId);
+  if (existingCount >= MAX_PHOTOS_PER_REVIEW) {
+    return "too_many";
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    return "too_large";
+  }
+  if (!isAllowedPhotoMimeType(file.type)) {
+    return "invalid_type";
+  }
+
+  const originalBuffer = Buffer.from(await file.arrayBuffer());
+  let processedBuffer: Buffer;
+  try {
+    processedBuffer = await processPhotoBuffer(originalBuffer, file.type);
+  } catch {
+    return "invalid_type";
+  }
+
+  const storagePath = buildPhotoStoragePath(reviewId, file.type, crypto.randomUUID());
+  const { error: uploadError } = await supabase.storage
+    .from(REVIEW_PHOTOS_BUCKET)
+    .upload(storagePath, processedBuffer, { contentType: file.type });
+
+  if (uploadError) {
+    throw new Error("사진 업로드에 실패했습니다.");
+  }
+
+  const { error: insertError } = await supabase.from("review_photos").insert({
+    review_id: reviewId,
+    employee_id: employeeId,
+    storage_path: storagePath,
+  });
+
+  if (insertError) {
+    await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove([storagePath]);
+    throw new Error("사진 등록에 실패했습니다.");
+  }
+
+  return null;
 }
 
 function redirectToMealForm(
@@ -77,6 +138,7 @@ export async function upsertMealRecord(
 
   const supabase = createServiceRoleClient();
   let menuName = parsed.data.customMenuName;
+  let menuItemIdForRecord = parsed.data.menuItemId ?? null;
   if (parsed.data.menuItemId) {
     const { data: menuItem } = await supabase
       .from("menu_items")
@@ -92,6 +154,36 @@ export async function upsertMealRecord(
       redirectToMealForm(restaurantId, visitId, appointmentId, "invalid_menu");
     }
     menuName = parsedMenuName.data;
+  } else if (parsed.data.customMenuName) {
+    const { data: existingMenu, error: existingMenuError } = await supabase
+      .from("menu_items")
+      .select("id")
+      .eq("restaurant_id", restaurantId)
+      .eq("name", parsed.data.customMenuName)
+      .maybeSingle();
+    if (existingMenuError) {
+      throw new Error("메뉴 조회에 실패했습니다.");
+    }
+
+    if (existingMenu) {
+      menuItemIdForRecord = existingMenu.id;
+    } else {
+      const { data: insertedMenu, error: insertMenuError } = await supabase
+        .from("menu_items")
+        .insert({
+          restaurant_id: restaurantId,
+          name: parsed.data.customMenuName,
+          price: parsed.data.paidPrice,
+          created_by: employee.id,
+          updated_by: employee.id,
+        })
+        .select("id")
+        .maybeSingle();
+      if (insertMenuError || !insertedMenu) {
+        throw new Error("메뉴 추가에 실패했습니다.");
+      }
+      menuItemIdForRecord = insertedMenu.id;
+    }
   }
 
   const existing = await getMealRecordForSource(employee.id, completedSource);
@@ -100,7 +192,7 @@ export async function upsertMealRecord(
     restaurant_id: restaurantId,
     visit_id: completedSource.visitId ?? null,
     appointment_id: completedSource.appointmentId ?? null,
-    menu_item_id: parsed.data.menuItemId ?? null,
+    menu_item_id: menuItemIdForRecord,
     menu_name_snapshot: menuName!,
     paid_price: parsed.data.paidPrice,
     updated_at: new Date().toISOString(),
@@ -174,7 +266,7 @@ export async function upsertReview(
     redirectToForm(restaurantId, "invalid_input");
   }
 
-  const { error } = await supabase.from("reviews").upsert(
+  const { data: savedReview, error } = await supabase.from("reviews").upsert(
     {
       employee_id: employee.id,
       restaurant_id: restaurantId,
@@ -192,10 +284,18 @@ export async function upsertReview(
       updated_at: new Date().toISOString(),
     },
     { onConflict: "employee_id,restaurant_id" }
-  );
+  ).select("id").maybeSingle();
 
-  if (error) {
+  if (error || !savedReview) {
     throw new Error("리뷰 저장에 실패했습니다.");
+  }
+
+  const selectedPhoto = getSelectedPhotoFile(formData);
+  if (selectedPhoto) {
+    const photoStatus = await saveReviewPhoto(supabase, savedReview.id, employee.id, selectedPhoto);
+    if (photoStatus) {
+      redirectToPhotoForm(restaurantId, photoStatus, visitId, appointmentId);
+    }
   }
 
   redirect(`/restaurants/${restaurantId}?reviewStatus=saved`);

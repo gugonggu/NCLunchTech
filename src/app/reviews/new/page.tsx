@@ -129,7 +129,11 @@ export default async function NewReviewPage({
         />
       )}
 
-      <form action={upsertReview.bind(null, restaurant.id, visitId, appointmentId)} className="flex flex-col gap-4">
+      <form
+        action={upsertReview.bind(null, restaurant.id, visitId, appointmentId)}
+        className="flex flex-col gap-4"
+        encType="multipart/form-data"
+      >
         <fieldset className="flex flex-col gap-3">
           <legend className="text-lg font-bold tracking-tight text-brand-dark">필수 평가(1~5점)</legend>
 
@@ -223,6 +227,18 @@ export default async function NewReviewPage({
           />
         </label>
 
+        {!existing && (
+          <label className="flex flex-col gap-2 text-sm text-ink-muted">
+            사진(선택, 최대 {MAX_PHOTOS_PER_REVIEW}장)
+            <input
+              type="file"
+              name="photo"
+              accept="image/jpeg,image/png,image/webp"
+              className="rounded-control border border-line bg-surface px-4 py-3 text-sm text-ink-muted"
+            />
+          </label>
+        )}
+
         <button type="submit" className={buttonStyles({ block: true })}>
           {existing ? "리뷰 수정 저장" : "리뷰 저장"}
         </button>
@@ -237,11 +253,11 @@ export default async function NewReviewPage({
           {photoFeedbackMessage && <p className="text-sm text-danger">{photoFeedbackMessage}</p>}
 
           {photos.length > 0 && (
-            <ul className="grid grid-cols-3 gap-2">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {photos.map((p) => (
                 <li key={p.id} className="flex flex-col gap-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.url} alt="내가 올린 리뷰 사진" className="aspect-square w-full rounded-xl object-cover" />
+                  <img src={p.url} alt="내가 올린 리뷰 사진" className="aspect-square w-full rounded-card bg-surface-muted object-cover shadow-card" />
                   <form action={deleteReviewPhoto.bind(null, p.id, restaurantId)}>
                     <button type="submit" className="w-full rounded-lg bg-surface-muted px-2 py-1 text-xs transition active:scale-[0.98]">
                       삭제

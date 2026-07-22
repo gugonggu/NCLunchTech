@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { REVIEW_PHOTOS_BUCKET } from "@/lib/review-photos/validation";
 import { aggregateReviewRows, type ReviewAggregate } from "./validation";
 import type { RevisitIntent } from "./validation";
 import type { MealSource } from "@/lib/meals/validation";
@@ -48,6 +49,18 @@ export async function getMyReview(employeeId: string, restaurantId: string): Pro
     tags: data.tags,
     oneLineReview: data.one_line_review,
   };
+}
+
+export async function hasMyReview(employeeId: string, restaurantId: string): Promise<boolean> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("employee_id", employeeId)
+    .eq("restaurant_id", restaurantId)
+    .maybeSingle();
+
+  return !!data;
 }
 
 export interface ReviewSummary {
@@ -107,8 +120,78 @@ export interface RecentReview {
   id: string;
   employeeId: string;
   employeeNickname: string;
+  tasteRating: number;
+  speedRating: number;
+  priceRating: number;
+  soloFitRating: number;
   oneLineReview: string | null;
   tags: string[] | null;
+  mealRecord: { menuName: string; paidPrice: number } | null;
+  photos: { id: string; url: string }[];
+}
+
+interface RecentReviewRow {
+  id: string;
+  employee_id: string;
+  taste_rating: number;
+  speed_rating: number;
+  price_rating: number;
+  solo_fit_rating: number;
+  one_line_review: string | null;
+  tags: string[] | null;
+  employees: { nickname: string } | null;
+}
+
+interface RecentReviewPhotoRow {
+  id: string;
+  review_id: string;
+  storage_path: string;
+  created_at: string;
+}
+
+interface RecentReviewMealRow {
+  employee_id: string;
+  menu_name_snapshot: string;
+  paid_price: number;
+  created_at: string;
+}
+
+export function mapRecentReviewRows(
+  reviews: RecentReviewRow[],
+  photos: RecentReviewPhotoRow[],
+  mealRecords: RecentReviewMealRow[],
+  toPublicUrl: (storagePath: string) => string
+): RecentReview[] {
+  const photosByReviewId = new Map<string, { id: string; url: string }[]>();
+  for (const photo of photos) {
+    const list = photosByReviewId.get(photo.review_id) ?? [];
+    list.push({ id: photo.id, url: toPublicUrl(photo.storage_path) });
+    photosByReviewId.set(photo.review_id, list);
+  }
+
+  const mealsByEmployeeId = new Map<string, { menuName: string; paidPrice: number }>();
+  for (const meal of mealRecords) {
+    if (!mealsByEmployeeId.has(meal.employee_id)) {
+      mealsByEmployeeId.set(meal.employee_id, {
+        menuName: meal.menu_name_snapshot,
+        paidPrice: meal.paid_price,
+      });
+    }
+  }
+
+  return reviews.map((r) => ({
+    id: r.id,
+    employeeId: r.employee_id,
+    employeeNickname: r.employees?.nickname ?? "(알 수 없음)",
+    tasteRating: r.taste_rating,
+    speedRating: r.speed_rating,
+    priceRating: r.price_rating,
+    soloFitRating: r.solo_fit_rating,
+    oneLineReview: r.one_line_review,
+    tags: r.tags,
+    mealRecord: mealsByEmployeeId.get(r.employee_id) ?? null,
+    photos: photosByReviewId.get(r.id) ?? [],
+  }));
 }
 
 /** 식당 상세에 개별 카드로 보여줄 최근 리뷰 목록(신고·댓글·도움돼요는 이 목록 단위로 붙는다). */
@@ -116,19 +199,56 @@ export async function getRecentReviews(restaurantId: string): Promise<RecentRevi
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("reviews")
-    .select("id, employee_id, one_line_review, tags, employees(nickname)")
+    .select("id, employee_id, taste_rating, speed_rating, price_rating, solo_fit_rating, one_line_review, tags, employees(nickname)")
     .eq("restaurant_id", restaurantId)
     .order("created_at", { ascending: false })
     .limit(10);
+
+  const reviews = (data ?? []) as unknown as RecentReviewRow[];
+  if (reviews.length === 0) {
+    return [];
+  }
+
+  const reviewIds = reviews.map((review) => review.id);
+  const employeeIds = [...new Set(reviews.map((review) => review.employee_id))];
+  const [{ data: photos }, { data: mealRecords }] = await Promise.all([
+    supabase
+      .from("review_photos")
+      .select("id, review_id, storage_path, created_at")
+      .in("review_id", reviewIds)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("meal_records")
+      .select("employee_id, menu_name_snapshot, paid_price, created_at")
+      .eq("restaurant_id", restaurantId)
+      .in("employee_id", employeeIds)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const toPublicUrl = (storagePath: string) =>
+    supabase.storage.from(REVIEW_PHOTOS_BUCKET).getPublicUrl(storagePath).data.publicUrl;
+
+  return mapRecentReviewRows(
+    reviews,
+    (photos ?? []) as RecentReviewPhotoRow[],
+    (mealRecords ?? []) as RecentReviewMealRow[],
+    toPublicUrl
+  );
 
   return (data ?? []).map((r) => {
     const employee = r.employees as unknown as { nickname: string } | null;
     return {
       id: r.id,
       employeeId: r.employee_id,
+      tasteRating: r.taste_rating,
+      speedRating: r.speed_rating,
+      priceRating: r.price_rating,
+      soloFitRating: r.solo_fit_rating,
       employeeNickname: employee?.nickname ?? "(알 수 없음)",
       oneLineReview: r.one_line_review,
       tags: r.tags,
+      mealRecord: null,
+      photos: [],
     };
   });
 }

@@ -21,6 +21,7 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
   const [inviteCode, setInviteCode] = useState("");
+  const [realName, setRealName] = useState("");
   const [nickname, setNickname] = useState("");
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
@@ -36,7 +37,7 @@ function SignupForm() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteCode, nickname, pin, pinConfirm }),
+        body: JSON.stringify({ inviteCode, realName, nickname, pin, pinConfirm }),
       });
       const data = await res.json();
 
@@ -60,11 +61,11 @@ function SignupForm() {
         <div className="space-y-2">
           <h1 className="text-3xl font-extrabold tracking-tight text-ink">회원가입</h1>
           <p className="text-sm text-ink-muted">
-            점심 결정, 이제 1~2분이면 충분해요.
+            초대 코드, 실명, 닉네임, 4자리 PIN만 입력하면 바로 시작할 수 있어요.
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <FormField label="초대코드" htmlFor="signup-code">
+          <FormField label="초대 코드" htmlFor="signup-code">
             <input
               id="signup-code"
               className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"
@@ -74,7 +75,17 @@ function SignupForm() {
               required
             />
           </FormField>
-          <FormField label="닉네임" htmlFor="signup-nickname">
+          <FormField label="실명" htmlFor="signup-real-name" hint="초대·검색에서만 사용하고 리뷰에는 표시하지 않아요.">
+            <input
+              id="signup-real-name"
+              className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"
+              value={realName}
+              onChange={(e) => setRealName(e.target.value)}
+              aria-describedby={message ? "signup-error" : undefined}
+              required
+            />
+          </FormField>
+          <FormField label="닉네임" htmlFor="signup-nickname" hint="리뷰와 리더보드에는 닉네임만 보여요.">
             <input
               id="signup-nickname"
               className="w-full rounded-control border border-line bg-surface px-4 py-3 text-ink"

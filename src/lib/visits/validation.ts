@@ -4,7 +4,7 @@ export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0
 
 const ALLOWED_TRANSITIONS: Record<VisitStatus, VisitStatus[]> = {
   planned: ["completed", "cancelled"],
-  completed: [],
+  completed: ["cancelled"],
   cancelled: [],
 };
 

@@ -151,14 +151,16 @@ export async function resolveEmployeesByNickname(
     return [];
   }
 
+  const terms = new Set(nicknames.map((name) => name.trim()).filter(Boolean));
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("employees")
-    .select("id, nickname")
-    .in("nickname", nicknames)
+    .select("id, nickname, real_name")
     .eq("is_active", true);
 
-  return (data ?? []).filter((e) => e.id !== excludeEmployeeId);
+  return (data ?? []).filter(
+    (e) => e.id !== excludeEmployeeId && (terms.has(e.nickname) || (e.real_name ? terms.has(e.real_name) : false))
+  );
 }
 
 export interface RelevantAppointment {

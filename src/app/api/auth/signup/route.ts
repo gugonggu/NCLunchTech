@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { inviteCode, nickname, pin } = parsed.data;
+  const { inviteCode, nickname, realName, pin } = parsed.data;
   const supabase = createServiceRoleClient();
 
   const { data: settings, error: settingsError } = await supabase
@@ -49,8 +49,8 @@ export async function POST(request: Request) {
 
   const { data: employee, error: insertError } = await supabase
     .from("employees")
-    .insert({ nickname, pin_hash: pinHash })
-    .select("id, nickname")
+    .insert({ nickname, real_name: realName, pin_hash: pinHash })
+    .select("id, nickname, real_name")
     .single();
 
   if (insertError || !employee) {
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   const token = await createSession(employee.id);
 
-  const response = NextResponse.json({ ok: true, nickname: employee.nickname });
+  const response = NextResponse.json({ ok: true, nickname: employee.nickname, realName: employee.real_name });
   response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions);
   return response;
 }

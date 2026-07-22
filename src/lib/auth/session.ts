@@ -17,6 +17,7 @@ export const sessionCookieOptions = {
 export interface SessionEmployee {
   id: string;
   nickname: string;
+  realName?: string | null;
 }
 
 export async function createSession(employeeId: string): Promise<string> {
@@ -57,7 +58,7 @@ export async function findEmployeeBySessionToken(token: string): Promise<Session
 
   const { data: employee, error: employeeError } = await supabase
     .from("employees")
-    .select("id, nickname, is_active")
+    .select("id, nickname, real_name, is_active")
     .eq("id", session.employee_id)
     .maybeSingle();
 
@@ -71,7 +72,7 @@ export async function findEmployeeBySessionToken(token: string): Promise<Session
     .update({ last_used_at: now.toISOString(), expires_at: newExpiresAt.toISOString() })
     .eq("id", session.id);
 
-  return { id: employee.id, nickname: employee.nickname };
+  return { id: employee.id, nickname: employee.nickname, realName: employee.real_name };
 }
 
 /** Server Component에서 쿠키로 현재 로그인한 직원을 조회한다(쿠키 자체를 갱신하지는 않는다). */

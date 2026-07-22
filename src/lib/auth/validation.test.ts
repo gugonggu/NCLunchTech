@@ -1,40 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, signupSchema } from "./validation";
+import { loginSchema, profileSchema, signupSchema } from "./validation";
 
 describe("signupSchema", () => {
-  it("올바른 입력은 통과한다", () => {
+  it("accepts valid signup input including real name", () => {
     const result = signupSchema.safeParse({
       inviteCode: "abc123",
-      nickname: "홍길동",
+      realName: "홍길동",
+      nickname: "점심이",
       pin: "1234",
       pinConfirm: "1234",
     });
     expect(result.success).toBe(true);
   });
 
-  it("PIN과 PIN 확인이 다르면 실패한다", () => {
+  it("rejects signup without real name", () => {
     const result = signupSchema.safeParse({
       inviteCode: "abc123",
-      nickname: "홍길동",
+      nickname: "점심이",
+      pin: "1234",
+      pinConfirm: "1234",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects mismatched PIN confirmation", () => {
+    const result = signupSchema.safeParse({
+      inviteCode: "abc123",
+      realName: "홍길동",
+      nickname: "점심이",
       pin: "1234",
       pinConfirm: "4321",
     });
     expect(result.success).toBe(false);
   });
 
-  it("PIN이 4자리 숫자가 아니면 실패한다", () => {
+  it("rejects non 4-digit PIN", () => {
     const result = signupSchema.safeParse({
       inviteCode: "abc123",
-      nickname: "홍길동",
+      realName: "홍길동",
+      nickname: "점심이",
       pin: "12a4",
       pinConfirm: "12a4",
     });
     expect(result.success).toBe(false);
   });
 
-  it("닉네임에 공백이나 특수문자가 있으면 실패한다", () => {
+  it("rejects nickname with spaces or special characters", () => {
     const result = signupSchema.safeParse({
       inviteCode: "abc123",
+      realName: "홍길동",
       nickname: "홍 길동!",
       pin: "1234",
       pinConfirm: "1234",
@@ -43,14 +57,21 @@ describe("signupSchema", () => {
   });
 });
 
+describe("profileSchema", () => {
+  it("accepts editable profile names", () => {
+    const result = profileSchema.safeParse({ realName: "홍길동", nickname: "점심이" });
+    expect(result.success).toBe(true);
+  });
+});
+
 describe("loginSchema", () => {
-  it("올바른 입력은 통과한다", () => {
-    const result = loginSchema.safeParse({ nickname: "홍길동", pin: "1234" });
+  it("accepts valid login input", () => {
+    const result = loginSchema.safeParse({ nickname: "점심이", pin: "1234" });
     expect(result.success).toBe(true);
   });
 
-  it("PIN 형식이 잘못되면 실패한다", () => {
-    const result = loginSchema.safeParse({ nickname: "홍길동", pin: "12345" });
+  it("rejects invalid PIN format", () => {
+    const result = loginSchema.safeParse({ nickname: "점심이", pin: "12345" });
     expect(result.success).toBe(false);
   });
 });

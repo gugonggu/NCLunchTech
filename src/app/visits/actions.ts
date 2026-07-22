@@ -120,9 +120,6 @@ export async function cancelTodayVisit() {
   if (!active) {
     redirectWithStatus("no_active_visit");
   }
-  if (active.status === "completed") {
-    redirectWithStatus("already_completed");
-  }
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
@@ -131,7 +128,7 @@ export async function cancelTodayVisit() {
     .update({ status: "cancelled", cancelled_at: now, updated_at: now })
     .eq("id", active.id)
     .eq("employee_id", employee.id)
-    .eq("status", "planned");
+    .in("status", ["planned", "completed"]);
 
   if (error) {
     throw new Error("취소에 실패했습니다.");
