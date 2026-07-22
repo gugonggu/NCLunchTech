@@ -5,8 +5,9 @@ import { getPollDetail, getWinningIds, isEligibleAppointmentVoter } from "@/lib/
 import { POLL_STATUS_MESSAGES, isPollStatusCode, isValidRestaurantPollBridge } from "@/lib/polls/validation";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
-import { cancelVote, closePoll, decidePoll, resolvePollTie, voteInPoll } from "./actions";
+import { cancelVote, closePoll, decidePoll, resolvePollTie, resolvePollTieWithOption, voteInPoll } from "./actions";
 import { PollRealtimeRefresh } from "./PollRealtimeRefresh";
+import { TieRoulette } from "./TieRoulette";
 
 const displayFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -138,11 +139,7 @@ export default async function PollDetailPage({
           <h2 className="text-base font-bold text-ink">결정 못 하겠어요?</h2>
           <p className="mt-1 text-sm text-ink-muted">공동 1위 중에서 기준을 골라 결과를 확정할 수 있어요.</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <form action={resolvePollTie.bind(null, poll.id, "random")}>
-              <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
-                무작위로 결정
-              </button>
-            </form>
+            <TieRoulette pollId={poll.id} options={poll.options.filter((option) => winningIds.includes(option.id)).map((option) => ({ id: option.id, label: option.label }))} resolve={resolvePollTieWithOption} />
             {poll.pollType === "restaurant" && (
               <>
                 <form action={resolvePollTie.bind(null, poll.id, "nearest")}>

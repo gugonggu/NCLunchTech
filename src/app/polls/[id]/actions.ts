@@ -222,6 +222,17 @@ export async function resolvePollTie(pollId: string, method: string) {
   redirectWithStatus(pollId, "decided");
 }
 
+export async function resolvePollTieWithOption(pollId: string, optionId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) redirect(`/login?returnTo=${encodeURIComponent(`/polls/${pollId}`)}`);
+  const poll = await getPollDetail(pollId, employee.id);
+  if (!poll || poll.createdBy !== employee.id || poll.status !== "closed") redirectWithStatus(pollId, "not_creator");
+  const winningIds = new Set(getWinningIds(poll.options));
+  if (!winningIds.has(optionId)) redirectWithStatus(pollId, "invalid_input");
+  await finalizePollDecision(poll, optionId);
+  redirectWithStatus(pollId, "decided");
+}
+
 async function chooseTieWinner(
   poll: PollDetail,
   tiedOptions: PollDetail["options"],
