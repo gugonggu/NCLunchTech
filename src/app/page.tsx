@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
 import { getHomeAppSettings } from "@/lib/app-settings";
-import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
 import { getPublicRecruitingAppointments, getRelevantAppointments } from "@/lib/appointments/queries";
@@ -96,8 +95,7 @@ export default async function HomePage({
       ? await getMealRecordForSource(employee.id, { visitId: todayVisit.id })
       : null;
 
-  const soloNeedsConfirmation =
-    todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
+  const soloNeedsConfirmation = todayVisit?.status === "planned";
   const appointmentsNeedingConfirmation = relevantAppointments.filter((appointment) => appointment.needsConfirmation);
   const upcomingAppointments = relevantAppointments.filter((appointment) => !appointment.needsConfirmation);
   const hasAnyConfirmation = soloNeedsConfirmation || appointmentsNeedingConfirmation.length > 0;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { getMyReview, hasCompletedVisit } from "@/lib/reviews/queries";
+import { getMyReview, hasCompletedVisit, hasReviewAccessForSource } from "@/lib/reviews/queries";
 import { REVIEW_STATUS_MESSAGES, REVIEW_TAGS, isReviewStatusCode } from "@/lib/reviews/validation";
 import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/queries";
 import { MEAL_STATUS_MESSAGES, isMealStatusCode, mealSourceSchema } from "@/lib/meals/validation";
@@ -57,7 +57,10 @@ export default async function NewReviewPage({
   const feedbackMessage = isReviewStatusCode(status) ? REVIEW_STATUS_MESSAGES[status] : null;
   const mealFeedbackMessage = isMealStatusCode(mealStatus) ? MEAL_STATUS_MESSAGES[mealStatus] : null;
   const photoFeedbackMessage = isReviewPhotoStatusCode(photoStatus) ? REVIEW_PHOTO_MESSAGES[photoStatus] : null;
-  const visited = await hasCompletedVisit(employee.id, restaurantId);
+  const parsedSource = mealSourceSchema.safeParse({ visitId, appointmentId });
+  const visited = parsedSource.success
+    ? await hasReviewAccessForSource(employee.id, restaurantId, parsedSource.data)
+    : await hasCompletedVisit(employee.id, restaurantId);
 
   if (!visited) {
     return (
@@ -79,7 +82,6 @@ export default async function NewReviewPage({
 
   const existing = await getMyReview(employee.id, restaurantId);
   const photos = existing ? await getReviewPhotos(existing.id) : [];
-  const parsedSource = mealSourceSchema.safeParse({ visitId, appointmentId });
   const completedSource = parsedSource.success
     ? await getCompletedMealSource(employee.id, restaurantId, parsedSource.data)
     : null;
@@ -127,7 +129,7 @@ export default async function NewReviewPage({
         />
       )}
 
-      <form action={upsertReview.bind(null, restaurant.id)} className="flex flex-col gap-4">
+      <form action={upsertReview.bind(null, restaurant.id, visitId, appointmentId)} className="flex flex-col gap-4">
         <fieldset className="flex flex-col gap-3">
           <legend className="text-lg font-bold tracking-tight text-brand-dark">필수 평가(1~5점)</legend>
 

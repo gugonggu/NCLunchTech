@@ -1,8 +1,7 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getSeoulDateString } from "@/lib/visits/validation";
-import { canAcceptPublicApplicant, type AppointmentStatus, type HostAttendanceStatus, type ParticipantStatus } from "./validation";
+import { canAcceptPublicApplicant, type AppointmentMealType, type AppointmentStatus, type HostAttendanceStatus, type ParticipantStatus } from "./validation";
 
 export interface AppointmentDetail {
   id: string;
@@ -16,6 +15,7 @@ export interface AppointmentDetail {
   hostAttendanceStatus: HostAttendanceStatus | null;
   isPublic: boolean;
   capacity: number | null;
+  mealType: AppointmentMealType;
 }
 
 export async function getAppointmentDetail(appointmentId: string): Promise<AppointmentDetail | null> {
@@ -23,7 +23,7 @@ export async function getAppointmentDetail(appointmentId: string): Promise<Appoi
   const { data } = await supabase
     .from("appointments")
     .select(
-      "id, host_employee_id, restaurant_id, scheduled_at, memo, status, host_attendance_status, is_public, capacity, restaurants(name, category)"
+      "id, host_employee_id, restaurant_id, scheduled_at, memo, status, host_attendance_status, is_public, capacity, meal_type, restaurants(name, category)"
     )
     .eq("id", appointmentId)
     .maybeSingle();
@@ -49,6 +49,7 @@ export async function getAppointmentDetail(appointmentId: string): Promise<Appoi
     hostAttendanceStatus: data.host_attendance_status as HostAttendanceStatus | null,
     isPublic: data.is_public,
     capacity: data.capacity,
+    mealType: data.meal_type as AppointmentMealType,
   };
 }
 
@@ -254,7 +255,7 @@ export async function getRelevantAppointments(
       scheduledAt: a.scheduled_at,
       role: "host",
       participantStatus: null,
-      needsConfirmation: isPastConfirmationWindow(new Date(a.scheduled_at), now),
+      needsConfirmation: true,
     });
   }
 
@@ -283,7 +284,7 @@ export async function getRelevantAppointments(
       scheduledAt: appt.scheduled_at,
       role: "participant",
       participantStatus: p.status as ParticipantStatus,
-      needsConfirmation: p.status === "accepted" && isPastConfirmationWindow(scheduledAt, now),
+      needsConfirmation: p.status === "accepted",
     });
   }
 

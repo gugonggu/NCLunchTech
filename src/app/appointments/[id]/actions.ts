@@ -17,7 +17,6 @@ import {
 } from "@/lib/notifications/validation";
 import { getAppointmentDetail, getMyParticipant } from "@/lib/appointments/queries";
 import { canAcceptPublicApplicant, canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
-import { getAttendanceTiming } from "@/lib/appointments/attendance";
 import { closeOpenPollsForAppointment } from "@/lib/polls/queries";
 import { MAX_POLL_OPTIONS, dedupeIds, sanitizeCustomLabels } from "@/lib/polls/validation";
 import { calculateSettlementShares, settlementInputSchema } from "@/lib/settlements/validation";
@@ -280,9 +279,6 @@ export async function markParticipantNoShow(appointmentId: string) {
   if (appointment.status === "cancelled") {
     redirectWithStatus(appointmentId, "cancelled_appointment");
   }
-  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
-    redirectWithStatus(appointmentId, "too_early");
-  }
 
   const existing = await getMyParticipant(appointmentId, employee.id);
   if (!existing || !canParticipantTransition(existing.status, "cancelled")) {
@@ -401,9 +397,6 @@ export async function confirmAttendance(appointmentId: string) {
   if (appointment.status === "cancelled") {
     redirectWithStatus(appointmentId, "cancelled_appointment");
   }
-  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
-    redirectWithStatus(appointmentId, "too_early");
-  }
 
   const existing = await getMyParticipant(appointmentId, employee.id);
   if (!existing || !canParticipantTransition(existing.status, "completed")) {
@@ -455,9 +448,6 @@ export async function confirmHostAttendance(appointmentId: string) {
   }
 
   const appointment = await requireHostAttendancePending(appointmentId, employee.id);
-  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
-    redirectWithStatus(appointmentId, "too_early");
-  }
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
@@ -488,9 +478,6 @@ export async function markHostNoShow(appointmentId: string) {
   }
 
   const appointment = await requireHostAttendancePending(appointmentId, employee.id);
-  if (getAttendanceTiming(appointment.scheduledAt, new Date()) === "too_early") {
-    redirectWithStatus(appointmentId, "too_early");
-  }
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();

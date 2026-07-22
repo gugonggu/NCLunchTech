@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { resolveEmployeesByNickname } from "@/lib/appointments/queries";
-import { memoSchema, parseNicknameList, parsePublicAppointmentInput, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
+import { memoSchema, parseAppointmentMealType, parseNicknameList, parsePublicAppointmentInput, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
 import { createNotification } from "@/lib/notifications/queries";
 import { buildAppointmentInvitedMessage } from "@/lib/notifications/validation";
 import { getPollDetail } from "@/lib/polls/queries";
@@ -45,6 +45,11 @@ export async function createAppointment(restaurantId: string, formData: FormData
     redirectToNewForm(restaurantId, "invalid_memo");
   }
 
+  const mealType = parseAppointmentMealType(formData.get("mealType"));
+  if (!mealType) {
+    redirectToNewForm(restaurantId, "invalid_input");
+  }
+
   const publicInput = parsePublicAppointmentInput(formData);
   if (!publicInput) {
     redirectToNewForm(restaurantId, "invalid_input");
@@ -80,6 +85,7 @@ export async function createAppointment(restaurantId: string, formData: FormData
       memo: parsedMemo.data ?? null,
       is_public: publicInput.isPublic,
       capacity: publicInput.capacity,
+      meal_type: mealType,
     })
     .select("id")
     .single();

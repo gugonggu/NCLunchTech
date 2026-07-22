@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { hasCompletedVisit } from "@/lib/reviews/queries";
+import { hasCompletedVisit, hasReviewAccessForSource } from "@/lib/reviews/queries";
 import { normalizeReviewFormData, reviewSchema } from "@/lib/reviews/validation";
 import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/queries";
 import {
@@ -139,7 +139,12 @@ export async function upsertMealRecord(
   redirectToMealForm(restaurantId, visitId, appointmentId, "saved");
 }
 
-export async function upsertReview(restaurantId: string, formData: FormData) {
+export async function upsertReview(
+  restaurantId: string,
+  visitId: string | undefined,
+  appointmentId: string | undefined,
+  formData: FormData
+) {
   const employee = await getCurrentEmployee();
   if (!employee) {
     redirect(`/login?returnTo=${encodeURIComponent(`/reviews/new?restaurantId=${restaurantId}`)}`);
@@ -156,7 +161,10 @@ export async function upsertReview(restaurantId: string, formData: FormData) {
     redirectToForm(restaurantId, "not_found");
   }
 
-  const visited = await hasCompletedVisit(employee.id, restaurantId);
+  const source = mealSourceSchema.safeParse({ visitId, appointmentId });
+  const visited = source.success
+    ? await hasReviewAccessForSource(employee.id, restaurantId, source.data)
+    : await hasCompletedVisit(employee.id, restaurantId);
   if (!visited) {
     redirectToForm(restaurantId, "not_visited");
   }

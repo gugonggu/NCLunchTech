@@ -2,6 +2,7 @@ import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { aggregateReviewRows, type ReviewAggregate } from "./validation";
 import type { RevisitIntent } from "./validation";
+import type { MealSource } from "@/lib/meals/validation";
 
 export interface MyReview {
   id: string;
@@ -162,6 +163,51 @@ export async function hasCompletedVisit(employeeId: string, restaurantId: string
   });
 
   return (visitCount ?? 0) > 0 || (hostCount ?? 0) > 0 || attendedViaAppointment;
+}
+
+/** A review opened from a chosen lunch source must be tied to that employee and restaurant. */
+export async function hasReviewAccessForSource(
+  employeeId: string,
+  restaurantId: string,
+  source: MealSource
+): Promise<boolean> {
+  const supabase = createServiceRoleClient();
+  if (source.visitId) {
+    const { data } = await supabase
+      .from("visits")
+      .select("id")
+      .eq("id", source.visitId)
+      .eq("employee_id", employeeId)
+      .eq("restaurant_id", restaurantId)
+      .in("status", ["planned", "completed"])
+      .maybeSingle();
+    return !!data;
+  }
+
+  const [hostResult, participantResult] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("id")
+      .eq("id", source.appointmentId!)
+      .eq("host_employee_id", employeeId)
+      .eq("restaurant_id", restaurantId)
+      .eq("status", "active")
+      .maybeSingle(),
+    supabase
+      .from("appointment_participants")
+      .select("appointments!inner(id, restaurant_id, status)")
+      .eq("appointment_id", source.appointmentId!)
+      .eq("employee_id", employeeId)
+      .in("status", ["accepted", "completed"]),
+  ]);
+  const participantAppointment = participantResult.data?.[0]?.appointments as unknown as {
+    restaurant_id: string;
+    status: string;
+  } | null;
+  return (
+    !!hostResult.data ||
+    (participantAppointment?.restaurant_id === restaurantId && participantAppointment.status === "active")
+  );
 }
 
 /** 추천 엔진 2.0(2-7)용: 여러 식당의 리뷰를 한 번에 집계한다(평균 평점, 최다 언급 태그). */

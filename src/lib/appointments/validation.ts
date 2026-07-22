@@ -2,12 +2,17 @@ import { z } from "zod";
 import { MAX_POLL_OPTIONS } from "@/lib/polls/validation";
 
 export type AppointmentStatus = "active" | "cancelled";
+export type AppointmentMealType = "dine_in" | "delivery";
 export type ParticipantStatus = "pending" | "accepted" | "declined" | "cancelled" | "completed" | "expired";
 export type HostAttendanceStatus = "completed" | "cancelled";
 
 export const PUBLIC_APPOINTMENT_CAPACITY_DEFAULT = 4;
 export const PUBLIC_APPOINTMENT_CAPACITY_MIN = 2;
 export const PUBLIC_APPOINTMENT_CAPACITY_MAX = 10;
+
+export function parseAppointmentMealType(value: unknown): AppointmentMealType | null {
+  return value === "dine_in" || value === "delivery" ? value : null;
+}
 
 export interface PublicAppointmentInput {
   isPublic: boolean;

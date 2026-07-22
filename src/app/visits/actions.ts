@@ -6,7 +6,6 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { decideOutcome } from "@/lib/visits/decision";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { UUID_PATTERN, getSeoulDateString, type VisitFeedbackCode } from "@/lib/visits/validation";
-import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 
 function redirectWithStatus(status: VisitFeedbackCode): never {
   redirect(`/?visitStatus=${status}`);
@@ -158,9 +157,6 @@ export async function completeTodayVisit() {
   }
 
   const currentTime = new Date();
-  if (!isPastConfirmationWindow(new Date(active.updatedAt), currentTime)) {
-    redirectWithStatus("too_early");
-  }
 
   const supabase = createServiceRoleClient();
   const now = currentTime.toISOString();
@@ -199,9 +195,6 @@ export async function markTodayVisitNoShow() {
   }
 
   const currentTime = new Date();
-  if (!isPastConfirmationWindow(new Date(active.updatedAt), currentTime)) {
-    redirectWithStatus("too_early");
-  }
 
   const now = currentTime.toISOString();
   const supabase = createServiceRoleClient();

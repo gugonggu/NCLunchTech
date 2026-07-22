@@ -204,25 +204,13 @@ describe("HomePage", () => {
     render(ui);
 
     const hero = screen.getByLabelText("오늘 가장 중요한 일");
-    expect(within(hero).getByRole("link", { name: /오늘 점심 투표/ })).toHaveAttribute(
-      "href",
-      "/polls/poll-1",
-    );
-    expect(within(hero).queryByText("오늘의 점심")).not.toBeInTheDocument();
+    expect(within(hero).getByText("방문 확인")).toBeInTheDocument();
+    expect(within(hero).queryByRole("link", { name: /오늘 점심 투표/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /오늘 점심 투표/ })).toHaveLength(1);
     expect(screen.getAllByText("오늘 점심 투표")).toHaveLength(1);
 
     const timeline = screen.getByLabelText("오늘 일정");
-    expect(within(timeline).getByText("오늘의 점심")).toBeInTheDocument();
-    expect(screen.getAllByText("오늘의 점심")).toHaveLength(1);
-    expect(within(timeline).getByText("한식 · 144m")).toBeInTheDocument();
-    expect(within(timeline).getByRole("link", { name: "상세 보기" })).toHaveAttribute(
-      "href",
-      "/restaurants/r-1",
-    );
-    expect(within(timeline).getByRole("link", { name: "변경하기" })).toHaveAttribute("href", "/recommend");
-    expect(within(timeline).getByRole("button", { name: "결정 취소" })).toBeInTheDocument();
-    expect(within(timeline).getByRole("button", { name: "방문 완료" })).toBeInTheDocument();
+    expect(within(timeline).queryByText("오늘의 점심")).not.toBeInTheDocument();
     expect(within(timeline).getByRole("heading", { name: "진행 중인 투표" })).toBeInTheDocument();
   });
 
@@ -274,7 +262,7 @@ describe("HomePage", () => {
     );
   });
 
-  it("결정 후 1시간 전인 planned 방문은 오늘의 점심 카드로 보여준다", async () => {
+  it("planned 방문은 즉시 방문 확인 카드로 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
     mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue({
@@ -291,11 +279,10 @@ describe("HomePage", () => {
     const ui = await renderHome();
     render(ui);
 
-    expect(screen.getByText("오늘의 점심")).toBeInTheDocument();
+    expect(screen.getByText("방문 확인")).toBeInTheDocument();
     expect(screen.getByText("테스트식당")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "변경하기" })).toHaveAttribute("href", "/recommend");
-    expect(screen.getByRole("button", { name: "결정 취소" })).toBeInTheDocument();
-    expect(screen.queryByText("방문 확인")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "변경하기" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "결정 취소" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "오늘 뭐 먹지?" })).not.toBeInTheDocument();
   });
 

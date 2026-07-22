@@ -6,11 +6,20 @@ import {
   getDefaultAppointmentTime,
   isAppointmentStatusCode,
   memoSchema,
+  parseAppointmentMealType,
   parsePublicAppointmentInput,
   parseNicknameList,
   parseSeoulDateTimeLocal,
   sanitizeReturnTo,
 } from "./validation";
+
+describe("parseAppointmentMealType", () => {
+  it("accepts only dine-in and delivery", () => {
+    expect(parseAppointmentMealType("dine_in")).toBe("dine_in");
+    expect(parseAppointmentMealType("delivery")).toBe("delivery");
+    expect(parseAppointmentMealType("takeout")).toBeNull();
+  });
+});
 
 describe("getDefaultAppointmentTime", () => {
   it("서울 기준 12:30 이전이면 오늘 12:30을 반환한다", () => {

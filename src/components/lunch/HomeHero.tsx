@@ -139,6 +139,12 @@ export function HomeHero({
                   방문 완료
                 </Button>
               </form>
+              <Link
+                href={`/reviews/new?restaurantId=${todayVisit.restaurantId}&visitId=${todayVisit.id}`}
+                className={buttonStyles({ variant: "secondary", block: true })}
+              >
+                리뷰 남기기
+              </Link>
             </div>
           </div>
         )}

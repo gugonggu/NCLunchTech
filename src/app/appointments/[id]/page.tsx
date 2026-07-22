@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getAppointmentDetail, getMyParticipant, getParticipants } from "@/lib/appointments/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getAppointmentPolls } from "@/lib/polls/queries";
@@ -87,7 +86,7 @@ export default async function AppointmentDetailPage({
   const isExpired = scheduledAt <= now;
   const isCancelled = appointment.status === "cancelled";
   const isOpen = !isCancelled && !isExpired;
-  const needsConfirmation = !isCancelled && isPastConfirmationWindow(scheduledAt, now);
+  const needsConfirmation = !isCancelled;
 
   const myParticipant = isHost ? null : await getMyParticipant(id, employee.id);
   const participants = isHost ? await getParticipants(id) : [];
@@ -152,6 +151,7 @@ export default async function AppointmentDetailPage({
           {appointment.restaurantName}
         </Link>
         <p className="text-sm text-ink-muted">{appointment.restaurantCategory}</p>
+        <p className="mt-1 text-sm text-ink-muted">{appointment.mealType === "delivery" ? "배달" : "방문"}</p>
         {appointment.isPublic && appointment.capacity !== null && (
           <p className="mt-1 text-sm font-semibold text-brand-dark">공개 모집 · 정원 {appointment.capacity}명</p>
         )}
@@ -257,7 +257,7 @@ export default async function AppointmentDetailPage({
         </div>
       )}
 
-      {isHost && appointment.hostAttendanceStatus === "completed" && (
+      {isHost && appointment.hostAttendanceStatus !== "cancelled" && (
         <div className="flex flex-col gap-2">
           {mealRecord && (
             <p className="text-sm tabular-nums text-ink-muted">
@@ -509,7 +509,7 @@ export default async function AppointmentDetailPage({
         </form>
       )}
 
-      {!isHost && myParticipant?.status === "completed" && (
+      {!isHost && (myParticipant?.status === "accepted" || myParticipant?.status === "completed") && (
         <div className="flex flex-col gap-2">
           {mealRecord && (
             <p className="text-sm tabular-nums text-ink-muted">

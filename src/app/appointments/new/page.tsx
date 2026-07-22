@@ -112,6 +112,18 @@ export default async function NewAppointmentPage({
           />
         </label>
 
+        <fieldset className="flex flex-col gap-2 text-sm text-ink-muted">
+          <legend>식사 방식</legend>
+          <label className="flex items-center gap-2 text-ink">
+            <input type="radio" name="mealType" value="dine_in" defaultChecked />
+            방문
+          </label>
+          <label className="flex items-center gap-2 text-ink">
+            <input type="radio" name="mealType" value="delivery" />
+            배달
+          </label>
+        </fieldset>
+
         <label className="flex flex-col gap-1 text-sm text-ink-muted">
           메모(선택, 최대 100자)
           <textarea
