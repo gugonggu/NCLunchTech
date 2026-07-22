@@ -4,6 +4,7 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
 import { getMonthlySummary } from "@/lib/monthly-summary-queries";
+import { getSeasonalBadges } from "@/lib/seasonal-badges-queries";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { LogoutButton } from "../LogoutButton";
@@ -99,7 +100,7 @@ export default async function MePage() {
     { label: "즐겨찾기", value: favoritesResult.count ?? 0 },
   ];
 
-  const [leaderboard, monthlySummary] = await Promise.all([getMonthlyLeaderboard(employee.id), getMonthlySummary(employee.id)]);
+  const [leaderboard, monthlySummary, seasonalBadges] = await Promise.all([getMonthlyLeaderboard(employee.id), getMonthlySummary(employee.id), getSeasonalBadges(employee.id)]);
   const myRanks = (Object.entries(RANK_CATEGORY_LABELS) as [keyof typeof RANK_CATEGORY_LABELS, string][])
     .map(([key, label]) => ({ label, myRank: leaderboard.categories[key].myRank }))
     .filter((row) => row.myRank !== null);
@@ -155,6 +156,8 @@ export default async function MePage() {
           </ul>
         </section>
       )}
+
+      {seasonalBadges.badges.length > 0 && <section className="rounded-card bg-surface px-4 py-4 shadow-card"><p className="text-sm font-semibold text-brand-dark">{seasonalBadges.label} 배지</p><p className="mt-2 text-sm text-ink-muted">{seasonalBadges.badges.join(" · ")}</p></section>}
 
       <Link href="/leaderboard" className={buttonStyles({ variant: "secondary", block: true })}>
         월간 배지·리더보드
