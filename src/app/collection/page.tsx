@@ -10,6 +10,8 @@ import {
   getVisitedRestaurantIds,
 } from "@/lib/collection/queries";
 import { RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
+import { getLunchPassport } from "@/lib/lunch-passport-queries";
+import { LunchPassportCard } from "@/components/collection/LunchPassportCard";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { toggleFavorite } from "@/app/restaurants/[id]/actions";
@@ -42,10 +44,11 @@ export default async function CollectionPage({
     supabase.from("restaurants").select("id, name, category").eq("is_active", true).range(from, to)
   );
 
-  const [visitedIds, favoriteIds, latestMealRecords] = await Promise.all([
+  const [visitedIds, favoriteIds, latestMealRecords, passport] = await Promise.all([
     getVisitedRestaurantIds(employee.id),
     getFavoriteRestaurantIds(employee.id),
     getLatestMealRecordsByRestaurant(employee.id),
+    getLunchPassport(employee.id),
   ]);
 
   const breakdown = buildCategoryBreakdown(RESTAURANT_CATEGORIES, allRestaurants, visitedIds);
@@ -77,6 +80,8 @@ export default async function CollectionPage({
       </Link>
 
       <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>도감</h1>
+
+      <LunchPassportCard passport={passport} />
 
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-bold tracking-tight text-brand-dark">분류별 현황</h2>
