@@ -10,5 +10,8 @@ export function buildMonthlySummary(
   const counts = new Map<string, number>();
   for (const visit of visits) counts.set(visit.restaurantId, (counts.get(visit.restaurantId) ?? 0) + 1);
   const top = [...counts].sort((a, b) => b[1] - a[1] || (names.get(a[0]) ?? "").localeCompare(names.get(b[0]) ?? "", "ko"))[0];
-  return { label: range.label, completedVisitCount: visits.length, newRestaurantCount: counts.size, reviewCount: activities.reviews.filter((at) => at >= range.start && at < range.end).length, mealRecordCount: activities.meals.filter((at) => at >= range.start && at < range.end).length, mostVisitedRestaurant: top ? { name: names.get(top[0]) ?? "알 수 없는 식당", count: top[1] } : null };
+  const reviewCount = activities.reviews.filter((at) => at >= range.start && at < range.end).length;
+  const mealRecordCount = activities.meals.filter((at) => at >= range.start && at < range.end).length;
+  const badges = [reviewCount >= 3 && "리뷰왕", counts.size >= 3 && "점심 개척왕", mealRecordCount >= 3 && "메뉴 수집왕"].filter((badge): badge is string => Boolean(badge));
+  return { label: range.label, completedVisitCount: visits.length, newRestaurantCount: counts.size, reviewCount, mealRecordCount, badges, mostVisitedRestaurant: top ? { name: names.get(top[0]) ?? "알 수 없는 식당", count: top[1] } : null };
 }

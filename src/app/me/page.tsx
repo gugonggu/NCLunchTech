@@ -137,6 +137,7 @@ export default async function MePage() {
           <p>메뉴 기록 <strong className="text-brand-dark">{monthlySummary.mealRecordCount}</strong>개</p>
         </div>
         {monthlySummary.mostVisitedRestaurant && <p className="mt-3 text-sm text-ink-muted">가장 자주 간 곳 · <span className="font-semibold text-ink">{monthlySummary.mostVisitedRestaurant.name}</span> {monthlySummary.mostVisitedRestaurant.count}회</p>}
+        {monthlySummary.badges.length > 0 && <p className="mt-3 text-sm text-ink-muted">이번 달 배지 · <span className="font-semibold text-brand-dark">{monthlySummary.badges.join(" · ")}</span></p>}
       </section>
 
       {myRanks.length > 0 && (
