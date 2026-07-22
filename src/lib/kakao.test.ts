@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapKakaoCategory } from "./kakao";
+import { filterPlacesWithinRadius, mapKakaoCategory } from "./kakao";
 
 describe("mapKakaoCategory", () => {
   it("카페가 포함되면 카페·간단식으로 매핑한다", () => {
@@ -16,5 +16,14 @@ describe("mapKakaoCategory", () => {
 
   it("매칭되는 키워드가 없으면 기타로 분류한다", () => {
     expect(mapKakaoCategory("음식점 > 뷔페")).toBe("기타");
+  });
+
+  it("키워드 검색 결과 중 2km 이내 장소만 남긴다", () => {
+    expect(
+      filterPlacesWithinRadius([
+        { id: "near", distance: "401" },
+        { id: "far", distance: "2001" },
+      ] as never, 2000).map((place) => place.id),
+    ).toEqual(["near"]);
   });
 });

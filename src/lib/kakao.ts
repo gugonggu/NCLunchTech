@@ -43,6 +43,29 @@ export interface KakaoPlace {
   phone: string;
   x: string;
   y: string;
+  distance?: string;
+}
+
+export function filterPlacesWithinRadius(places: KakaoPlace[], radiusM: number): KakaoPlace[] {
+  return places.filter((place) => {
+    const distance = Number(place.distance);
+    return Number.isFinite(distance) && distance <= radiusM;
+  });
+}
+
+export async function searchPlacesByKeyword(params: {
+  query: string;
+  lat: number;
+  lng: number;
+  radiusM: number;
+}): Promise<KakaoPlace[]> {
+  const url =
+    `${KAKAO_API_BASE}/search/keyword.json?query=${encodeURIComponent(params.query)}` +
+    `&x=${params.lng}&y=${params.lat}&radius=${params.radiusM}&sort=distance&size=15`;
+  const res = await fetch(url, { headers: kakaoHeaders() });
+  if (!res.ok) throw new Error(`Kakao 키워드 검색 실패: ${res.status}`);
+  const data = await res.json();
+  return filterPlacesWithinRadius(data.documents ?? [], params.radiusM);
 }
 
 export async function searchNearbyPlaces(params: {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { SyncKakaoButton } from "./SyncKakaoButton";
+import { KakaoRestaurantAddForm } from "./KakaoRestaurantAddForm";
 import { getAdminStatusMessage, RESTAURANT_ADMIN_STATUS_MESSAGES } from "@/lib/admin/status-messages";
 
 const RESULT_LIMIT = 60;
@@ -46,6 +47,7 @@ export default async function AdminRestaurantsPage({
           CSV 업로드
         </Link>
       </div>
+      <KakaoRestaurantAddForm />
 
       <form method="get" className="flex gap-2">
         <input
