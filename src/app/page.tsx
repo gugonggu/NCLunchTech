@@ -5,7 +5,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { isPastConfirmationWindow } from "@/lib/confirmation-window";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { getSeoulDateString, isVisitFeedbackCode, VISIT_STATUS_MESSAGES } from "@/lib/visits/validation";
-import { getRelevantAppointments } from "@/lib/appointments/queries";
+import { getPublicRecruitingAppointments, getRelevantAppointments } from "@/lib/appointments/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
@@ -22,6 +22,14 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   month: "long",
   day: "numeric",
   weekday: "long",
+});
+
+const appointmentTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
 interface HomeSearchParams {
@@ -68,6 +76,7 @@ export default async function HomePage({
       ? await getMealRecordForSource(employee.id, { visitId: todayVisit.id })
       : null;
   const relevantAppointments = await getRelevantAppointments(employee.id, now);
+  const publicRecruitingAppointments = await getPublicRecruitingAppointments(employee.id, now);
   const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
   const relevantPolls = await getRelevantPolls(employee.id);
   const lunchAvailabilities = await getLunchAvailabilities(today);
@@ -164,6 +173,29 @@ export default async function HomePage({
       <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "190ms" }}>
         <LunchAvailabilityCard employeeId={employee.id} availabilities={lunchAvailabilities} />
       </div>
+
+      {publicRecruitingAppointments.length > 0 && (
+        <section className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-3" style={{ animationDelay: "210ms" }}>
+          <div>
+            <p className="text-sm font-semibold text-brand-dark">Open lunch</p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-ink">참여 가능한 동행</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {publicRecruitingAppointments.map((appointment) => (
+              <Link
+                key={appointment.id}
+                href={`/appointments/${appointment.id}`}
+                className="rounded-card bg-surface px-4 py-3 shadow-card transition active:scale-[0.99]"
+              >
+                <p className="font-semibold text-ink">{appointment.restaurantName}</p>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {appointmentTimeFormatter.format(new Date(appointment.scheduledAt))} · {appointment.acceptedParticipantCount + 1}/{appointment.capacity}명
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <nav
         aria-label="홈 바로가기"

@@ -75,6 +75,9 @@ export async function respondToInvite(appointmentId: string, response: "accepted
   }
 
   const appointment = await requireOpenAppointment(appointmentId);
+  if (appointment.isPublic) {
+    redirectWithStatus(appointmentId, "public_appointment_only");
+  }
   if (appointment.hostEmployeeId === employee.id) {
     redirectWithStatus(appointmentId, "not_host");
   }

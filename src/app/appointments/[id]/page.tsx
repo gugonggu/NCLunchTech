@@ -14,8 +14,10 @@ import {
 } from "@/lib/appointments/validation";
 import {
   cancelAppointment,
+  applyToPublicAppointment,
   confirmAttendance,
   confirmHostAttendance,
+  decidePublicApplicant,
   createAppointmentMenuPoll,
   markHostNoShow,
   markParticipantNoShow,
@@ -150,6 +152,9 @@ export default async function AppointmentDetailPage({
           {appointment.restaurantName}
         </Link>
         <p className="text-sm text-ink-muted">{appointment.restaurantCategory}</p>
+        {appointment.isPublic && appointment.capacity !== null && (
+          <p className="mt-1 text-sm font-semibold text-brand-dark">공개 모집 · 정원 {appointment.capacity}명</p>
+        )}
         <p className="mt-2 text-sm tabular-nums text-ink">{displayFormatter.format(scheduledAt)}</p>
         {appointment.memo && <p className="mt-2 text-sm text-ink">{appointment.memo}</p>}
       </div>
@@ -382,6 +387,25 @@ export default async function AppointmentDetailPage({
             </ul>
           )}
 
+          {appointment.isPublic && isOpen && participants.some((participant) => participant.status === "pending") && (
+            <div className="flex flex-col gap-2 rounded-card bg-surface-muted p-3">
+              <p className="text-sm font-semibold text-ink">참여 신청 처리</p>
+              {participants.filter((participant) => participant.status === "pending").map((participant) => (
+                <div key={participant.id} className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-ink">{participant.employeeNickname}</span>
+                  <div className="flex gap-2">
+                    <form action={decidePublicApplicant.bind(null, id, participant.id, "accepted")}>
+                      <button type="submit" className="rounded-xl bg-brand px-3 py-1.5 text-xs font-semibold text-black">승인</button>
+                    </form>
+                    <form action={decidePublicApplicant.bind(null, id, participant.id, "declined")}>
+                      <button type="submit" className="rounded-xl bg-surface px-3 py-1.5 text-xs font-semibold">거절</button>
+                    </form>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {isOpen && (
             <>
               <form action={updateAppointmentSchedule.bind(null, id)} className="flex flex-col gap-2">
@@ -427,7 +451,7 @@ export default async function AppointmentDetailPage({
         </section>
       )}
 
-      {!isHost && isOpen && myParticipant && myParticipant.status === "pending" && (
+      {!isHost && !appointment.isPublic && isOpen && myParticipant && myParticipant.status === "pending" && (
         <div className="flex gap-2">
           <form action={respondToInvite.bind(null, id, "accepted")} className="flex-1">
             <button type="submit" className={buttonStyles({ block: true })}>
@@ -442,19 +466,18 @@ export default async function AppointmentDetailPage({
         </div>
       )}
 
-      {!isHost && isOpen && !myParticipant && (
+      {!isHost && appointment.isPublic && isOpen && !myParticipant && (
         <div className="flex gap-2">
-          <form action={respondToInvite.bind(null, id, "accepted")} className="flex-1">
+          <form action={applyToPublicAppointment.bind(null, id)} className="flex-1">
             <button type="submit" className={buttonStyles({ block: true })}>
-              참여하기
-            </button>
-          </form>
-          <form action={respondToInvite.bind(null, id, "declined")} className="flex-1">
-            <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
-              거절
+              참여 신청
             </button>
           </form>
         </div>
+      )}
+
+      {!isHost && appointment.isPublic && isOpen && myParticipant?.status === "pending" && (
+        <p className="text-sm text-ink-muted">참여 신청을 보냈어요. 방장의 승인을 기다려주세요.</p>
       )}
 
       {participantNeedsConfirmation && (

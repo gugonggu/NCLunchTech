@@ -13,6 +13,7 @@ import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { createAppointment } from "./actions";
 import { RestaurantPicker } from "./RestaurantPicker";
+import { PublicRecruitmentFields } from "./PublicRecruitmentFields";
 
 interface NewAppointmentSearchParams {
   restaurantId?: string;
@@ -122,15 +123,7 @@ export default async function NewAppointmentPage({
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-ink-muted">
-          참여자 닉네임(쉼표로 구분, 선택)
-          <input
-            type="text"
-            name="participantNicknames"
-            placeholder="예: 김철수, 박영희"
-            className="rounded-control border border-line px-4 py-3 text-base text-ink"
-          />
-        </label>
+        <PublicRecruitmentFields />
         <p className="text-xs text-ink-muted">
           여기서 직접 지정하지 않아도, 약속을 만든 뒤 링크를 공유해 참여자를 초대할 수 있어요.
         </p>

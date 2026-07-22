@@ -22,6 +22,7 @@ vi.mock("@/app/visits/actions", () => ({
 
 vi.mock("@/lib/appointments/queries", () => ({
   getRelevantAppointments: vi.fn(),
+  getPublicRecruitingAppointments: vi.fn(),
 }));
 
 vi.mock("@/lib/notifications/queries", () => ({
@@ -58,7 +59,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getActiveVisitToday } from "@/lib/visits/queries";
-import { getRelevantAppointments } from "@/lib/appointments/queries";
+import { getPublicRecruitingAppointments, getRelevantAppointments } from "@/lib/appointments/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
@@ -70,6 +71,7 @@ function mockDefaults() {
   vi.mocked(getMealRecordForSource).mockResolvedValue(null);
   vi.mocked(getRelevantPolls).mockResolvedValue([]);
   vi.mocked(getLunchAvailabilities).mockResolvedValue([]);
+  vi.mocked(getPublicRecruitingAppointments).mockResolvedValue([]);
   mockSettingsMaybeSingle.mockResolvedValue({
     data: { company_lat: 35.17, company_lng: 129.13, announcement: null },
   });
@@ -80,6 +82,27 @@ function renderHome(searchParams: Record<string, string> = {}) {
 }
 
 describe("HomePage", () => {
+  it("renders public appointments that the employee can apply to", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(getPublicRecruitingAppointments).mockResolvedValue([
+      {
+        id: "public-1",
+        restaurantName: "복만당",
+        scheduledAt: "2026-07-23T03:30:00.000Z",
+        capacity: 4,
+        acceptedParticipantCount: 1,
+      },
+    ]);
+
+    render(await renderHome());
+
+    expect(screen.getByRole("heading", { name: "참여 가능한 동행" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /복만당/ })).toHaveAttribute("href", "/appointments/public-1");
+  });
+
   it("비로그인 상태에서는 로그인·회원가입 버튼을 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue(null);
 
