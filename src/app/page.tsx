@@ -128,7 +128,7 @@ export default async function HomePage({
     !(heroKind === "confirmation" && soloNeedsConfirmation);
 
   return (
-    <main className="relative flex w-full flex-1 flex-col gap-8 overflow-hidden">
+    <main className="relative flex w-full flex-1 flex-col gap-8 overflow-hidden pb-6 sm:pb-8">
       <GradientBackdrop />
 
       <header

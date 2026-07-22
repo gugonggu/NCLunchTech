@@ -12,6 +12,15 @@ export function canTransition(from: VisitStatus, to: VisitStatus): boolean {
   return ALLOWED_TRANSITIONS[from].includes(to);
 }
 
+export function getCancelledVisitUpdate(now: string) {
+  return {
+    status: "cancelled" as const,
+    cancelled_at: now,
+    completed_at: null,
+    updated_at: now,
+  };
+}
+
 /** Asia/Seoul(UTC+9, 서머타임 없음) 기준 오늘 날짜를 YYYY-MM-DD 문자열로 계산한다. */
 export function getSeoulDateString(now: Date): string {
   const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;

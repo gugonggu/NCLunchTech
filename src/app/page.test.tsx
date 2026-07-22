@@ -94,6 +94,17 @@ function renderHome(searchParams: Record<string, string> = {}) {
 }
 
 describe("HomePage", () => {
+  it("adds breathing room below the home content", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "tester" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+
+    const { container } = render(await renderHome());
+
+    expect(container.querySelector("main")).toHaveClass("pb-6", "sm:pb-8");
+  });
+
   it("이번 달의 식당을 오늘 같이 먹기 아래에 표시한다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트" });
     mockDefaults();

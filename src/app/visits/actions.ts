@@ -5,7 +5,7 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { decideOutcome } from "@/lib/visits/decision";
 import { getActiveVisitToday } from "@/lib/visits/queries";
-import { UUID_PATTERN, getSeoulDateString, type VisitFeedbackCode } from "@/lib/visits/validation";
+import { UUID_PATTERN, getCancelledVisitUpdate, getSeoulDateString, type VisitFeedbackCode } from "@/lib/visits/validation";
 
 function redirectWithStatus(status: VisitFeedbackCode): never {
   redirect(`/?visitStatus=${status}`);
@@ -125,7 +125,7 @@ export async function cancelTodayVisit() {
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("visits")
-    .update({ status: "cancelled", cancelled_at: now, updated_at: now })
+    .update(getCancelledVisitUpdate(now))
     .eq("id", active.id)
     .eq("employee_id", employee.id)
     .in("status", ["planned", "completed"]);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canTransition, daysBetweenDateStrings, getSeoulDateString, isVisitFeedbackCode } from "./validation";
+import { canTransition, daysBetweenDateStrings, getCancelledVisitUpdate, getSeoulDateString, isVisitFeedbackCode } from "./validation";
 
 describe("getSeoulDateString", () => {
   it("calculates the date using Asia/Seoul time", () => {
@@ -26,6 +26,17 @@ describe("canTransition", () => {
   it("does not reopen cancelled visits", () => {
     expect(canTransition("cancelled", "planned")).toBe(false);
     expect(canTransition("cancelled", "completed")).toBe(false);
+  });
+});
+
+describe("getCancelledVisitUpdate", () => {
+  it("clears completion time while cancelling a completed visit", () => {
+    expect(getCancelledVisitUpdate("2026-07-23T03:30:00.000Z")).toEqual({
+      status: "cancelled",
+      cancelled_at: "2026-07-23T03:30:00.000Z",
+      completed_at: null,
+      updated_at: "2026-07-23T03:30:00.000Z",
+    });
   });
 });
 
