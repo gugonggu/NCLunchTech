@@ -86,7 +86,7 @@ describe("HomePage", () => {
     expect(screen.queryByText(/식당 찾기/)).not.toBeInTheDocument();
   });
 
-  it("오늘의 결정이 없으면 오늘 뭐 먹지?/식당 찾기 버튼을 보여준다", async () => {
+  it("오늘의 결정이 없으면 오늘 뭐 먹지?/도감/리더보드 버튼을 보여준다", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "테스트닉네임" });
     mockDefaults();
     vi.mocked(getActiveVisitToday).mockResolvedValue(null);
@@ -97,7 +97,8 @@ describe("HomePage", () => {
 
     expect(screen.getByText("테스트닉네임님, 안녕하세요.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "오늘 뭐 먹지?" })).toHaveAttribute("href", "/recommend");
-    expect(screen.getByRole("link", { name: "식당 찾기" })).toHaveAttribute("href", "/restaurants");
+    expect(screen.getByRole("link", { name: "도감" })).toHaveAttribute("href", "/collection");
+    expect(screen.getByRole("link", { name: "리더보드" })).toHaveAttribute("href", "/leaderboard");
     expect(screen.queryByRole("link", { name: "로그인" })).not.toBeInTheDocument();
   });
 

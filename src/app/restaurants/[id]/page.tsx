@@ -13,6 +13,7 @@ import { getHelpfulCount, hasReacted } from "@/lib/review-reactions/queries";
 import { getRestaurantPhotoGallery } from "@/lib/review-photos/queries";
 import { formatTimeToMinute } from "@/lib/restaurants/hours-validation";
 import { buttonStyles } from "@/components/ui/Button";
+import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { StatusReportForm } from "../StatusReportForm";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
@@ -105,7 +106,8 @@ export default async function RestaurantDetailPage({
   const photoGallery = await getRestaurantPhotoGallery(id);
 
   return (
-    <main className="flex flex-1 flex-col gap-8 px-6 py-8">
+    <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 overflow-hidden px-6 py-8">
+      <GradientBackdrop />
       <Link href="/restaurants" className="text-sm text-ink-muted">
         ← 목록으로
       </Link>
@@ -118,7 +120,7 @@ export default async function RestaurantDetailPage({
 
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">{restaurant.name}</h1>
+          <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>{restaurant.name}</h1>
           {employee && (
             <form action={toggleFavorite.bind(null, restaurant.id)}>
               <button

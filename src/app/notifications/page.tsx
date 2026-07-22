@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getNotifications, markAllNotificationsRead } from "@/lib/notifications/queries";
+import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 
 const displayFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -21,12 +22,13 @@ export default async function NotificationsPage() {
   await markAllNotificationsRead(employee.id);
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+    <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+      <GradientBackdrop />
       <Link href="/" className="text-sm text-ink-muted">
         ← 홈으로
       </Link>
 
-      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">알림</h1>
+      <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>알림</h1>
 
       {notifications.length === 0 ? (
         <p className="text-sm text-ink-muted">아직 알림이 없어요.</p>

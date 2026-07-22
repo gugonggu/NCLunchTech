@@ -41,11 +41,13 @@ export function TodayTimeline({
     <section aria-label="오늘 일정" className="flex flex-col gap-3">
       <div>
         <p className="text-sm font-semibold text-brand-dark">Today</p>
-        <h2 className="mt-1 text-xl font-bold tracking-tight text-ink sm:text-2xl">오늘 일정</h2>
+        <h2 className="mt-1 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-xl font-bold tracking-tight text-transparent sm:text-2xl">
+          오늘 일정
+        </h2>
       </div>
 
       {showVisitSummary && todayVisit?.status === "planned" && (
-        <Card>
+        <Card className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float">
           <p className="text-xs font-semibold text-brand-dark">오늘의 점심</p>
           <p className="mt-1 font-semibold text-ink">{todayVisit.restaurantName}</p>
           <p className="text-sm tabular-nums text-ink-muted">
@@ -80,7 +82,7 @@ export function TodayTimeline({
       )}
 
       {showVisitSummary && todayVisit?.status === "completed" && (
-        <Card>
+        <Card className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float">
           <p className="text-xs font-semibold text-success">오늘 다녀온 식당 · 방문 완료</p>
           <p className="mt-1 font-semibold text-ink">{todayVisit.restaurantName}</p>
           <p className="text-sm tabular-nums text-ink-muted">
@@ -108,13 +110,24 @@ export function TodayTimeline({
             <Link
               key={poll.id}
               href={`/polls/${poll.id}`}
-              className="rounded-control bg-surface px-4 py-4 shadow-card transition active:scale-[0.98]"
+              className="block rounded-control bg-surface px-4 py-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float active:scale-[0.98]"
             >
-              <span className="block font-semibold text-ink">{poll.label}</span>
-              <span className="block text-sm text-ink-muted">
-                {poll.status === "open" ? "진행 중" : "마감됨 · 결과 확정 대기"}
-                {poll.status === "open" && isClosingSoon(new Date(poll.closesAt), now) && " · 마감 임박"}
+              <span className="flex items-center gap-2">
+                <span className="font-semibold text-ink">{poll.label}</span>
+                {poll.status === "open" && (
+                  <span className="rounded-full bg-gradient-to-r from-brand to-[#ff5c7a] px-2 py-0.5 text-xs font-semibold text-white">
+                    진행 중
+                  </span>
+                )}
+                {poll.status === "open" && isClosingSoon(new Date(poll.closesAt), now) && (
+                  <span className="rounded-full bg-gradient-to-r from-[#ff5c7a] to-[#c94b8a] px-2 py-0.5 text-xs font-semibold text-white">
+                    마감 임박
+                  </span>
+                )}
               </span>
+              {poll.status !== "open" && (
+                <span className="block text-sm text-ink-muted">마감됨 · 결과 확정 대기</span>
+              )}
             </Link>
           ))}
         </div>
@@ -127,16 +140,21 @@ export function TodayTimeline({
             <Link
               key={appointment.id}
               href={`/appointments/${appointment.id}`}
-              className="rounded-control bg-surface px-4 py-4 shadow-card transition active:scale-[0.98]"
+              className="block rounded-control bg-surface px-4 py-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float active:scale-[0.98]"
             >
-              <span className="block font-semibold text-ink">{appointment.restaurantName}</span>
-              <span className="block text-sm text-ink-muted">
+              <span className="flex items-center gap-2">
+                <span className="font-semibold text-ink">{appointment.restaurantName}</span>
+                {appointment.role !== "host" && appointment.participantStatus === "pending" && (
+                  <span className="rounded-full bg-gradient-to-r from-[#ffd23f] to-[#ff8a65] px-2 py-0.5 text-xs font-semibold text-white">
+                    응답 대기 중
+                  </span>
+                )}
+              </span>
+              <span className="block text-sm tabular-nums text-ink-muted">
                 {upcomingFormatter.format(new Date(appointment.scheduledAt))}
                 {appointment.role === "host"
                   ? " · 내가 만든 약속"
-                  : appointment.participantStatus === "pending"
-                    ? " · 응답 대기 중"
-                    : " · 참여 확정"}
+                  : appointment.participantStatus !== "pending" && " · 참여 확정"}
               </span>
             </Link>
           ))}

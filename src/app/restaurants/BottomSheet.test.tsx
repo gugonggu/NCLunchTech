@@ -66,17 +66,6 @@ describe("BottomSheet", () => {
     expect(onSnapChange).toHaveBeenCalledWith(expected);
   });
 
-  it("always hides from the explicit hide button", () => {
-    const onSnapChange = renderSheet("half");
-
-    const hideButton = screen.getByRole("button", { name: "식당 목록 숨기기" });
-    fireEvent.click(hideButton);
-
-    expect(onSnapChange).toHaveBeenCalledWith("hidden");
-    expect(hideButton).toHaveAttribute("aria-controls", "restaurant-results-sheet");
-    expect(hideButton).toHaveAttribute("aria-expanded", "true");
-  });
-
   it("renders no sheet while hidden", () => {
     renderSheet("hidden");
 

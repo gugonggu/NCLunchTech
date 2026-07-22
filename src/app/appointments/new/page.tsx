@@ -10,6 +10,7 @@ import {
   isAppointmentStatusCode,
 } from "@/lib/appointments/validation";
 import { buttonStyles } from "@/components/ui/Button";
+import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { createAppointment } from "./actions";
 import { RestaurantPicker } from "./RestaurantPicker";
 
@@ -46,7 +47,8 @@ export default async function NewAppointmentPage({
 
   if (!restaurantId) {
     return (
-      <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+      <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+        <GradientBackdrop />
         <RestaurantPicker state={await searchAppointmentRestaurants(params)} />
       </main>
     );
@@ -67,12 +69,13 @@ export default async function NewAppointmentPage({
   const defaultScheduledAt = formatSeoulDateTimeLocal(getDefaultAppointmentTime(new Date()));
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+    <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+      <GradientBackdrop />
       <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
         ← 뒤로
       </Link>
 
-      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">함께 먹기</h1>
+      <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>함께 먹기</h1>
       <p className="text-ink">
         {restaurant.name} · {restaurant.category}
       </p>
@@ -88,7 +91,7 @@ export default async function NewAppointmentPage({
         </a>
       ) : null}
 
-      {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+      {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
       {fromPollId && (
         <p className="rounded-card bg-brand-bg px-4 py-3 text-sm text-brand-dark">
           투표로 정해진 식당이에요.

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
+import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 
 const CATEGORY_META = {
   review: { title: "리뷰왕", description: "이번 달 작성한 리뷰", unit: "개" },
@@ -16,12 +17,13 @@ export default async function LeaderboardPage() {
   const leaderboard = await getMonthlyLeaderboard(employee.id);
 
   return (
-    <main className="flex flex-1 flex-col gap-5 bg-brand-bg px-6 py-8">
+    <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 overflow-hidden px-6 py-8">
+      <GradientBackdrop />
       <div>
         <Link href="/me" className="text-sm text-ink-muted">
           ← 내 정보로
         </Link>
-        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">월간 배지·리더보드</h1>
+        <h1 className={`mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>월간 배지·리더보드</h1>
         <p className="mt-1 text-sm text-ink-muted">집계 기간 · {leaderboard.label}</p>
       </div>
 

@@ -10,6 +10,7 @@ import { getRecentCompletedVisits } from "@/lib/visits/queries";
 import { getRecentAttendedAppointments } from "@/lib/appointments/queries";
 import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
 import { buttonStyles } from "@/components/ui/Button";
+import { GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { RestaurantsMapView, type MapRestaurant } from "./RestaurantsMapView";
 import { RestaurantsMapWorkspace } from "./RestaurantsMapWorkspace";
 
@@ -25,6 +26,7 @@ interface RestaurantsSearchParams {
   excludeRecent?: string;
   sort?: string;
   forAppointment?: string;
+  page?: string;
 }
 
 export default async function RestaurantsPage({
@@ -150,7 +152,25 @@ export default async function RestaurantsPage({
   }
 
   const total = list.length;
-  const visible = list.slice(0, RESULT_LIMIT);
+  const totalPages = Math.max(1, Math.ceil(total / RESULT_LIMIT));
+  const page = Math.min(totalPages, Math.max(1, Number(params.page) || 1));
+  const visible = list.slice((page - 1) * RESULT_LIMIT, page * RESULT_LIMIT);
+
+  function pageHref(targetPage: number) {
+    const search = new URLSearchParams();
+    if (query) search.set("q", query);
+    if (menuQuery) search.set("menuQ", menuQuery);
+    if (category) search.set("category", category);
+    if (radius !== DEFAULT_RADIUS_M) search.set("radius", String(radius));
+    if (maxPrice !== undefined) search.set("maxPrice", String(maxPrice));
+    if (openNowOnly) search.set("openNow", "on");
+    if (excludeRecent) search.set("excludeRecent", "on");
+    if (sort !== "distance") search.set("sort", sort);
+    if (forAppointment) search.set("forAppointment", forAppointment);
+    if (targetPage > 1) search.set("page", String(targetPage));
+    const qs = search.toString();
+    return qs ? `/restaurants?${qs}` : "/restaurants";
+  }
 
   const mapRestaurants: MapRestaurant[] = visible.map((r) => ({
     id: r.id,
@@ -168,10 +188,9 @@ export default async function RestaurantsPage({
     <RestaurantsMapWorkspace
       header={<div className="flex flex-col gap-2 px-4 py-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-brand-dark">식당 찾기</h1>
+          <h1 className={`text-xl font-extrabold tracking-tight ${GRADIENT_TEXT}`}>식당 찾기</h1>
           <p className="text-xs tabular-nums text-ink-muted">
-            {total}건 중 {visible.length}건
-            {total > RESULT_LIMIT && " (검색어로 좁혀보세요)"}
+            {total}건 중 {visible.length}건{totalPages > 1 && ` · ${page}/${totalPages}페이지`}
           </p>
         </div>
 
@@ -280,6 +299,16 @@ export default async function RestaurantsPage({
         restaurants={mapRestaurants}
         companyLocation={companyLocation}
         forAppointment={forAppointment}
+        pagination={
+          totalPages > 1
+            ? {
+                page,
+                totalPages,
+                prevHref: page > 1 ? pageHref(page - 1) : null,
+                nextHref: page < totalPages ? pageHref(page + 1) : null,
+              }
+            : null
+        }
       />
     </RestaurantsMapWorkspace>
   );

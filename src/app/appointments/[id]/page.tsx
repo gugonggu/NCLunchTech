@@ -32,6 +32,7 @@ import {
   isSettlementStatusCode,
 } from "@/lib/settlements/validation";
 import { buttonStyles } from "@/components/ui/Button";
+import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { SettlementCopyButton } from "../SettlementCopyButton";
 
 const POLL_STATUS_LABELS: Record<string, string> = {
@@ -121,12 +122,13 @@ export default async function AppointmentDetailPage({
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+    <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+      <GradientBackdrop />
       <Link href="/" className="text-sm text-ink-muted">
         ← 홈으로
       </Link>
 
-      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">동료와 함께</h1>
+      <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>동료와 함께</h1>
 
       {feedbackMessage && (
         <p className="rounded-card bg-surface px-4 py-3 text-sm text-brand-dark shadow-card">{feedbackMessage}</p>

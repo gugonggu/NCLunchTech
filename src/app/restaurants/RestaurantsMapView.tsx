@@ -22,6 +22,13 @@ interface CompanyLocation {
   lng: number;
 }
 
+export interface RestaurantsPagination {
+  page: number;
+  totalPages: number;
+  prevHref: string | null;
+  nextHref: string | null;
+}
+
 /** KNN타워 기본 좌표(회사 좌표 미설정 시 지도 중심 대체용, 실제 거리 계산에는 쓰이지 않는다). */
 const FALLBACK_CENTER = { lat: 35.1685, lng: 129.1298 };
 
@@ -29,19 +36,30 @@ export function RestaurantsMapView({
   restaurants,
   companyLocation,
   forAppointment,
+  pagination = null,
 }: {
   restaurants: MapRestaurant[];
   companyLocation: CompanyLocation | null;
   forAppointment?: string;
+  pagination?: RestaurantsPagination | null;
 }) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const markersRef = useRef<globalThis.Map<string, kakao.maps.Marker>>(new globalThis.Map());
   const clustererRef = useRef<kakao.maps.MarkerClusterer | null>(null);
+  const listItemRefs = useRef<globalThis.Map<string, HTMLAnchorElement>>(new globalThis.Map());
 
   const [mapError, setMapError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>("half");
+
+  function scrollListItemIntoView(id: string) {
+    // 시트가 hidden/peek였다면 half로 펼쳐지는 애니메이션이 끝난 뒤에 스크롤해야
+    // 목록 영역이 실제로 보이는 상태에서 스크롤이 먹힌다.
+    window.setTimeout(() => {
+      listItemRefs.current.get(id)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 320);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +94,7 @@ export function RestaurantsMapView({
             setSelectedId(r.id);
             setSheetSnap((prev) => (prev === "hidden" || prev === "peek" ? "half" : prev));
             map.panTo(marker.getPosition());
+            scrollListItemIntoView(r.id);
           });
           markersRef.current.set(r.id, marker);
           return marker;
@@ -117,15 +136,6 @@ export function RestaurantsMapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleSelectFromList(id: string) {
-    setSelectedId(id);
-    setSheetSnap((prev) => (prev === "hidden" || prev === "peek" ? "half" : prev));
-    const marker = markersRef.current.get(id);
-    if (marker && mapRef.current) {
-      mapRef.current.panTo(marker.getPosition());
-    }
-  }
-
   return (
     <div className="absolute inset-0">
       <div ref={mapContainerRef} className="absolute inset-0 bg-surface-muted" />
@@ -159,10 +169,15 @@ export function RestaurantsMapView({
           <ul className="flex flex-col gap-2">
             {restaurants.map((r) => (
               <li key={r.id}>
-                <button
-                  type="button"
-                  onClick={() => handleSelectFromList(r.id)}
-                  className={`w-full rounded-card px-4 py-4 text-left transition active:scale-[0.98] ${
+                <Link
+                  ref={(el) => {
+                    if (el) listItemRefs.current.set(r.id, el);
+                    else listItemRefs.current.delete(r.id);
+                  }}
+                  href={
+                    forAppointment ? `/restaurants/${r.id}?forAppointment=${forAppointment}` : `/restaurants/${r.id}`
+                  }
+                  className={`block w-full rounded-card px-4 py-4 text-left transition active:scale-[0.98] ${
                     selectedId === r.id ? "border border-brand bg-brand-bg" : "bg-surface shadow-card"
                   }`}
                 >
@@ -173,18 +188,36 @@ export function RestaurantsMapView({
                     {r.distanceM !== null && ` · ${r.distanceM}m`}
                     {!!r.reviewCount && ` · 리뷰 ${r.reviewCount}개`}
                   </p>
-                </button>
-                <Link
-                  href={
-                    forAppointment ? `/restaurants/${r.id}?forAppointment=${forAppointment}` : `/restaurants/${r.id}`
-                  }
-                  className="mt-1 block text-xs text-ink-muted underline"
-                >
-                  상세 보기
                 </Link>
               </li>
             ))}
           </ul>
+        )}
+
+        {pagination && (
+          <nav aria-label="식당 목록 페이지" className="mt-3 flex items-center justify-between gap-3">
+            {pagination.prevHref ? (
+              <Link href={pagination.prevHref} className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-dark underline">
+                이전
+              </Link>
+            ) : (
+              <span aria-disabled="true" className="inline-flex min-h-11 items-center text-sm text-ink-muted">
+                이전
+              </span>
+            )}
+            <p className="text-sm tabular-nums text-ink-muted">
+              {pagination.page}/{pagination.totalPages}페이지
+            </p>
+            {pagination.nextHref ? (
+              <Link href={pagination.nextHref} className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-dark underline">
+                다음
+              </Link>
+            ) : (
+              <span aria-disabled="true" className="inline-flex min-h-11 items-center text-sm text-ink-muted">
+                다음
+              </span>
+            )}
+          </nav>
         )}
       </BottomSheet>
     </div>

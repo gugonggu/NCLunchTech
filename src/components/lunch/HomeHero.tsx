@@ -49,12 +49,15 @@ export function HomeHero({
 }: HomeHeroProps) {
   return (
     <section aria-label="오늘 가장 중요한 일">
-      <Card tone="accent" className="h-full overflow-hidden">
+      <Card
+        tone="accent"
+        className="h-full overflow-hidden bg-gradient-to-br from-[#fff0e2] via-[#ffe0c2] to-[#ffcfc2] shadow-[0_20px_60px_-12px_rgba(244,124,32,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_-10px_rgba(244,124,32,0.55)]"
+      >
         {kind === "confirmation" && (
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-sm font-semibold text-brand-dark">방문 확인</p>
-              <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">오늘 점심은 어떠셨나요?</h2>
+              <h2 className="mt-1 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">오늘 점심은 어떠셨나요?</h2>
             </div>
 
             {soloNeedsConfirmation && todayVisit && (
@@ -96,7 +99,7 @@ export function HomeHero({
         {kind === "poll" && primaryPoll && (
           <div>
             <p className="text-sm font-semibold text-brand-dark">진행 중인 투표</p>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{primaryPoll.label}</h2>
+            <h2 className="mt-2 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">{primaryPoll.label}</h2>
             <p className="mt-2 text-sm text-ink-muted">
               선택지를 확인하고 동료들과 오늘 점심을 정해보세요.
               {isClosingSoon(new Date(primaryPoll.closesAt), now) && " · 마감 임박"}
@@ -114,7 +117,7 @@ export function HomeHero({
         {kind === "decision" && todayVisit && (
           <div>
             <p className="text-sm font-semibold text-brand-dark">오늘의 점심</p>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{todayVisit.restaurantName}</h2>
+            <h2 className="mt-2 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">{todayVisit.restaurantName}</h2>
             <VisitMeta visit={todayVisit} distanceM={distanceM} />
             <div className="mt-5 grid grid-cols-2 gap-2">
               <Link
@@ -143,7 +146,7 @@ export function HomeHero({
         {kind === "follow-up" && todayVisit && (
           <div>
             <p className="text-sm font-semibold text-brand-dark">오늘 다녀온 식당</p>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{todayVisit.restaurantName}</h2>
+            <h2 className="mt-2 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">{todayVisit.restaurantName}</h2>
             <VisitMeta visit={todayVisit} distanceM={distanceM} />
             <p className="mt-3 text-sm font-semibold text-success">방문 완료</p>
             {todayMealRecord && (
@@ -163,7 +166,7 @@ export function HomeHero({
         {kind === "recommend" && (
           <div>
             <p className="text-sm font-semibold text-brand-dark">오늘의 추천</p>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">오늘 점심, 가볍게 골라볼까요?</h2>
+            <h2 className="mt-2 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">오늘 점심, 가볍게 골라볼까요?</h2>
             <p className="mt-2 text-sm text-ink-muted">거리와 취향을 반영한 추천을 바로 받아보세요.</p>
             <Link href="/recommend" className={`${buttonStyles()} mt-5 w-full`}>
               오늘 뭐 먹지?

@@ -17,7 +17,13 @@ describe("RestaurantsMapView", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "식당 목록 숨기기" }));
+    const handle = () => screen.getByRole("button", { name: "식당 목록 높이 조절" });
+
+    // half -> peek -> hidden (drag down twice)
+    fireEvent.pointerDown(handle(), { clientY: 100 });
+    fireEvent.pointerUp(handle(), { clientY: 160 });
+    fireEvent.pointerDown(handle(), { clientY: 100 });
+    fireEvent.pointerUp(handle(), { clientY: 160 });
 
     const openButton = await screen.findByRole("button", { name: "식당 목록 열기" });
     expect(openButton).toHaveAttribute("aria-controls", "restaurant-results-sheet");
@@ -26,7 +32,7 @@ describe("RestaurantsMapView", () => {
     fireEvent.click(openButton);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "식당 목록 숨기기" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "식당 목록 높이 조절" })).toBeInTheDocument();
     });
   });
 });

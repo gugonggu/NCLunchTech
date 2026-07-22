@@ -4,6 +4,7 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
 import { buttonStyles } from "@/components/ui/Button";
+import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { LogoutButton } from "../LogoutButton";
 
 const RANK_CATEGORY_LABELS = {
@@ -76,7 +77,8 @@ export default async function MePage() {
   ];
   if (results.some((result) => result.error) || !profileResult.data) {
     return (
-      <main className="flex flex-1 flex-col gap-4 bg-brand-bg px-6 py-8">
+      <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+        <GradientBackdrop />
         <p className="text-sm text-danger">내 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
         <LogoutButton />
       </main>
@@ -102,10 +104,11 @@ export default async function MePage() {
     .filter((row) => row.myRank !== null);
 
   return (
-    <main className="flex flex-1 flex-col gap-5 bg-brand-bg px-6 py-8">
+    <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 overflow-hidden px-6 py-8">
+      <GradientBackdrop />
       <div>
         <p className="text-sm text-ink-muted">내 정보</p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-dark sm:text-4xl">{employee.nickname}</h1>
+        <h1 className={`mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl ${GRADIENT_TEXT}`}>{employee.nickname}</h1>
         <p className="mt-1 text-sm tabular-nums text-ink-muted">
           {joinedAtFormatter.format(new Date(profileResult.data.created_at))} 가입
         </p>

@@ -10,6 +10,7 @@ import {
   RESTAURANT_REPORT_STATUS_MESSAGES,
 } from "@/lib/reports/validation";
 import { buttonStyles } from "@/components/ui/Button";
+import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { createCommentReport, createReport, createRestaurantReport } from "./actions";
 
 interface NewReportSearchParams {
@@ -59,12 +60,13 @@ export default async function NewReportPage({
       : null;
 
     return (
-      <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+      <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+        <GradientBackdrop />
         <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
 
-        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">식당 정보 제보</h1>
+        <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>식당 정보 제보</h1>
         <p className="text-ink">{restaurant.name}</p>
 
         {restaurantFeedbackMessage && <p className="text-sm text-brand-dark">{restaurantFeedbackMessage}</p>}
@@ -123,11 +125,12 @@ export default async function NewReportPage({
 
     if (comment.employee_id === employee.id) {
       return (
-        <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+        <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+          <GradientBackdrop />
           <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
             ← 뒤로
           </Link>
-          <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">댓글 신고</h1>
+          <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>댓글 신고</h1>
           <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
             본인이 작성한 댓글은 신고할 수 없어요.
           </p>
@@ -136,12 +139,13 @@ export default async function NewReportPage({
     }
 
     return (
-      <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+      <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+        <GradientBackdrop />
         <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
 
-        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">댓글 신고</h1>
+        <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>댓글 신고</h1>
         <p className="text-ink">{restaurant.name}</p>
 
         {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
@@ -185,11 +189,12 @@ export default async function NewReportPage({
 
   if (review.employee_id === employee.id) {
     return (
-      <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+      <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+        <GradientBackdrop />
         <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
-        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">리뷰 신고</h1>
+        <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>리뷰 신고</h1>
         <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
           본인이 작성한 리뷰는 신고할 수 없어요.
         </p>
@@ -198,12 +203,13 @@ export default async function NewReportPage({
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-6 py-8">
+    <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
+      <GradientBackdrop />
       <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
         ← 뒤로
       </Link>
 
-      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">리뷰 신고</h1>
+      <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${GRADIENT_TEXT}`}>리뷰 신고</h1>
       <p className="text-ink">{restaurant.name}</p>
 
       {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}

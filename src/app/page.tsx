@@ -13,6 +13,7 @@ import { HomeHero } from "@/components/lunch/HomeHero";
 import { TodayTimeline } from "@/components/lunch/TodayTimeline";
 import { selectHomeHero } from "@/components/lunch/home-state";
 import { buttonStyles } from "@/components/ui/Button";
+import { GradientBackdrop } from "@/components/ui/GradientBackdrop";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -106,11 +107,18 @@ export default async function HomePage({
     !(heroKind === "confirmation" && soloNeedsConfirmation);
 
   return (
-    <main className="flex w-full flex-1 flex-col gap-8">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <main className="relative flex w-full flex-1 flex-col gap-8 overflow-hidden">
+      <GradientBackdrop />
+
+      <header
+        className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+        style={{ animationDelay: "0ms" }}
+      >
         <div>
           <p className="text-sm font-semibold text-brand-dark">{dateFormatter.format(now)}</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">{employee.nickname}님, 안녕하세요.</h1>
+          <h1 className="mt-2 bg-gradient-to-r from-brand-dark via-brand via-[#ff5c7a] to-[#c94b8a] bg-clip-text text-3xl font-extrabold tracking-tight text-transparent sm:text-5xl">
+            {employee.nickname}님, 안녕하세요.
+          </h1>
         </div>
         {unreadNotificationCount > 0 && (
           <Link href="/notifications" className={buttonStyles({ variant: "secondary", size: "compact" })}>
@@ -120,16 +128,24 @@ export default async function HomePage({
       </header>
 
       {settings?.announcement && (
-        <p className="rounded-control bg-surface px-4 py-3 text-sm text-ink-muted shadow-card">
+        <p
+          className="animate-fade-up mx-auto w-full max-w-2xl rounded-control bg-surface px-4 py-3 text-sm text-ink-muted shadow-card"
+          style={{ animationDelay: "80ms" }}
+        >
           {settings.announcement}
         </p>
       )}
 
       {feedbackMessage && (
-        <p className="rounded-control bg-success-soft px-4 py-3 text-sm font-semibold text-success">{feedbackMessage}</p>
+        <p
+          className="animate-fade-up mx-auto w-full max-w-2xl rounded-control bg-success-soft px-4 py-3 text-sm font-semibold text-success"
+          style={{ animationDelay: "80ms" }}
+        >
+          {feedbackMessage}
+        </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:gap-8">
+      <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "160ms" }}>
         <HomeHero
           kind={heroKind}
           todayVisit={todayVisit}
@@ -140,6 +156,22 @@ export default async function HomePage({
           distanceM={todayVisitDistanceM}
           now={now}
         />
+      </div>
+
+      <nav
+        aria-label="홈 바로가기"
+        className="animate-fade-up mx-auto grid w-full max-w-2xl grid-cols-2 gap-3"
+        style={{ animationDelay: "220ms" }}
+      >
+        <Link href="/collection" className={buttonStyles({ variant: "secondary", block: true })}>
+          도감
+        </Link>
+        <Link href="/leaderboard" className={buttonStyles({ variant: "secondary", block: true })}>
+          리더보드
+        </Link>
+      </nav>
+
+      <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "280ms" }}>
         <TodayTimeline
           polls={secondaryPolls}
           appointments={upcomingAppointments}
@@ -150,15 +182,6 @@ export default async function HomePage({
           showVisitSummary={showVisitSummary}
         />
       </div>
-
-      <nav aria-label="홈 바로가기" className="grid grid-cols-2 gap-3">
-        <Link href="/restaurants" className={buttonStyles({ variant: "secondary", block: true })}>
-          식당 찾기
-        </Link>
-        <Link href="/collection" className={buttonStyles({ variant: "secondary", block: true })}>
-          도감
-        </Link>
-      </nav>
     </main>
   );
 }
