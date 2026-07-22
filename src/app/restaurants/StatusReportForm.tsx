@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useActionState } from "react";
 import { STATUS_REPORT_IDLE_STATE, type StatusReportActionState } from "@/lib/status-reports/validation";
 
@@ -18,13 +18,33 @@ export function StatusReportForm({
   layout?: "row" | "grid";
 }) {
   const [state, formAction, isPending] = useActionState(action, STATUS_REPORT_IDLE_STATE);
-  const [pendingValue, setPendingValue] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (state.status !== "idle") {
-      setPendingValue(null);
-    }
-  }, [state]);
+  return (
+    <StatusReportFormBody
+      key={`${state.status}:${state.message ?? ""}`}
+      values={values}
+      formAction={formAction}
+      isPending={isPending}
+      state={state}
+      layout={layout}
+    />
+  );
+}
+
+function StatusReportFormBody({
+  values,
+  formAction,
+  isPending,
+  state,
+  layout,
+}: {
+  values: readonly string[];
+  formAction: (formData: FormData) => void;
+  isPending: boolean;
+  state: StatusReportActionState;
+  layout: "row" | "grid";
+}) {
+  const [pendingValue, setPendingValue] = useState<string | null>(null);
 
   if (pendingValue) {
     return (

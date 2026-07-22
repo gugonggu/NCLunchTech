@@ -5,17 +5,18 @@ import { isLunchAvailabilityStatus, type LunchAvailability } from "./validation"
 interface LunchAvailabilityRow {
   employee_id: string;
   status: string;
-  employees: { nickname: string } | null;
+  employees: { nickname: string } | { nickname: string }[] | null;
 }
 
 export function toLunchAvailability(row: LunchAvailabilityRow): LunchAvailability | null {
-  if (!row.employees || !isLunchAvailabilityStatus(row.status)) {
+  const employee = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+  if (!employee || !isLunchAvailabilityStatus(row.status)) {
     return null;
   }
 
   return {
     employeeId: row.employee_id,
-    nickname: row.employees.nickname,
+    nickname: employee.nickname,
     status: row.status,
   };
 }
@@ -33,5 +34,7 @@ export async function getLunchAvailabilities(availabilityDate: string): Promise<
     throw new Error("점심 상태를 불러오지 못했습니다.");
   }
 
-  return (data ?? []).map((row) => toLunchAvailability(row as LunchAvailabilityRow)).filter((row): row is LunchAvailability => row !== null);
+  return (data ?? [])
+    .map((row) => toLunchAvailability(row as LunchAvailabilityRow))
+    .filter((row): row is LunchAvailability => row !== null);
 }

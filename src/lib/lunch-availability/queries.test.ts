@@ -21,4 +21,14 @@ describe("lunch availability queries", () => {
       }),
     ).toBeNull();
   });
+
+  it("maps the first employee when Supabase returns a relation array", () => {
+    expect(
+      toLunchAvailability({
+        employee_id: "employee-1",
+        status: "has_appointment",
+        employees: [{ nickname: "홍천" }],
+      } as never),
+    ).toEqual({ employeeId: "employee-1", nickname: "홍천", status: "has_appointment" });
+  });
 });
