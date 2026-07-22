@@ -85,6 +85,60 @@ export interface MealRecord {
   paidPrice: number;
 }
 
+export interface ManagedMealRecord extends MealRecord {
+  restaurantId: string;
+  restaurantName: string;
+  createdAt: string;
+}
+
+interface ManagedMealRecordRow {
+  id: string;
+  restaurant_id: string;
+  menu_item_id: string | null;
+  menu_name_snapshot: string;
+  paid_price: number;
+  created_at: string;
+  restaurants: { name: string }[] | null;
+}
+
+export function mapManagedMealRecord(row: ManagedMealRecordRow): ManagedMealRecord {
+  return {
+    id: row.id,
+    restaurantId: row.restaurant_id,
+    restaurantName: row.restaurants?.[0]?.name ?? "알 수 없는 식당",
+    menuItemId: row.menu_item_id,
+    menuName: row.menu_name_snapshot,
+    paidPrice: row.paid_price,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getMealRecordsForEmployee(employeeId: string): Promise<ManagedMealRecord[]> {
+  const { data, error } = await createServiceRoleClient()
+    .from("meal_records")
+    .select("id, restaurant_id, menu_item_id, menu_name_snapshot, paid_price, created_at, restaurants(name)")
+    .eq("employee_id", employeeId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("식사 기록 조회에 실패했습니다.");
+  return ((data ?? []) as ManagedMealRecordRow[]).map(mapManagedMealRecord);
+}
+
+export async function getMealRecordForEmployee(
+  employeeId: string,
+  recordId: string,
+): Promise<ManagedMealRecord | null> {
+  const { data, error } = await createServiceRoleClient()
+    .from("meal_records")
+    .select("id, restaurant_id, menu_item_id, menu_name_snapshot, paid_price, created_at, restaurants(name)")
+    .eq("id", recordId)
+    .eq("employee_id", employeeId)
+    .maybeSingle();
+
+  if (error) throw new Error("식사 기록 조회에 실패했습니다.");
+  return data ? mapManagedMealRecord(data as ManagedMealRecordRow) : null;
+}
+
 export async function getMealRecordForSource(
   employeeId: string,
   source: MealSource
