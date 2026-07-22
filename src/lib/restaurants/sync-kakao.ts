@@ -15,7 +15,9 @@ export interface GridPoint {
 }
 
 const METERS_PER_LAT_DEGREE = 111320;
-const GRID_CELL_RADIUS_M = 800;
+const GRID_CELL_RADIUS_M = 400;
+export const KAKAO_SYNC_SEARCH_RADIUS_M = 2000;
+export const KAKAO_SYNC_GRID_SPACING_M = 400;
 
 /**
  * 중심 좌표 주변을 격자로 나눠 하위 검색 지점을 만든다.
@@ -59,8 +61,11 @@ export async function syncRestaurantsFromKakao(adminId: string): Promise<SyncRes
     throw new Error("회사 좌표가 설정되지 않았습니다. app_settings를 먼저 확인해주세요.");
   }
 
-  const searchRadiusM = 2000; // 최대 노출 반경까지 폭넓게 수집. 실제 노출 반경 필터링은 추천/검색 단계에서 처리한다.
-  const grid = buildSearchGrid({ lat: settings.company_lat, lng: settings.company_lng }, searchRadiusM);
+  const grid = buildSearchGrid(
+    { lat: settings.company_lat, lng: settings.company_lng },
+    KAKAO_SYNC_SEARCH_RADIUS_M,
+    KAKAO_SYNC_GRID_SPACING_M,
+  );
 
   const foundByPlaceId = new Map<string, KakaoPlace>();
 
