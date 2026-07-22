@@ -5,7 +5,7 @@ import { getPollDetail, getWinningIds, isEligibleAppointmentVoter } from "@/lib/
 import { POLL_STATUS_MESSAGES, isPollStatusCode, isValidRestaurantPollBridge } from "@/lib/polls/validation";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
-import { cancelVote, closePoll, decidePoll, voteInPoll } from "./actions";
+import { cancelVote, closePoll, decidePoll, resolvePollTie, voteInPoll } from "./actions";
 
 const displayFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -130,6 +130,34 @@ export default async function PollDetailPage({
           );
         })}
       </ul>
+
+      {poll.status === "closed" && isCreator && winningIds.length > 1 && (
+        <section className="rounded-card bg-surface p-4 shadow-card">
+          <h2 className="text-base font-bold text-ink">결정 못 하겠어요?</h2>
+          <p className="mt-1 text-sm text-ink-muted">공동 1위 중에서 기준을 골라 결과를 확정할 수 있어요.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <form action={resolvePollTie.bind(null, poll.id, "random")}>
+              <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
+                무작위로 결정
+              </button>
+            </form>
+            {poll.pollType === "restaurant" && (
+              <>
+                <form action={resolvePollTie.bind(null, poll.id, "nearest")}>
+                  <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
+                    가장 가까운 곳
+                  </button>
+                </form>
+                <form action={resolvePollTie.bind(null, poll.id, "least_visited")}>
+                  <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
+                    덜 방문한 곳
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       {isOpen && canVote && poll.myOptionId && (
         <form action={cancelVote.bind(null, poll.id)}>

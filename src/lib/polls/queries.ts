@@ -6,6 +6,7 @@ import { getWinningOptionIds, shouldLazyClose, type PollStatus, type PollType } 
 export interface PollOptionDetail {
   id: string;
   label: string;
+  position: number;
   voteCount: number;
   restaurantId: string | null;
 }
@@ -64,7 +65,7 @@ export async function getPollDetail(pollId: string, employeeId: string | null): 
   const [{ data: options }, { data: votes }] = await Promise.all([
     supabase
       .from("poll_options")
-      .select("id, restaurant_id, menu_item_id, custom_label, restaurants(name), menu_items(name)")
+      .select("id, position, restaurant_id, menu_item_id, custom_label, restaurants(name), menu_items(name)")
       .eq("poll_id", pollId)
       .order("position"),
     supabase.from("poll_votes").select("option_id, employee_id").eq("poll_id", pollId),
@@ -82,6 +83,7 @@ export async function getPollDetail(pollId: string, employeeId: string | null): 
     return {
       id: o.id,
       label: restaurant?.name ?? menuItem?.name ?? o.custom_label ?? "",
+      position: o.position,
       voteCount: countByOption.get(o.id) ?? 0,
       restaurantId: o.restaurant_id,
     };
