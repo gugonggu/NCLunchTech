@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { SyncKakaoButton } from "./SyncKakaoButton";
 import { KakaoRestaurantAddForm } from "./KakaoRestaurantAddForm";
+import { ManualKakaoRestaurantForm } from "./ManualKakaoRestaurantForm";
 import { getAdminStatusMessage, RESTAURANT_ADMIN_STATUS_MESSAGES } from "@/lib/admin/status-messages";
 
 const RESULT_LIMIT = 60;
@@ -48,6 +49,7 @@ export default async function AdminRestaurantsPage({
         </Link>
       </div>
       <KakaoRestaurantAddForm />
+      <ManualKakaoRestaurantForm />
 
       <form method="get" className="flex gap-2">
         <input
