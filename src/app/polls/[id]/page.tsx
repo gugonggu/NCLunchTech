@@ -6,6 +6,7 @@ import { POLL_STATUS_MESSAGES, isPollStatusCode, isValidRestaurantPollBridge } f
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { cancelVote, closePoll, decidePoll, resolvePollTie, voteInPoll } from "./actions";
+import { PollRealtimeRefresh } from "./PollRealtimeRefresh";
 
 const displayFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -55,6 +56,7 @@ export default async function PollDetailPage({
   return (
     <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-6 py-8">
       <GradientBackdrop />
+      <PollRealtimeRefresh pollId={poll.id} />
       <Link href="/" className="text-sm text-ink-muted">
         ← 홈으로
       </Link>
