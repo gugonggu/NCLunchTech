@@ -9,7 +9,9 @@ import { getRelevantAppointments } from "@/lib/appointments/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
+import { getLunchAvailabilities } from "@/lib/lunch-availability/queries";
 import { HomeHero } from "@/components/lunch/HomeHero";
+import { LunchAvailabilityCard } from "@/components/lunch/LunchAvailabilityCard";
 import { TodayTimeline } from "@/components/lunch/TodayTimeline";
 import { selectHomeHero } from "@/components/lunch/home-state";
 import { buttonStyles } from "@/components/ui/Button";
@@ -68,6 +70,7 @@ export default async function HomePage({
   const relevantAppointments = await getRelevantAppointments(employee.id, now);
   const unreadNotificationCount = await getUnreadNotificationCount(employee.id);
   const relevantPolls = await getRelevantPolls(employee.id);
+  const lunchAvailabilities = await getLunchAvailabilities(today);
 
   const soloNeedsConfirmation =
     todayVisit?.status === "planned" && isPastConfirmationWindow(new Date(todayVisit.updatedAt), now);
@@ -156,6 +159,10 @@ export default async function HomePage({
           distanceM={todayVisitDistanceM}
           now={now}
         />
+      </div>
+
+      <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "190ms" }}>
+        <LunchAvailabilityCard employeeId={employee.id} availabilities={lunchAvailabilities} />
       </div>
 
       <nav
