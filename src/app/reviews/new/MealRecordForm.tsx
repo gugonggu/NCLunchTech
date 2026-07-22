@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { MealRecord } from "@/lib/meals/queries";
 import type { MealSource } from "@/lib/meals/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { upsertMealRecord } from "./actions";
 
 interface MealRecordFormProps {
@@ -21,9 +22,9 @@ export function MealRecordForm({ restaurantId, source, menuItems, existing }: Me
   );
 
   return (
-    <section className="flex flex-col gap-3 rounded-card bg-orange-50 p-4">
+    <section className="flex flex-col gap-3 rounded-card bg-brand-soft p-4">
       <div>
-        <h2 className="font-bold text-brand-dark">먹은 메뉴 기록</h2>
+        <h2 className="text-lg font-bold tracking-tight text-brand-dark">먹은 메뉴 기록</h2>
         <p className="text-sm text-ink-muted">등록 메뉴 하나를 고르거나 직접 입력해주세요.</p>
       </div>
 
@@ -76,7 +77,7 @@ export function MealRecordForm({ restaurantId, source, menuItems, existing }: Me
           />
         </label>
 
-        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+        <button type="submit" className={buttonStyles({ block: true })}>
           {existing ? "메뉴 기록 수정" : "메뉴 기록 저장"}
         </button>
       </form>

@@ -106,11 +106,11 @@ export default async function HomePage({
     !(heroKind === "confirmation" && soloNeedsConfirmation);
 
   return (
-    <main className="flex w-full flex-1 flex-col gap-6">
+    <main className="flex w-full flex-1 flex-col gap-8">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-brand-dark">{dateFormatter.format(now)}</p>
-          <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">{employee.nickname}님, 안녕하세요.</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">{employee.nickname}님, 안녕하세요.</h1>
         </div>
         {unreadNotificationCount > 0 && (
           <Link href="/notifications" className={buttonStyles({ variant: "secondary", size: "compact" })}>
@@ -120,7 +120,7 @@ export default async function HomePage({
       </header>
 
       {settings?.announcement && (
-        <p className="rounded-control border border-line bg-surface px-4 py-3 text-sm text-ink-muted shadow-card">
+        <p className="rounded-control bg-surface px-4 py-3 text-sm text-ink-muted shadow-card">
           {settings.announcement}
         </p>
       )}
@@ -129,7 +129,7 @@ export default async function HomePage({
         <p className="rounded-control bg-success-soft px-4 py-3 text-sm font-semibold text-success">{feedbackMessage}</p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:gap-8">
         <HomeHero
           kind={heroKind}
           todayVisit={todayVisit}

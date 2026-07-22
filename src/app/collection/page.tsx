@@ -10,6 +10,7 @@ import {
   getVisitedRestaurantIds,
 } from "@/lib/collection/queries";
 import { RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
+import { buttonStyles } from "@/components/ui/Button";
 import { toggleFavorite } from "@/app/restaurants/[id]/actions";
 
 const RESULT_LIMIT = 60;
@@ -73,15 +74,15 @@ export default async function CollectionPage({
         ← 홈으로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">도감</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">도감</h1>
 
       <section className="flex flex-col gap-2">
-        <h2 className="font-bold text-brand-dark">분류별 현황</h2>
+        <h2 className="text-lg font-bold tracking-tight text-brand-dark">분류별 현황</h2>
         <ul className="grid grid-cols-3 gap-2">
           {breakdown.map((b) => (
-            <li key={b.category} className="rounded-card border border-line px-3 py-2 text-center">
+            <li key={b.category} className="rounded-card bg-surface px-3 py-3 text-center shadow-card">
               <p className="text-xs text-ink-muted">{b.category}</p>
-              <p className="text-sm font-semibold text-brand-dark">
+              <p className="text-sm font-semibold tabular-nums text-brand-dark">
                 {b.visitedCount}/{b.totalCount}
               </p>
             </li>
@@ -91,13 +92,13 @@ export default async function CollectionPage({
 
       {favoriteRestaurants.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="font-bold text-brand-dark">즐겨찾기</h2>
+          <h2 className="text-lg font-bold tracking-tight text-brand-dark">즐겨찾기</h2>
           <ul className="flex flex-col gap-2">
             {favoriteRestaurants.map((r) => (
               <li key={r.id}>
                 <Link
                   href={`/restaurants/${r.id}`}
-                  className="block rounded-card border border-line px-4 py-3"
+                  className="block rounded-card bg-surface px-4 py-3 shadow-card transition active:scale-[0.98]"
                 >
                   <p className="font-semibold">{r.name}</p>
                   <p className="text-sm text-ink-muted">
@@ -105,7 +106,7 @@ export default async function CollectionPage({
                     {visitedIds.has(r.id) ? " · 방문 완료" : " · 미방문"}
                   </p>
                   {latestMealRecords.get(r.id) && (
-                    <p className="text-sm text-ink-muted">
+                    <p className="text-sm tabular-nums text-ink-muted">
                       {latestMealRecords.get(r.id)!.menuName} ·{" "}
                       {latestMealRecords.get(r.id)!.paidPrice.toLocaleString("ko-KR")}원
                     </p>
@@ -118,7 +119,7 @@ export default async function CollectionPage({
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-bold text-brand-dark">전체 식당</h2>
+        <h2 className="text-lg font-bold tracking-tight text-brand-dark">전체 식당</h2>
 
         <form method="get" className="flex flex-col gap-3">
           <select
@@ -146,12 +147,12 @@ export default async function CollectionPage({
             <input type="checkbox" name="favoritesOnly" defaultChecked={favoritesOnly} />
             즐겨찾기만 보기
           </label>
-          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+          <button type="submit" className={buttonStyles({ block: true })}>
             적용
           </button>
         </form>
 
-        <p className="text-sm text-ink-muted">
+        <p className="text-sm tabular-nums text-ink-muted">
           {total}건 중 {visible.length}건 표시
           {total > RESULT_LIMIT && " (분류나 필터로 좁혀보세요)"}
         </p>
@@ -160,7 +161,7 @@ export default async function CollectionPage({
           {visible.map((r) => (
             <li
               key={r.id}
-              className="flex items-center justify-between rounded-card border border-line px-4 py-3"
+              className="flex items-center justify-between rounded-card bg-surface px-4 py-3 shadow-card"
             >
               <Link href={`/restaurants/${r.id}`} className="flex-1">
                 <p className="font-semibold">{r.name}</p>
@@ -169,14 +170,18 @@ export default async function CollectionPage({
                   {visitedIds.has(r.id) ? " · 방문 완료" : " · 미방문"}
                 </p>
                 {latestMealRecords.get(r.id) && (
-                  <p className="text-sm text-ink-muted">
+                  <p className="text-sm tabular-nums text-ink-muted">
                     {latestMealRecords.get(r.id)!.menuName} ·{" "}
                     {latestMealRecords.get(r.id)!.paidPrice.toLocaleString("ko-KR")}원
                   </p>
                 )}
               </Link>
               <form action={toggleFavorite.bind(null, r.id)}>
-                <button type="submit" className="px-2 text-xl" aria-label="즐겨찾기 토글">
+                <button
+                  type="submit"
+                  className="px-2 text-xl transition active:scale-[0.98]"
+                  aria-label="즐겨찾기 토글"
+                >
                   {favoriteIds.has(r.id) ? "★" : "☆"}
                 </button>
               </form>

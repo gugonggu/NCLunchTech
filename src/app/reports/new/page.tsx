@@ -9,6 +9,7 @@ import {
   RESTAURANT_REPORT_CATEGORIES,
   RESTAURANT_REPORT_STATUS_MESSAGES,
 } from "@/lib/reports/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { createCommentReport, createReport, createRestaurantReport } from "./actions";
 
 interface NewReportSearchParams {
@@ -63,7 +64,7 @@ export default async function NewReportPage({
           ← 뒤로
         </Link>
 
-        <h1 className="text-xl font-bold text-brand-dark">식당 정보 제보</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">식당 정보 제보</h1>
         <p className="text-ink">{restaurant.name}</p>
 
         {restaurantFeedbackMessage && <p className="text-sm text-brand-dark">{restaurantFeedbackMessage}</p>}
@@ -74,7 +75,7 @@ export default async function NewReportPage({
             {RESTAURANT_REPORT_CATEGORIES.map((c) => (
               <label
                 key={c.value}
-                className="flex items-center gap-2 rounded-card border border-line px-4 py-3"
+                className="flex items-center gap-2 rounded-card bg-surface px-4 py-3 shadow-card"
               >
                 <input type="radio" name="category" value={c.value} required />
                 {c.label}
@@ -91,7 +92,7 @@ export default async function NewReportPage({
               className="rounded-control border border-line px-4 py-3 text-base text-ink"
             />
           </label>
-          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+          <button type="submit" className={buttonStyles({ block: true })}>
             제보하기
           </button>
         </form>
@@ -126,7 +127,7 @@ export default async function NewReportPage({
           <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
             ← 뒤로
           </Link>
-          <h1 className="text-xl font-bold text-brand-dark">댓글 신고</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">댓글 신고</h1>
           <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
             본인이 작성한 댓글은 신고할 수 없어요.
           </p>
@@ -140,12 +141,12 @@ export default async function NewReportPage({
           ← 뒤로
         </Link>
 
-        <h1 className="text-xl font-bold text-brand-dark">댓글 신고</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">댓글 신고</h1>
         <p className="text-ink">{restaurant.name}</p>
 
-        {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+        {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
 
-        <p className="rounded-card border border-line px-4 py-3 text-sm text-ink">{comment.content}</p>
+        <p className="rounded-card bg-surface px-4 py-3 text-sm text-ink shadow-card">{comment.content}</p>
 
         <form action={createCommentReport.bind(null, commentId)} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm text-ink-muted">
@@ -159,7 +160,7 @@ export default async function NewReportPage({
               className="rounded-control border border-line px-4 py-3 text-base text-ink"
             />
           </label>
-          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+          <button type="submit" className={buttonStyles({ block: true })}>
             신고하기
           </button>
         </form>
@@ -188,7 +189,7 @@ export default async function NewReportPage({
         <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
-        <h1 className="text-xl font-bold text-brand-dark">리뷰 신고</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">리뷰 신고</h1>
         <p className="rounded-card bg-surface-muted px-4 py-3 text-sm text-ink-muted">
           본인이 작성한 리뷰는 신고할 수 없어요.
         </p>
@@ -202,13 +203,13 @@ export default async function NewReportPage({
         ← 뒤로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">리뷰 신고</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">리뷰 신고</h1>
       <p className="text-ink">{restaurant.name}</p>
 
-      {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+      {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
 
       {review.one_line_review && (
-        <p className="rounded-card border border-line px-4 py-3 text-sm text-ink">
+        <p className="rounded-card bg-surface px-4 py-3 text-sm text-ink shadow-card">
           {review.one_line_review}
         </p>
       )}
@@ -225,7 +226,7 @@ export default async function NewReportPage({
             className="rounded-control border border-line px-4 py-3 text-base text-ink"
           />
         </label>
-        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+        <button type="submit" className={buttonStyles({ block: true })}>
           신고하기
         </button>
       </form>

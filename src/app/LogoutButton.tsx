@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { buttonStyles } from "@/components/ui/Button";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -32,14 +33,10 @@ export function LogoutButton() {
 
   return (
     <div className="flex flex-col gap-2">
-      <button
-        onClick={handleLogout}
-        disabled={isSubmitting}
-        className="rounded-control bg-brand px-4 py-3 font-semibold text-black disabled:opacity-50"
-      >
+      <button onClick={handleLogout} disabled={isSubmitting} className={buttonStyles({ block: true })}>
         {isSubmitting ? "로그아웃 중..." : "로그아웃"}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

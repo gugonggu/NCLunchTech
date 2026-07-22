@@ -31,6 +31,7 @@ import {
   buildSettlementClipboardText,
   isSettlementStatusCode,
 } from "@/lib/settlements/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { SettlementCopyButton } from "../SettlementCopyButton";
 
 const POLL_STATUS_LABELS: Record<string, string> = {
@@ -125,7 +126,7 @@ export default async function AppointmentDetailPage({
         ← 홈으로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">동료와 함께</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">동료와 함께</h1>
 
       {feedbackMessage && (
         <p className="rounded-card bg-surface px-4 py-3 text-sm text-brand-dark shadow-card">{feedbackMessage}</p>
@@ -142,18 +143,18 @@ export default async function AppointmentDetailPage({
         </p>
       )}
 
-      <div className="rounded-card border border-line px-4 py-4">
+      <div className="rounded-card bg-surface px-4 py-4 shadow-card">
         <Link href={`/restaurants/${appointment.restaurantId}`} className="font-semibold text-brand-dark">
           {appointment.restaurantName}
         </Link>
         <p className="text-sm text-ink-muted">{appointment.restaurantCategory}</p>
-        <p className="mt-2 text-sm text-ink">{displayFormatter.format(scheduledAt)}</p>
+        <p className="mt-2 text-sm tabular-nums text-ink">{displayFormatter.format(scheduledAt)}</p>
         {appointment.memo && <p className="mt-2 text-sm text-ink">{appointment.memo}</p>}
       </div>
 
       {(appointmentPolls.length > 0 || (isHost && isOpen)) && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-bold text-brand-dark">메뉴 투표</h2>
+          <h2 className="text-lg font-bold tracking-tight text-brand-dark">메뉴 투표</h2>
 
           {appointmentPolls.length > 0 && (
             <ul className="flex flex-col gap-2">
@@ -161,10 +162,10 @@ export default async function AppointmentDetailPage({
                 <li key={p.id}>
                   <Link
                     href={`/polls/${p.id}`}
-                    className="flex items-center justify-between rounded-card border border-line px-4 py-3"
+                    className="flex items-center justify-between rounded-card bg-surface px-4 py-3 shadow-card transition active:scale-[0.98]"
                   >
                     <span>{POLL_STATUS_LABELS[p.status] ?? p.status}</span>
-                    <span className="text-sm text-ink-muted">{p.totalVotes}표</span>
+                    <span className="text-sm tabular-nums text-ink-muted">{p.totalVotes}표</span>
                   </Link>
                 </li>
               ))}
@@ -184,9 +185,9 @@ export default async function AppointmentDetailPage({
                 <ul className="flex flex-col gap-2">
                   {pollableMenuItems.map((m) => (
                     <li key={m.id}>
-                      <label className="flex items-center justify-between gap-3 rounded-card border border-line px-4 py-3">
+                      <label className="flex items-center justify-between gap-3 rounded-card bg-surface px-4 py-3 shadow-card">
                         <span>{m.name}</span>
-                        <span className="flex items-center gap-3 text-sm text-ink-muted">
+                        <span className="flex items-center gap-3 text-sm tabular-nums text-ink-muted">
                           {m.price != null ? `${m.price.toLocaleString("ko-KR")}원` : "가격 정보 없음"}
                           <input type="checkbox" name="menuItemIds" value={m.id} />
                         </span>
@@ -220,7 +221,7 @@ export default async function AppointmentDetailPage({
                 />
               </label>
 
-              <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
+              <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold transition active:scale-[0.98]">
                 메뉴 투표 만들기
               </button>
             </form>
@@ -233,15 +234,12 @@ export default async function AppointmentDetailPage({
           <p className="text-sm font-semibold text-ink-muted">방문을 확인해주세요.</p>
           <div className="flex gap-2">
             <form action={confirmHostAttendance.bind(null, id)} className="flex-1">
-              <button type="submit" className="w-full rounded-control bg-brand px-4 py-3 font-semibold text-black">
+              <button type="submit" className={buttonStyles({ block: true })}>
                 다녀왔어요
               </button>
             </form>
             <form action={markHostNoShow.bind(null, id)} className="flex-1">
-              <button
-                type="submit"
-                className="w-full rounded-control bg-surface px-4 py-3 font-semibold text-ink-muted shadow-card"
-              >
+              <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
                 가지 않았어요
               </button>
             </form>
@@ -255,13 +253,13 @@ export default async function AppointmentDetailPage({
       {isHost && appointment.hostAttendanceStatus === "completed" && (
         <div className="flex flex-col gap-2">
           {mealRecord && (
-            <p className="text-sm text-ink-muted">
+            <p className="text-sm tabular-nums text-ink-muted">
               {mealRecord.menuName} · {mealRecord.paidPrice.toLocaleString("ko-KR")}원
             </p>
           )}
           <Link
             href={`/reviews/new?restaurantId=${appointment.restaurantId}&appointmentId=${appointment.id}`}
-            className="rounded-control bg-surface px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-card"
+            className={buttonStyles({ variant: "secondary", block: true })}
           >
             리뷰 남기기
           </Link>
@@ -270,15 +268,15 @@ export default async function AppointmentDetailPage({
 
       {settlementAttendees.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-bold text-brand-dark">정산(N빵)</h2>
+          <h2 className="text-lg font-bold tracking-tight text-brand-dark">정산(N빵)</h2>
 
           {settlementFeedback && (
             <p className="rounded-card bg-surface px-4 py-3 text-sm text-brand-dark shadow-card">{settlementFeedback}</p>
           )}
 
           {settlement ? (
-            <div className="flex flex-col gap-2 rounded-card border border-line px-4 py-4">
-              <p className="text-sm text-ink-muted">
+            <div className="flex flex-col gap-2 rounded-card bg-surface px-4 py-4 shadow-card">
+              <p className="text-sm tabular-nums text-ink-muted">
                 총 {settlement.totalAmount.toLocaleString("ko-KR")}원 / {settlement.shares.length}명
               </p>
               <ul className="flex flex-col gap-1">
@@ -288,7 +286,7 @@ export default async function AppointmentDetailPage({
                       {s.employeeNickname}
                       {s.isPayer ? " (결제자)" : ""}
                     </span>
-                    <span>{s.amount.toLocaleString("ko-KR")}원</span>
+                    <span className="tabular-nums">{s.amount.toLocaleString("ko-KR")}원</span>
                   </li>
                 ))}
               </ul>
@@ -353,7 +351,7 @@ export default async function AppointmentDetailPage({
                   <option value={100}>100원</option>
                 </select>
               </label>
-              <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
+              <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold transition active:scale-[0.98]">
                 {settlement ? "정산 다시 계산하기" : "정산하기"}
               </button>
             </form>
@@ -363,7 +361,7 @@ export default async function AppointmentDetailPage({
 
       {isHost && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-bold text-brand-dark">참여자</h2>
+          <h2 className="text-lg font-bold tracking-tight text-brand-dark">참여자</h2>
           {participants.length === 0 ? (
             <p className="text-sm text-ink-muted">아직 초대한 동료가 없어요. 링크를 공유해보세요.</p>
           ) : (
@@ -371,7 +369,7 @@ export default async function AppointmentDetailPage({
               {participants.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between rounded-card border border-line px-4 py-3"
+                  className="flex items-center justify-between rounded-card bg-surface px-4 py-3 shadow-card"
                 >
                   <span>{p.employeeNickname}</span>
                   <span className="text-sm text-ink-muted">
@@ -405,23 +403,20 @@ export default async function AppointmentDetailPage({
                     className="rounded-control border border-line px-4 py-3 text-base text-ink"
                   />
                 </label>
-                <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
+                <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold transition active:scale-[0.98]">
                   시각·메모 저장
                 </button>
               </form>
 
               <Link
                 href={`/restaurants?forAppointment=${id}`}
-                className="rounded-control bg-surface-muted px-4 py-3 text-center text-sm font-semibold"
+                className="rounded-control bg-surface-muted px-4 py-3 text-center text-sm font-semibold transition active:scale-[0.98]"
               >
                 식당 변경
               </Link>
 
               <form action={cancelAppointment.bind(null, id)}>
-                <button
-                  type="submit"
-                  className="w-full rounded-control bg-surface px-4 py-3 text-sm font-semibold text-red-600 shadow-card"
-                >
+                <button type="submit" className={buttonStyles({ variant: "danger", block: true })}>
                   약속 전체 취소
                 </button>
               </form>
@@ -433,12 +428,12 @@ export default async function AppointmentDetailPage({
       {!isHost && isOpen && myParticipant && myParticipant.status === "pending" && (
         <div className="flex gap-2">
           <form action={respondToInvite.bind(null, id, "accepted")} className="flex-1">
-            <button type="submit" className="w-full rounded-control bg-brand px-4 py-3 font-semibold text-black">
+            <button type="submit" className={buttonStyles({ block: true })}>
               수락
             </button>
           </form>
           <form action={respondToInvite.bind(null, id, "declined")} className="flex-1">
-            <button type="submit" className="w-full rounded-control bg-surface px-4 py-3 font-semibold text-ink-muted shadow-card">
+            <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
               거절
             </button>
           </form>
@@ -448,12 +443,12 @@ export default async function AppointmentDetailPage({
       {!isHost && isOpen && !myParticipant && (
         <div className="flex gap-2">
           <form action={respondToInvite.bind(null, id, "accepted")} className="flex-1">
-            <button type="submit" className="w-full rounded-control bg-brand px-4 py-3 font-semibold text-black">
+            <button type="submit" className={buttonStyles({ block: true })}>
               참여하기
             </button>
           </form>
           <form action={respondToInvite.bind(null, id, "declined")} className="flex-1">
-            <button type="submit" className="w-full rounded-control bg-surface px-4 py-3 font-semibold text-ink-muted shadow-card">
+            <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
               거절
             </button>
           </form>
@@ -465,15 +460,12 @@ export default async function AppointmentDetailPage({
           <p className="text-sm font-semibold text-ink-muted">방문을 확인해주세요.</p>
           <div className="flex gap-2">
             <form action={confirmAttendance.bind(null, id)} className="flex-1">
-              <button type="submit" className="w-full rounded-control bg-brand px-4 py-3 font-semibold text-black">
+              <button type="submit" className={buttonStyles({ block: true })}>
                 다녀왔어요
               </button>
             </form>
             <form action={markParticipantNoShow.bind(null, id)} className="flex-1">
-              <button
-                type="submit"
-                className="w-full rounded-control bg-surface px-4 py-3 font-semibold text-ink-muted shadow-card"
-              >
+              <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
                 가지 않았어요
               </button>
             </form>
@@ -486,10 +478,7 @@ export default async function AppointmentDetailPage({
 
       {!isHost && isOpen && !needsConfirmation && myParticipant?.status === "accepted" && (
         <form action={withdrawParticipation.bind(null, id)}>
-          <button
-            type="submit"
-            className="w-full rounded-control bg-surface px-4 py-3 text-sm font-semibold text-ink-muted shadow-card"
-          >
+          <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
             불참(참여 취소)
           </button>
         </form>
@@ -498,13 +487,13 @@ export default async function AppointmentDetailPage({
       {!isHost && myParticipant?.status === "completed" && (
         <div className="flex flex-col gap-2">
           {mealRecord && (
-            <p className="text-sm text-ink-muted">
+            <p className="text-sm tabular-nums text-ink-muted">
               {mealRecord.menuName} · {mealRecord.paidPrice.toLocaleString("ko-KR")}원
             </p>
           )}
           <Link
             href={`/reviews/new?restaurantId=${appointment.restaurantId}&appointmentId=${appointment.id}`}
-            className="rounded-control bg-surface px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-card"
+            className={buttonStyles({ variant: "secondary", block: true })}
           >
             리뷰 남기기
           </Link>

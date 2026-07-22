@@ -8,6 +8,7 @@ import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/quer
 import { MEAL_STATUS_MESSAGES, isMealStatusCode, mealSourceSchema } from "@/lib/meals/validation";
 import { getReviewPhotos } from "@/lib/review-photos/queries";
 import { MAX_PHOTOS_PER_REVIEW, REVIEW_PHOTO_MESSAGES, isReviewPhotoStatusCode } from "@/lib/review-photos/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { deleteReviewPhoto, uploadReviewPhoto, upsertReview } from "./actions";
 import { MealRecordForm } from "./MealRecordForm";
 
@@ -63,7 +64,7 @@ export default async function NewReviewPage({
         <Link href={`/restaurants/${restaurant.id}`} className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
-        <h1 className="text-xl font-bold text-brand-dark">리뷰 작성</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">리뷰 작성</h1>
         <p className="text-ink">
           {restaurant.name} · {restaurant.category}
         </p>
@@ -100,14 +101,16 @@ export default async function NewReviewPage({
         ← 뒤로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">{existing ? "리뷰 수정" : "리뷰 작성"}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">
+        {existing ? "리뷰 수정" : "리뷰 작성"}
+      </h1>
       <p className="text-ink">
         {restaurant.name} · {restaurant.category}
       </p>
 
-      {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+      {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
       {mealFeedbackMessage && (
-        <p className={mealStatus === "saved" ? "text-sm text-green-700" : "text-sm text-red-600"}>
+        <p className={mealStatus === "saved" ? "text-sm text-success" : "text-sm text-danger"}>
           {mealFeedbackMessage}
         </p>
       )}
@@ -123,7 +126,7 @@ export default async function NewReviewPage({
 
       <form action={upsertReview.bind(null, restaurant.id)} className="flex flex-col gap-4">
         <fieldset className="flex flex-col gap-3">
-          <legend className="font-bold text-brand-dark">필수 평가(1~5점)</legend>
+          <legend className="text-lg font-bold tracking-tight text-brand-dark">필수 평가(1~5점)</legend>
 
           {(
             [
@@ -166,7 +169,7 @@ export default async function NewReviewPage({
         </fieldset>
 
         <fieldset className="flex flex-col gap-3">
-          <legend className="font-bold text-brand-dark">선택 평가(1~5점, 비워두면 제외)</legend>
+          <legend className="text-lg font-bold tracking-tight text-brand-dark">선택 평가(1~5점, 비워두면 제외)</legend>
 
           {(
             [
@@ -215,16 +218,18 @@ export default async function NewReviewPage({
           />
         </label>
 
-        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+        <button type="submit" className={buttonStyles({ block: true })}>
           {existing ? "리뷰 수정 저장" : "리뷰 저장"}
         </button>
       </form>
 
       {existing && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-bold text-brand-dark">사진(선택, 최대 {MAX_PHOTOS_PER_REVIEW}장)</h2>
+          <h2 className="text-lg font-bold tracking-tight text-brand-dark">
+            사진(선택, 최대 {MAX_PHOTOS_PER_REVIEW}장)
+          </h2>
 
-          {photoFeedbackMessage && <p className="text-sm text-red-600">{photoFeedbackMessage}</p>}
+          {photoFeedbackMessage && <p className="text-sm text-danger">{photoFeedbackMessage}</p>}
 
           {photos.length > 0 && (
             <ul className="grid grid-cols-3 gap-2">
@@ -233,7 +238,7 @@ export default async function NewReviewPage({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.url} alt="내가 올린 리뷰 사진" className="aspect-square w-full rounded-xl object-cover" />
                   <form action={deleteReviewPhoto.bind(null, p.id, restaurantId)}>
-                    <button type="submit" className="w-full rounded-lg bg-surface-muted px-2 py-1 text-xs">
+                    <button type="submit" className="w-full rounded-lg bg-surface-muted px-2 py-1 text-xs transition active:scale-[0.98]">
                       삭제
                     </button>
                   </form>
@@ -251,7 +256,7 @@ export default async function NewReviewPage({
                 required
                 className="text-sm text-ink-muted"
               />
-              <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
+              <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold transition active:scale-[0.98]">
                 사진 추가
               </button>
             </form>

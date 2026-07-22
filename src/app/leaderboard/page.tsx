@@ -21,7 +21,7 @@ export default async function LeaderboardPage() {
         <Link href="/me" className="text-sm text-ink-muted">
           ← 내 정보로
         </Link>
-        <h1 className="mt-3 text-2xl font-bold text-brand-dark">월간 배지·리더보드</h1>
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">월간 배지·리더보드</h1>
         <p className="mt-1 text-sm text-ink-muted">집계 기간 · {leaderboard.label}</p>
       </div>
 

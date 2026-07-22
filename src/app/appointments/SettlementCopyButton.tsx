@@ -19,12 +19,12 @@ export function SettlementCopyButton({ text }: { text: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold"
+        className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold transition active:scale-[0.98]"
       >
         정산 결과 복사하기
       </button>
-      {state === "copied" && <p className="text-xs text-green-700">정산 결과를 복사했어요.</p>}
-      {state === "failed" && <p className="text-xs text-red-600">복사에 실패했어요. 직접 선택해 복사해주세요.</p>}
+      {state === "copied" && <p className="text-xs text-success">정산 결과를 복사했어요.</p>}
+      {state === "failed" && <p className="text-xs text-danger">복사에 실패했어요. 직접 선택해 복사해주세요.</p>}
     </div>
   );
 }

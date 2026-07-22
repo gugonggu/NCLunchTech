@@ -9,6 +9,7 @@ import {
   getDefaultAppointmentTime,
   isAppointmentStatusCode,
 } from "@/lib/appointments/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { createAppointment } from "./actions";
 import { RestaurantPicker } from "./RestaurantPicker";
 
@@ -71,7 +72,7 @@ export default async function NewAppointmentPage({
         ← 뒤로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">함께 먹기</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">함께 먹기</h1>
       <p className="text-ink">
         {restaurant.name} · {restaurant.category}
       </p>
@@ -131,7 +132,7 @@ export default async function NewAppointmentPage({
           여기서 직접 지정하지 않아도, 약속을 만든 뒤 링크를 공유해 참여자를 초대할 수 있어요.
         </p>
 
-        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+        <button type="submit" className={buttonStyles({ block: true })}>
           약속 만들기
         </button>
       </form>

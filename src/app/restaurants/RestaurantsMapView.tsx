@@ -162,12 +162,12 @@ export function RestaurantsMapView({
                 <button
                   type="button"
                   onClick={() => handleSelectFromList(r.id)}
-                  className={`w-full rounded-card border px-4 py-3 text-left ${
-                    selectedId === r.id ? "border-brand bg-brand-bg" : "border-line"
+                  className={`w-full rounded-card px-4 py-4 text-left transition active:scale-[0.98] ${
+                    selectedId === r.id ? "border border-brand bg-brand-bg" : "bg-surface shadow-card"
                   }`}
                 >
                   <p className="font-semibold">{r.name}</p>
-                  <p className="text-sm text-ink-muted">
+                  <p className="text-sm tabular-nums text-ink-muted">
                     {r.category}
                     {r.address && ` · ${r.address}`}
                     {r.distanceM !== null && ` · ${r.distanceM}m`}

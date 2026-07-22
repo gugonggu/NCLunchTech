@@ -26,14 +26,14 @@ export default async function NotificationsPage() {
         ← 홈으로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">알림</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">알림</h1>
 
       {notifications.length === 0 ? (
         <p className="text-sm text-ink-muted">아직 알림이 없어요.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {notifications.map((n) => (
-            <li key={n.id} className="rounded-card border border-line px-4 py-3">
+            <li key={n.id} className="rounded-card bg-surface px-4 py-3 shadow-card">
               {n.relatedAppointmentId || n.relatedRestaurantId ? (
                 <Link
                   href={
@@ -41,15 +41,15 @@ export default async function NotificationsPage() {
                       ? `/appointments/${n.relatedAppointmentId}`
                       : `/restaurants/${n.relatedRestaurantId}`
                   }
-                  className="block"
+                  className="block transition active:scale-[0.98]"
                 >
                   <p className="text-sm text-ink">{n.message}</p>
-                  <p className="mt-1 text-xs text-ink-muted">{displayFormatter.format(new Date(n.createdAt))}</p>
+                  <p className="mt-1 text-xs tabular-nums text-ink-muted">{displayFormatter.format(new Date(n.createdAt))}</p>
                 </Link>
               ) : (
                 <>
                   <p className="text-sm text-ink">{n.message}</p>
-                  <p className="mt-1 text-xs text-ink-muted">{displayFormatter.format(new Date(n.createdAt))}</p>
+                  <p className="mt-1 text-xs tabular-nums text-ink-muted">{displayFormatter.format(new Date(n.createdAt))}</p>
                 </>
               )}
             </li>

@@ -9,6 +9,7 @@ import { RECENT_VISIT_WINDOW_DAYS } from "@/lib/recommend/engine";
 import { getRecentCompletedVisits } from "@/lib/visits/queries";
 import { getRecentAttendedAppointments } from "@/lib/appointments/queries";
 import { daysBetweenDateStrings, getSeoulDateString } from "@/lib/visits/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { RestaurantsMapView, type MapRestaurant } from "./RestaurantsMapView";
 import { RestaurantsMapWorkspace } from "./RestaurantsMapWorkspace";
 
@@ -167,8 +168,8 @@ export default async function RestaurantsPage({
     <RestaurantsMapWorkspace
       header={<div className="flex flex-col gap-2 px-4 py-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-brand-dark">식당 찾기</h1>
-          <p className="text-xs text-ink-muted">
+          <h1 className="text-xl font-bold tracking-tight text-brand-dark">식당 찾기</h1>
+          <p className="text-xs tabular-nums text-ink-muted">
             {total}건 중 {visible.length}건
             {total > RESULT_LIMIT && " (검색어로 좁혀보세요)"}
           </p>
@@ -190,7 +191,7 @@ export default async function RestaurantsPage({
               placeholder="식당 이름 검색"
               className="flex-1 rounded-control border border-line px-4 py-2 text-sm"
             />
-            <button type="submit" className="rounded-control bg-brand px-4 py-2 text-sm font-semibold text-black">
+            <button type="submit" className={buttonStyles({ size: "compact" })}>
               검색
             </button>
           </div>
@@ -266,7 +267,7 @@ export default async function RestaurantsPage({
                 <option value="new">신규순</option>
                 <option value="reviews">리뷰 많은순</option>
               </select>
-              <button type="submit" className="rounded-control bg-brand px-4 py-2 text-sm font-semibold text-black">
+              <button type="submit" className={buttonStyles({ size: "compact", block: true })}>
                 이 조건으로 검색
               </button>
             </div>

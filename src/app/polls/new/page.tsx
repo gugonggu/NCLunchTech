@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { MAX_POLL_OPTIONS, POLL_STATUS_MESSAGES, isPollStatusCode } from "@/lib/polls/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { createMenuPoll, createRestaurantPoll } from "./actions";
 
 interface NewPollSearchParams {
@@ -33,18 +34,12 @@ export default async function NewPollPage({
         <Link href="/" className="text-sm text-ink-muted">
           ← 홈으로
         </Link>
-        <h1 className="text-xl font-bold text-brand-dark">투표 만들기</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">투표 만들기</h1>
         <div className="flex flex-col gap-3">
-          <Link
-            href="/polls/new?type=restaurant"
-            className="rounded-control bg-brand px-4 py-4 text-center font-semibold text-black"
-          >
+          <Link href="/polls/new?type=restaurant" className={buttonStyles({ block: true })}>
             식당 투표
           </Link>
-          <Link
-            href="/polls/new?type=menu"
-            className="rounded-control bg-surface px-4 py-4 text-center font-semibold text-brand-dark shadow-card"
-          >
+          <Link href="/polls/new?type=menu" className={buttonStyles({ variant: "secondary", block: true })}>
             메뉴 투표
           </Link>
         </div>
@@ -70,8 +65,8 @@ export default async function NewPollPage({
         <Link href="/polls/new" className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
-        <h1 className="text-xl font-bold text-brand-dark">식당 투표 만들기</h1>
-        {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">식당 투표 만들기</h1>
+        {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
 
         <form method="get" className="flex gap-2">
           <input type="hidden" name="type" value="restaurant" />
@@ -82,7 +77,7 @@ export default async function NewPollPage({
             placeholder="식당 이름 검색"
             className="flex-1 rounded-control border border-line px-4 py-3"
           />
-          <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
+          <button type="submit" className={buttonStyles({ variant: "secondary" })}>
             검색
           </button>
         </form>
@@ -96,7 +91,7 @@ export default async function NewPollPage({
             <ul className="flex flex-col gap-2">
               {(restaurants ?? []).map((r) => (
                 <li key={r.id}>
-                  <label className="flex items-center gap-3 rounded-card border border-line px-4 py-3">
+                  <label className="flex items-center gap-3 rounded-card bg-surface px-4 py-3 shadow-card">
                     <input type="checkbox" name="restaurantIds" value={r.id} />
                     <span>
                       <span className="block font-semibold">{r.name}</span>
@@ -120,7 +115,7 @@ export default async function NewPollPage({
             />
           </label>
 
-          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+          <button type="submit" className={buttonStyles({ block: true })}>
             투표 만들기
           </button>
         </form>
@@ -147,8 +142,8 @@ export default async function NewPollPage({
         <Link href="/polls/new" className="text-sm text-ink-muted">
           ← 뒤로
         </Link>
-        <h1 className="text-xl font-bold text-brand-dark">메뉴 투표 만들기</h1>
-        {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+        <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">메뉴 투표 만들기</h1>
+        {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
         <p className="text-sm text-ink-muted">먼저 메뉴를 고를 식당을 선택해주세요.</p>
 
         <form method="get" className="flex gap-2">
@@ -160,7 +155,7 @@ export default async function NewPollPage({
             placeholder="식당 이름 검색"
             className="flex-1 rounded-control border border-line px-4 py-3"
           />
-          <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
+          <button type="submit" className={buttonStyles({ variant: "secondary" })}>
             검색
           </button>
         </form>
@@ -173,7 +168,7 @@ export default async function NewPollPage({
               <li key={r.id}>
                 <Link
                   href={`/polls/new?type=menu&restaurantId=${r.id}`}
-                  className="block rounded-card border border-line px-4 py-3"
+                  className="block rounded-card bg-surface px-4 py-3 shadow-card transition active:scale-[0.98]"
                 >
                   <p className="font-semibold">{r.name}</p>
                   <p className="text-sm text-ink-muted">
@@ -211,11 +206,11 @@ export default async function NewPollPage({
       <Link href="/polls/new?type=menu" className="text-sm text-ink-muted">
         ← 다른 식당 고르기
       </Link>
-      <h1 className="text-xl font-bold text-brand-dark">메뉴 투표 만들기</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">메뉴 투표 만들기</h1>
       <p className="text-ink">
         {restaurant.name} · {restaurant.category}
       </p>
-      {feedbackMessage && <p className="text-sm text-red-600">{feedbackMessage}</p>}
+      {feedbackMessage && <p className="text-sm text-danger">{feedbackMessage}</p>}
 
       <form action={createMenuPoll} className="flex flex-col gap-3">
         <input type="hidden" name="restaurantId" value={restaurant.id} />
@@ -229,9 +224,9 @@ export default async function NewPollPage({
           <ul className="flex flex-col gap-2">
             {(menuItems ?? []).map((m) => (
               <li key={m.id}>
-                <label className="flex items-center justify-between gap-3 rounded-card border border-line px-4 py-3">
+                <label className="flex items-center justify-between gap-3 rounded-card bg-surface px-4 py-3 shadow-card">
                   <span>{m.name}</span>
-                  <span className="flex items-center gap-3 text-sm text-ink-muted">
+                  <span className="flex items-center gap-3 text-sm tabular-nums text-ink-muted">
                     {m.price != null ? `${m.price.toLocaleString("ko-KR")}원` : "가격 정보 없음"}
                     <input type="checkbox" name="menuItemIds" value={m.id} />
                   </span>
@@ -265,7 +260,7 @@ export default async function NewPollPage({
           />
         </label>
 
-        <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+        <button type="submit" className={buttonStyles({ block: true })}>
           투표 만들기
         </button>
       </form>

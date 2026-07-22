@@ -12,6 +12,7 @@ import { getComments } from "@/lib/review-comments/queries";
 import { getHelpfulCount, hasReacted } from "@/lib/review-reactions/queries";
 import { getRestaurantPhotoGallery } from "@/lib/review-photos/queries";
 import { formatTimeToMinute } from "@/lib/restaurants/hours-validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { StatusReportForm } from "../StatusReportForm";
 import { decideRestaurant } from "@/app/visits/actions";
 import { changeAppointmentRestaurant } from "@/app/appointments/[id]/actions";
@@ -104,7 +105,7 @@ export default async function RestaurantDetailPage({
   const photoGallery = await getRestaurantPhotoGallery(id);
 
   return (
-    <main className="flex flex-1 flex-col gap-6 px-6 py-8">
+    <main className="flex flex-1 flex-col gap-8 px-6 py-8">
       <Link href="/restaurants" className="text-sm text-ink-muted">
         ← 목록으로
       </Link>
@@ -117,10 +118,14 @@ export default async function RestaurantDetailPage({
 
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-brand-dark">{restaurant.name}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">{restaurant.name}</h1>
           {employee && (
             <form action={toggleFavorite.bind(null, restaurant.id)}>
-              <button type="submit" className="text-2xl" aria-label={isFavorited ? "즐겨찾기 해제" : "즐겨찾기 추가"}>
+              <button
+                type="submit"
+                className="text-2xl transition active:scale-[0.98]"
+                aria-label={isFavorited ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+              >
                 {isFavorited ? "★" : "☆"}
               </button>
             </form>
@@ -128,8 +133,8 @@ export default async function RestaurantDetailPage({
         </div>
         <p className="text-ink">{restaurant.category}</p>
         <p className="text-ink">{restaurant.address}</p>
-        {restaurant.phone && <p className="text-ink">{restaurant.phone}</p>}
-        {distanceM !== null && <p className="text-ink">KNN타워에서 약 {distanceM}m</p>}
+        {restaurant.phone && <p className="text-ink tabular-nums">{restaurant.phone}</p>}
+        {distanceM !== null && <p className="tabular-nums text-ink">KNN타워에서 약 {distanceM}m</p>}
         {employee && (
           <Link href={`/reports/new?restaurantId=${restaurant.id}`} className="mt-1 text-sm text-ink-muted underline">
             정보가 달라졌나요? 제보하기
@@ -139,27 +144,18 @@ export default async function RestaurantDetailPage({
 
       {forAppointment ? (
         <form action={changeAppointmentRestaurant.bind(null, forAppointment, restaurant.id)}>
-          <button
-            type="submit"
-            className="w-full rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
-          >
+          <button type="submit" className={buttonStyles({ block: true })}>
             이 약속의 식당으로 변경
           </button>
         </form>
       ) : (
         <div className="flex flex-col gap-2">
           <form action={decideRestaurant.bind(null, restaurant.id)}>
-            <button
-              type="submit"
-              className="w-full rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
-            >
+            <button type="submit" className={buttonStyles({ block: true })}>
               혼자 결정하기
             </button>
           </form>
-          <Link
-            href={`/appointments/new?restaurantId=${restaurant.id}`}
-            className="block w-full rounded-control bg-surface px-4 py-3 text-center font-semibold text-brand-dark shadow-card"
-          >
+          <Link href={`/appointments/new?restaurantId=${restaurant.id}`} className={buttonStyles({ variant: "secondary", block: true })}>
             동료와 함께
           </Link>
         </div>
@@ -169,16 +165,16 @@ export default async function RestaurantDetailPage({
         href={kakaoMapUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-control bg-surface px-4 py-3 text-center font-semibold text-brand-dark shadow-card"
+        className={buttonStyles({ variant: "secondary", block: true })}
       >
         카카오맵에서 보기
       </a>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-bold text-brand-dark">메뉴</h2>
+        <h2 className="text-lg font-bold tracking-tight text-brand-dark">메뉴</h2>
         <ul className="flex flex-col gap-2">
           {(menuItems ?? []).map((item) => (
-            <li key={item.id} className="rounded-card border border-line px-4 py-3">
+            <li key={item.id} className="rounded-card bg-surface px-4 py-3 shadow-card">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{item.name}</span>
                 {item.is_sold_out && (
@@ -224,21 +220,21 @@ export default async function RestaurantDetailPage({
             placeholder="가격(선택)"
             className="rounded-control border border-line px-4 py-3"
           />
-          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+          <button type="submit" className={buttonStyles({ block: true })}>
             메뉴 추가
           </button>
         </form>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-bold text-brand-dark">영업시간</h2>
+        <h2 className="text-lg font-bold tracking-tight text-brand-dark">영업시간</h2>
         <form action={updateRestaurantHours.bind(null, id)} className="flex flex-col gap-2">
           {DAY_LABELS.map((label, day) => {
             const row = hoursByDay.get(day);
             return (
               <div
                 key={day}
-                className="flex items-center gap-2 rounded-card border border-line px-4 py-3"
+                className="flex items-center gap-2 rounded-card bg-surface px-4 py-3 shadow-card"
               >
                 <span className="w-6 font-semibold">{label}</span>
                 <label className="flex items-center gap-1 text-sm">
@@ -263,7 +259,7 @@ export default async function RestaurantDetailPage({
               </div>
             );
           })}
-          <button type="submit" className="rounded-control bg-brand px-4 py-3 font-semibold text-black">
+          <button type="submit" className={buttonStyles({ block: true })}>
             영업시간 저장
           </button>
         </form>
@@ -271,16 +267,16 @@ export default async function RestaurantDetailPage({
 
       {(reviewSummary || canReview) && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-bold text-brand-dark">평가·리뷰</h2>
+          <h2 className="text-lg font-bold tracking-tight text-brand-dark">평가·리뷰</h2>
 
           {reviewSummary ? (
             <>
-              <p className="text-sm text-ink-muted">리뷰 {reviewSummary.count}개</p>
+              <p className="text-sm tabular-nums text-ink-muted">리뷰 {reviewSummary.count}개</p>
               <ul className="flex flex-col gap-1">
                 {RATING_LABELS.map(({ key, label }) => (
                   <li key={key} className="flex items-center justify-between text-sm text-ink">
                     <span>{label}</span>
-                    <span>{reviewSummary[key].toFixed(1)}점</span>
+                    <span className="tabular-nums">{reviewSummary[key].toFixed(1)}점</span>
                   </li>
                 ))}
               </ul>
@@ -289,7 +285,7 @@ export default async function RestaurantDetailPage({
                   {reviewDetails.map(({ review: r, comments, helpfulCount, iReacted }) => {
                     const isOwnReview = employee?.id === r.employeeId;
                     return (
-                      <li key={r.id} className="rounded-card border border-line px-4 py-3 text-sm text-ink">
+                      <li key={r.id} className="rounded-card bg-surface px-4 py-3 text-sm text-ink shadow-card">
                         {r.oneLineReview && <p>{r.oneLineReview}</p>}
                         {r.tags && r.tags.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
@@ -398,7 +394,7 @@ export default async function RestaurantDetailPage({
           {canReview && (
             <Link
               href={`/reviews/new?restaurantId=${id}`}
-              className="rounded-control bg-surface px-4 py-3 text-center text-sm font-semibold text-brand-dark shadow-card"
+              className={buttonStyles({ variant: "secondary", block: true })}
             >
               리뷰 남기기
             </Link>
@@ -407,7 +403,7 @@ export default async function RestaurantDetailPage({
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-bold text-brand-dark">사진</h2>
+        <h2 className="text-lg font-bold tracking-tight text-brand-dark">사진</h2>
         {photoGallery.length > 0 ? (
           <ul className="grid grid-cols-3 gap-2">
             {photoGallery.map((p) => (
@@ -423,12 +419,12 @@ export default async function RestaurantDetailPage({
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-bold text-brand-dark">지금 상태</h2>
+        <h2 className="text-lg font-bold tracking-tight text-brand-dark">지금 상태</h2>
 
         <div className="flex flex-col gap-2">
           <p className="text-sm font-semibold text-ink-muted">혼잡도</p>
           {statusSummary.congestion ? (
-            <p className="text-sm text-ink">
+            <p className="text-sm tabular-nums text-ink">
               {statusSummary.congestion.latestValue} · {formatMinutesAgo(new Date(statusSummary.congestion.latestAt), now)}
               <span className="text-ink-muted">
                 {" "}
@@ -448,7 +444,7 @@ export default async function RestaurantDetailPage({
         <div className="flex flex-col gap-2">
           <p className="text-sm font-semibold text-ink-muted">영업 상태</p>
           {statusSummary.businessStatus ? (
-            <p className="text-sm text-ink">
+            <p className="text-sm tabular-nums text-ink">
               {statusSummary.businessStatus.latestValue} ·{" "}
               {formatMinutesAgo(new Date(statusSummary.businessStatus.latestAt), now)}
               <span className="text-ink-muted">

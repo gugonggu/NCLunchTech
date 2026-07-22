@@ -58,7 +58,7 @@ function SignupForm() {
     <AuthShell>
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-ink">회원가입</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">회원가입</h1>
           <p className="text-sm text-ink-muted">
             점심 결정, 이제 1~2분이면 충분해요.
           </p>

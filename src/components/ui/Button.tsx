@@ -12,7 +12,7 @@ export function buttonStyles(
   }: { variant?: Variant; size?: Size; block?: boolean } = {},
 ) {
   return cx(
-    "inline-flex min-w-11 items-center justify-center gap-2 rounded-control px-4 font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex min-w-11 items-center justify-center gap-2 rounded-control px-4 font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
     size === "default" ? "min-h-12 text-sm" : "min-h-11 text-sm",
     variant === "primary" &&
       "bg-brand text-black hover:bg-brand-dark active:bg-brand-dark",

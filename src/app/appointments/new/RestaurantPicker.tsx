@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buttonStyles } from "@/components/ui/Button";
 import { FeedbackState } from "@/components/ui/FeedbackState";
 import {
   type AppointmentRestaurantSearchState,
@@ -41,7 +42,7 @@ function Pagination({ state }: { state: Extract<AppointmentRestaurantSearchState
           이전
         </span>
       )}
-      <p className="text-sm text-ink-muted">
+      <p className="text-sm tabular-nums text-ink-muted">
         총 {state.totalCount}개 · {state.page}/{state.totalPages}페이지
       </p>
       {nextHref ? (
@@ -59,7 +60,7 @@ function Pagination({ state }: { state: Extract<AppointmentRestaurantSearchState
 
 function SearchForm({ filters }: { filters: NormalizedAppointmentRestaurantSearch }) {
   return (
-    <form method="get" className="grid gap-3 rounded-card border border-line bg-surface p-4 sm:grid-cols-2">
+    <form method="get" className="grid gap-3 rounded-card bg-surface p-4 shadow-card sm:grid-cols-2">
       <label className="flex flex-col gap-1 text-sm text-ink sm:col-span-2">
         식당 이름
         <input
@@ -99,7 +100,7 @@ function SearchForm({ filters }: { filters: NormalizedAppointmentRestaurantSearc
           <input type="checkbox" name="openNow" value="on" defaultChecked={filters.openNow} />
           영업 중만
         </label>
-        <button type="submit" className="min-h-11 rounded-control bg-brand px-4 text-sm font-semibold text-black">
+        <button type="submit" className={buttonStyles({ size: "compact" })}>
           검색
         </button>
       </div>
@@ -120,11 +121,11 @@ export function RestaurantPicker({ state }: { state: AppointmentRestaurantSearch
               <Link
                 key={restaurant.id}
                 href={`/appointments/new?restaurantId=${restaurant.id}`}
-                className="flex min-h-11 flex-col gap-1 rounded-card border border-line bg-surface p-4 text-ink hover:bg-surface-muted"
+                className="flex min-h-11 flex-col gap-1 rounded-card bg-surface p-4 text-ink shadow-card transition hover:bg-surface-muted active:scale-[0.98]"
               >
                 <span className="font-semibold">{restaurant.name}</span>
                 <span className="text-sm text-ink-muted">{restaurant.category} · {restaurant.address}</span>
-                <span className="text-sm text-ink-muted">
+                <span className="text-sm tabular-nums text-ink-muted">
                   {Math.round(restaurant.distanceM)}m · {restaurant.isOpenNow ? "영업 중" : "영업 종료"}
                 </span>
               </Link>

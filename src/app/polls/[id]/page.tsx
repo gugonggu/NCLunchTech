@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getPollDetail, getWinningIds, isEligibleAppointmentVoter } from "@/lib/polls/queries";
 import { POLL_STATUS_MESSAGES, isPollStatusCode, isValidRestaurantPollBridge } from "@/lib/polls/validation";
+import { buttonStyles } from "@/components/ui/Button";
 import { cancelVote, closePoll, decidePoll, voteInPoll } from "./actions";
 
 const displayFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -56,7 +57,7 @@ export default async function PollDetailPage({
         ← 홈으로
       </Link>
 
-      <h1 className="text-xl font-bold text-brand-dark">
+      <h1 className="text-2xl font-extrabold tracking-tight text-brand-dark sm:text-3xl">
         {poll.pollType === "restaurant" ? "식당 투표" : "메뉴 투표"}
       </h1>
       {poll.pollType === "menu" && poll.restaurantName && (
@@ -87,8 +88,8 @@ export default async function PollDetailPage({
           return (
             <li key={option.id}>
               <div
-                className={`flex items-center justify-between rounded-card border px-4 py-3 ${
-                  isDecided ? "border-brand bg-brand-bg" : isMine ? "border-brand" : "border-line"
+                className={`flex items-center justify-between rounded-card px-4 py-3 ${
+                  isDecided ? "border border-brand bg-brand-bg" : isMine ? "border border-brand bg-surface shadow-card" : "bg-surface shadow-card"
                 }`}
               >
                 <span>
@@ -100,10 +101,13 @@ export default async function PollDetailPage({
                   )}
                 </span>
                 <span className="flex items-center gap-3">
-                  <span className="text-sm text-ink-muted">{option.voteCount}표</span>
+                  <span className="text-sm tabular-nums text-ink-muted">{option.voteCount}표</span>
                   {isOpen && canVote && (
                     <form action={voteInPoll.bind(null, poll.id, option.id)}>
-                      <button type="submit" className="rounded-xl bg-surface-muted px-3 py-1.5 text-xs font-semibold">
+                      <button
+                        type="submit"
+                        className="rounded-xl bg-surface-muted px-3 py-1.5 text-xs font-semibold transition active:scale-[0.98]"
+                      >
                         {isMine ? "다시 선택" : "투표"}
                       </button>
                     </form>
@@ -112,7 +116,7 @@ export default async function PollDetailPage({
                     <form action={decidePoll.bind(null, poll.id, option.id)}>
                       <button
                         type="submit"
-                        className="rounded-xl bg-brand px-3 py-1.5 text-xs font-semibold text-black"
+                        className="rounded-xl bg-brand px-3 py-1.5 text-xs font-semibold text-black transition active:scale-[0.98]"
                       >
                         이 결과로 결정
                       </button>
@@ -127,10 +131,7 @@ export default async function PollDetailPage({
 
       {isOpen && canVote && poll.myOptionId && (
         <form action={cancelVote.bind(null, poll.id)}>
-          <button
-            type="submit"
-            className="w-full rounded-control bg-surface px-4 py-3 text-sm font-semibold text-ink-muted shadow-card"
-          >
+          <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
             투표 취소
           </button>
         </form>
@@ -142,7 +143,7 @@ export default async function PollDetailPage({
 
       {isOpen && isCreator && (
         <form action={closePoll.bind(null, poll.id)}>
-          <button type="submit" className="w-full rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold">
+          <button type="submit" className="w-full rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold transition active:scale-[0.98]">
             지금 마감하기
           </button>
         </form>
@@ -151,7 +152,7 @@ export default async function PollDetailPage({
       {canBridgeToAppointment && (
         <Link
           href={`/appointments/new?restaurantId=${decidedOptionRestaurantId}&fromPollId=${poll.id}`}
-          className="rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
+          className={buttonStyles({ block: true })}
         >
           이 식당으로 약속 만들기
         </Link>
@@ -160,7 +161,7 @@ export default async function PollDetailPage({
       {!employee && (
         <Link
           href={`/login?returnTo=${encodeURIComponent(`/polls/${poll.id}`)}`}
-          className="rounded-control bg-brand px-4 py-3 text-center font-semibold text-black"
+          className={buttonStyles({ block: true })}
         >
           로그인하고 투표하기
         </Link>
