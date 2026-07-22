@@ -5,6 +5,7 @@ import {
   getDefaultAppointmentTime,
   isAppointmentStatusCode,
   memoSchema,
+  parsePublicAppointmentInput,
   parseNicknameList,
   parseSeoulDateTimeLocal,
   sanitizeReturnTo,
@@ -79,6 +80,28 @@ describe("memoSchema", () => {
     if (result.success) {
       expect(result.data).toBeUndefined();
     }
+  });
+});
+
+describe("parsePublicAppointmentInput", () => {
+  it("treats an unchecked public option as a private appointment", () => {
+    expect(parsePublicAppointmentInput(new FormData())).toEqual({ isPublic: false, capacity: null });
+  });
+
+  it("accepts a public capacity within the host-inclusive range", () => {
+    const formData = new FormData();
+    formData.set("isPublic", "on");
+    formData.set("capacity", "4");
+
+    expect(parsePublicAppointmentInput(formData)).toEqual({ isPublic: true, capacity: 4 });
+  });
+
+  it("rejects a public capacity outside the allowed range", () => {
+    const formData = new FormData();
+    formData.set("isPublic", "on");
+    formData.set("capacity", "11");
+
+    expect(parsePublicAppointmentInput(formData)).toBeNull();
   });
 });
 

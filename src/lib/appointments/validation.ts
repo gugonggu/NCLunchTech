@@ -5,6 +5,32 @@ export type AppointmentStatus = "active" | "cancelled";
 export type ParticipantStatus = "pending" | "accepted" | "declined" | "cancelled" | "completed" | "expired";
 export type HostAttendanceStatus = "completed" | "cancelled";
 
+export const PUBLIC_APPOINTMENT_CAPACITY_DEFAULT = 4;
+export const PUBLIC_APPOINTMENT_CAPACITY_MIN = 2;
+export const PUBLIC_APPOINTMENT_CAPACITY_MAX = 10;
+
+export interface PublicAppointmentInput {
+  isPublic: boolean;
+  capacity: number | null;
+}
+
+export function parsePublicAppointmentInput(formData: FormData): PublicAppointmentInput | null {
+  if (formData.get("isPublic") !== "on") {
+    return { isPublic: false, capacity: null };
+  }
+
+  const capacity = Number(formData.get("capacity"));
+  if (
+    !Number.isInteger(capacity) ||
+    capacity < PUBLIC_APPOINTMENT_CAPACITY_MIN ||
+    capacity > PUBLIC_APPOINTMENT_CAPACITY_MAX
+  ) {
+    return null;
+  }
+
+  return { isPublic: true, capacity };
+}
+
 const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 /** Asia/Seoul 기준 약속 기본 시각: 12:30 이전이면 오늘 12:30, 이후면 현재 시각 + 30분. */
