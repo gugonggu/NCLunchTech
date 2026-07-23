@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import { RouletteResult } from "./RouletteResult";
 
 describe("RouletteResult", () => {
+  it("keeps the selected restaurant on the visible wheel when candidates exceed eight", () => {
+    render(<RouletteResult candidates={["1", "2", "3", "4", "5", "6", "7", "8", "당첨"]} restaurantId="restaurant-9" restaurantName="당첨" decideAction={vi.fn()} rerollAction={vi.fn()} />);
+
+    expect(screen.getByTestId("roulette-wheel")).toHaveTextContent("당첨");
+  });
+
   it("reveals the selected restaurant and result actions after spinning", async () => {
     vi.useFakeTimers();
     render(<RouletteResult candidates={["한식당", "중식당"]} restaurantId="restaurant-2" restaurantName="중식당" decideAction={vi.fn()} rerollAction={vi.fn()} />);

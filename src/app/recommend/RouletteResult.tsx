@@ -19,7 +19,9 @@ export function RouletteResult({
   const [spinning, setSpinning] = useState(false);
   const [done, setDone] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const wheelCandidates = candidates.slice(0, 8);
+  const wheelCandidates = candidates.length <= 8
+    ? candidates
+    : [...candidates.filter((candidate) => candidate !== restaurantName).slice(0, 7), restaurantName];
   const winnerIndex = Math.max(0, wheelCandidates.indexOf(restaurantName));
   const sector = 360 / Math.max(wheelCandidates.length, 1);
   const colors = ["#F28C28", "#FFD7A5", "#D96F12", "#FFE6C7", "#F6B66B", "#FFF4E8", "#E98B41", "#FAD0A6"];
@@ -55,7 +57,7 @@ export function RouletteResult({
           style={{ background, transform: `rotate(${rotation}deg)` }}
         >
           {wheelCandidates.map((candidate, index) => (
-            <span key={candidate} className="absolute left-1/2 top-1/2 w-16 origin-left -translate-y-1/2 text-center text-[11px] font-extrabold leading-tight text-ink" style={{ transform: `rotate(${index * sector + sector / 2}deg) translateX(68px)` }}>
+            <span key={candidate} className="absolute left-1/2 top-1/2 w-14 origin-left -translate-y-1/2 text-center text-[10px] font-extrabold leading-tight text-ink" style={{ transform: `rotate(${index * sector + sector / 2}deg) translateX(52px)` }}>
               {candidate}
             </span>
           ))}
