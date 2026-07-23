@@ -307,8 +307,8 @@ export default async function RecommendPage({
                   </section>
                 )}
 
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <form action={rerollRecommendation.bind(null, result.main.id, conditions)} className="flex-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <form action={rerollRecommendation.bind(null, result.main.id, conditions)}>
                     <Button type="submit" variant="secondary" block>
                       다시 추천
                     </Button>
@@ -322,7 +322,7 @@ export default async function RecommendPage({
                   </Link>
 
                   {showResetButton && (
-                    <form action={resetExclusions.bind(null, conditions)} className="flex-1">
+                    <form action={resetExclusions.bind(null, conditions)}>
                       <Button type="submit" variant="ghost" block>
                         제외 목록 초기화
                       </Button>
