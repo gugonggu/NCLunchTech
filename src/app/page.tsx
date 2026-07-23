@@ -114,10 +114,10 @@ export default async function HomePage({
   }
 
   const heroKind = selectHomeHero({
-    needsConfirmation: hasAnyConfirmation,
+    needsConfirmation: hasAnyConfirmation && !hasTodayReview,
     needsPollResponse: relevantPolls.some((poll) => poll.status === "open"),
-    hasPlannedLunch: todayVisit?.status === "planned",
-    hasCompletedLunch: todayVisit?.status === "completed",
+    hasPlannedLunch: todayVisit?.status === "planned" && !hasTodayReview,
+    hasCompletedLunch: todayVisit?.status === "completed" && !hasTodayReview,
   });
   const primaryPoll = heroKind === "poll" ? (relevantPolls.find((poll) => poll.status === "open") ?? null) : null;
   const secondaryPolls = primaryPoll ? relevantPolls.filter((poll) => poll.id !== primaryPoll.id) : relevantPolls;

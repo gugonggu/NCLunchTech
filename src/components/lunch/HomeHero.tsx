@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { cancelTodayVisit, completeTodayVisit, markTodayVisitNoShow } from "@/app/visits/actions";
 import { Button, buttonStyles } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -53,16 +56,6 @@ function ReviewLink({ todayVisit, hasTodayReview, className }: { todayVisit: Act
   );
 }
 
-function CancelVisitButton({ className }: { className?: string }) {
-  return (
-    <form action={cancelTodayVisit} className={className}>
-      <Button type="submit" variant="ghost" size="compact" block>
-        방문 취소
-      </Button>
-    </form>
-  );
-}
-
 export function HomeHero({
   kind,
   todayVisit,
@@ -74,15 +67,45 @@ export function HomeHero({
   distanceM,
   now,
 }: HomeHeroProps) {
-  const showExtraFollowUp = kind !== "follow-up" && todayVisit?.status === "completed";
+  const showReviewSlide = todayVisit?.status === "completed" && !hasTodayReview;
+  const showContextSlide = kind !== "recommend" && !hasTodayReview;
+  const slideCount = 1 + Number(showContextSlide) + Number(showReviewSlide);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const moveToSlide = (nextSlide: number) => {
+    setActiveSlide((nextSlide + slideCount) % slideCount);
+  };
 
   return (
     <section aria-label="오늘 가장 중요한 일">
-      <div className="flex snap-x gap-3 overflow-x-auto pb-1">
-        <Card
-          tone="accent"
-          className="min-w-full snap-start overflow-hidden bg-gradient-to-br from-[#fff0e2] via-[#ffe0c2] to-[#ffcfc2] shadow-[0_20px_60px_-12px_rgba(244,124,32,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_-10px_rgba(244,124,32,0.55)]"
+      <div className="overflow-hidden">
+        <div
+          className="flex transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${activeSlide * 100}%)` }}
         >
+          <Card
+            tone="accent"
+            aria-hidden={activeSlide !== 0}
+            className="w-full shrink-0 overflow-hidden bg-gradient-to-br from-[#fff0e2] via-[#ffe0c2] to-[#ffcfc2] shadow-[0_20px_60px_-12px_rgba(244,124,32,0.45)]"
+          >
+            <div>
+              <p className="text-sm font-semibold text-brand-dark">오늘의 추천</p>
+              <h2 className="mt-2 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
+                오늘 점심, 가볍게 골라볼까요?
+              </h2>
+              <p className="mt-2 text-sm text-ink-muted">거리와 취향을 반영한 추천을 바로 받아보세요.</p>
+              <Link href="/recommend" className={`${buttonStyles()} mt-5 w-full`}>
+                오늘 뭐 먹지?
+              </Link>
+            </div>
+          </Card>
+
+          {showContextSlide && (
+            <Card
+              tone="accent"
+              aria-hidden={activeSlide !== 1}
+              className="w-full shrink-0 overflow-hidden bg-gradient-to-br from-[#fff0e2] via-[#ffe0c2] to-[#ffcfc2] shadow-[0_20px_60px_-12px_rgba(244,124,32,0.45)]"
+            >
           {kind === "confirmation" && (
             <div className="flex flex-col gap-4">
               <div>
@@ -202,40 +225,49 @@ export function HomeHero({
                   {todayMealRecord.menuName} · {todayMealRecord.paidPrice.toLocaleString("ko-KR")}원
                 </p>
               )}
-              <ReviewLink todayVisit={todayVisit} hasTodayReview={hasTodayReview} className="mt-5 w-full" />
-              <CancelVisitButton className="mt-2" />
             </div>
           )}
-
-          {kind === "recommend" && (
-            <div>
-              <p className="text-sm font-semibold text-brand-dark">오늘의 추천</p>
-              <h2 className="mt-2 bg-gradient-to-r from-brand-dark to-[#c94b8a] bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
-                오늘 점심, 가볍게 골라볼까요?
-              </h2>
-              <p className="mt-2 text-sm text-ink-muted">거리와 취향을 반영한 추천을 바로 받아보세요.</p>
-              <Link href="/recommend" className={`${buttonStyles()} mt-5 w-full`}>
-                오늘 뭐 먹지?
-              </Link>
-            </div>
+            </Card>
           )}
-        </Card>
 
-        {showExtraFollowUp && todayVisit && (
-          <Card className="min-w-full snap-start">
-            <p className="text-sm font-semibold text-brand-dark">오늘 다녀온 식당</p>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-ink">{todayVisit.restaurantName}</h2>
-            <VisitMeta visit={todayVisit} distanceM={distanceM} />
-            {todayMealRecord && (
-              <p className="mt-2 text-sm tabular-nums text-ink-muted">
-                {todayMealRecord.menuName} · {todayMealRecord.paidPrice.toLocaleString("ko-KR")}원
-              </p>
-            )}
-            <ReviewLink todayVisit={todayVisit} hasTodayReview={hasTodayReview} className="mt-5 w-full" />
-            <CancelVisitButton className="mt-2" />
-          </Card>
-        )}
+          {showReviewSlide && todayVisit && (
+            <Card aria-hidden={activeSlide !== (showContextSlide ? 2 : 1)} className="w-full shrink-0">
+              <p className="text-sm font-semibold text-brand-dark">오늘 다녀온 식당</p>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-ink">{todayVisit.restaurantName}</h2>
+              <VisitMeta visit={todayVisit} distanceM={distanceM} />
+              {todayMealRecord && (
+                <p className="mt-2 text-sm tabular-nums text-ink-muted">
+                  {todayMealRecord.menuName} · {todayMealRecord.paidPrice.toLocaleString("ko-KR")}원
+                </p>
+              )}
+              <ReviewLink todayVisit={todayVisit} hasTodayReview={false} className="mt-5 w-full" />
+            </Card>
+          )}
+        </div>
       </div>
+
+      {slideCount > 1 && (
+        <div className="mt-3 flex items-center justify-center gap-3">
+          <Button type="button" variant="secondary" size="compact" onClick={() => moveToSlide(activeSlide - 1)} aria-label="이전 Hero">
+            이전
+          </Button>
+          <div className="flex gap-2" aria-label={`Hero ${activeSlide + 1} / ${slideCount}`}>
+            {Array.from({ length: slideCount }, (_, index) => (
+              <button
+                key={index}
+                type="button"
+                aria-label={`${index + 1}번째 Hero`}
+                aria-current={index === activeSlide ? "true" : undefined}
+                onClick={() => moveToSlide(index)}
+                className={`h-2.5 w-2.5 rounded-full transition ${index === activeSlide ? "bg-brand-dark" : "bg-line"}`}
+              />
+            ))}
+          </div>
+          <Button type="button" variant="secondary" size="compact" onClick={() => moveToSlide(activeSlide + 1)} aria-label="다음 Hero">
+            다음
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

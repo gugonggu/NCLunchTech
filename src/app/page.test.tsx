@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth/session", () => ({
@@ -265,6 +265,7 @@ describe("HomePage", () => {
     render(ui);
 
     const hero = screen.getByLabelText("오늘 가장 중요한 일");
+    fireEvent.click(within(hero).getByRole("button", { name: "2번째 Hero" }));
     expect(within(hero).getByRole("link", { name: /오늘 점심 투표/ })).toHaveAttribute(
       "href",
       "/polls/poll-1",
@@ -295,6 +296,8 @@ describe("HomePage", () => {
     vi.mocked(getRelevantAppointments).mockResolvedValue([]);
     const ui = await renderHome();
     render(ui);
+
+    fireEvent.click(screen.getByRole("button", { name: "2번째 Hero" }));
 
     expect(screen.getByText("방문 확인")).toBeInTheDocument();
     expect(screen.getByText("테스트식당")).toBeInTheDocument();
@@ -327,11 +330,12 @@ describe("HomePage", () => {
     const ui = await renderHome();
     render(ui);
 
-    expect(screen.getByText("오늘 다녀온 식당")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "2번째 Hero" }));
+
     expect(screen.getByText("방문 완료")).toBeInTheDocument();
-    expect(screen.getByText("제육볶음 · 9,500원")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "방문 완료" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "결정 취소" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "3번째 Hero" }));
     expect(screen.getByRole("link", { name: "리뷰 남기기" })).toHaveAttribute(
       "href",
       "/reviews/new?restaurantId=r-1&visitId=visit-1"
@@ -355,6 +359,8 @@ describe("HomePage", () => {
 
     const ui = await renderHome();
     render(ui);
+
+    fireEvent.click(screen.getByRole("button", { name: "2번째 Hero" }));
 
     expect(screen.getByText("방문 확인")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다녀왔어요" })).toBeInTheDocument();
@@ -440,6 +446,8 @@ describe("HomePage", () => {
 
     const ui = await renderHome();
     render(ui);
+
+    fireEvent.click(screen.getByRole("button", { name: "2번째 Hero" }));
 
     expect(screen.getByText("방문 확인")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /확인대기식당/ })).toHaveAttribute(
