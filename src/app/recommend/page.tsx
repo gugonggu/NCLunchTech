@@ -32,9 +32,11 @@ import {
   getVisitedRestaurantIds,
 } from "@/lib/collection/queries";
 import { decideRestaurant } from "@/app/visits/actions";
-import { rerollRecommendation, resetExclusions } from "./actions";
+import { rerollRecommendation, rerollRoulette, resetExclusions } from "./actions";
 import { RecommendationFilters } from "./RecommendationFilters";
 import { ResponsiveFilterPanel } from "./ResponsiveFilterPanel";
+import { RouletteResult } from "./RouletteResult";
+import { buildRouletteUrl } from "@/lib/recommend/urls";
 
 interface RecommendSearchParams {
   q?: string;
@@ -48,6 +50,7 @@ interface RecommendSearchParams {
   preferGoodRating?: string;
   preferFast?: string;
   preferUnvisited?: string;
+  roulette?: string;
 }
 
 export default async function RecommendPage({
@@ -56,6 +59,7 @@ export default async function RecommendPage({
   searchParams: Promise<RecommendSearchParams>;
 }) {
   const rawParams = await searchParams;
+  const rouletteMode = rawParams.roulette === "on";
 
   const normalized = normalizeRecommendParams({
     restaurantName: rawParams.q,
@@ -264,6 +268,16 @@ export default async function RecommendPage({
                   </p>
                 )}
 
+                {rouletteMode ? (
+                  <RouletteResult
+                    candidates={filtered.map((candidate) => candidate.name)}
+                    restaurantId={result.main.id}
+                    restaurantName={result.main.name}
+                    decideAction={decideRestaurant.bind(null, result.main.id)}
+                    rerollAction={rerollRoulette.bind(null, result.main.id, conditions)}
+                  />
+                ) : (
+                  <>
                 <RecommendationCard
                   restaurant={result.main}
                   photoUrl={photoUrls.get(result.main.id) ?? null}
@@ -300,6 +314,13 @@ export default async function RecommendPage({
                     </Button>
                   </form>
 
+                  <Link
+                    href={`${buildRouletteUrl(conditions)}${buildRouletteUrl(conditions).includes("?") ? "&" : "?"}roulette=on`}
+                    className={buttonStyles({ variant: "secondary", block: true })}
+                  >
+                    룰렛 모드
+                  </Link>
+
                   {showResetButton && (
                     <form action={resetExclusions.bind(null, conditions)} className="flex-1">
                       <Button type="submit" variant="ghost" block>
@@ -308,6 +329,8 @@ export default async function RecommendPage({
                     </form>
                   )}
                 </div>
+                  </>
+                )}
               </>
             )
           )}

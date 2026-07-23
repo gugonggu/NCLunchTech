@@ -11,6 +11,7 @@ interface NewPollSearchParams {
   type?: string;
   q?: string;
   restaurantId?: string;
+  selectedRestaurantId?: string;
   status?: string;
 }
 
@@ -19,7 +20,7 @@ export default async function NewPollPage({
 }: {
   searchParams: Promise<NewPollSearchParams>;
 }) {
-  const { type, q, restaurantId, status } = await searchParams;
+  const { type, q, restaurantId, selectedRestaurantId, status } = await searchParams;
 
   const employee = await getCurrentEmployee();
   if (!employee) {
@@ -95,7 +96,7 @@ export default async function NewPollPage({
               {(restaurants ?? []).map((r) => (
                 <li key={r.id}>
                   <label className="flex items-center gap-3 rounded-card bg-surface px-4 py-3 shadow-card">
-                    <input type="checkbox" name="restaurantIds" value={r.id} />
+                    <input type="checkbox" name="restaurantIds" value={r.id} defaultChecked={selectedRestaurantId === r.id} />
                     <span>
                       <span className="block font-semibold">{r.name}</span>
                       <span className="block text-sm text-ink-muted">
