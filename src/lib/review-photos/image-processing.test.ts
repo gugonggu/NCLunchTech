@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import sharp from "sharp";
-import { processPhotoBuffer } from "./image-processing";
+import { createPhotoUploadBlob, processPhotoBuffer } from "./image-processing";
 
 async function makeTestImage(width: number, height: number, withExif: boolean) {
   const image = sharp({
@@ -18,6 +18,15 @@ async function makeTestImage(width: number, height: number, withExif: boolean) {
 }
 
 describe("processPhotoBuffer", () => {
+  it("preserves binary JPEG bytes in the storage upload body", async () => {
+    const jpegBytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+
+    const uploadBody = createPhotoUploadBlob(jpegBytes, "image/jpeg");
+
+    expect(uploadBody.type).toBe("image/jpeg");
+    expect(Buffer.from(await uploadBody.arrayBuffer())).toEqual(jpegBytes);
+  });
+
   it("작은 이미지는 확대하지 않고 그대로 둔다(비율 유지)", async () => {
     const original = await makeTestImage(400, 300, false);
     const processed = await processPhotoBuffer(original, "image/jpeg");

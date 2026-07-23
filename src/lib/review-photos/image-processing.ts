@@ -2,6 +2,10 @@ import "server-only";
 import sharp from "sharp";
 import { PHOTO_RESIZE_MAX_DIMENSION } from "./validation";
 
+export function createPhotoUploadBlob(buffer: Buffer, mimeType: string): Blob {
+  return new Blob([new Uint8Array(buffer)], { type: mimeType });
+}
+
 /**
  * 업로드된 이미지를 최대 1600px(긴 변 기준)로 축소하고 재인코딩한다.
  * sharp는 출력 시 원본 메타데이터(EXIF 포함 GPS 위치정보)를 기본적으로 버리므로,

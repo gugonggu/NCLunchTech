@@ -14,7 +14,7 @@ import {
   type MealStatusCode,
 } from "@/lib/meals/validation";
 import { countReviewPhotos, getPhotoForOwnershipCheck } from "@/lib/review-photos/queries";
-import { processPhotoBuffer } from "@/lib/review-photos/image-processing";
+import { createPhotoUploadBlob, processPhotoBuffer } from "@/lib/review-photos/image-processing";
 import {
   MAX_PHOTOS_PER_REVIEW,
   MAX_PHOTO_BYTES,
@@ -73,7 +73,7 @@ async function saveReviewPhoto(
   const storagePath = buildPhotoStoragePath(reviewId, file.type, crypto.randomUUID());
   const { error: uploadError } = await supabase.storage
     .from(REVIEW_PHOTOS_BUCKET)
-    .upload(storagePath, processedBuffer, { contentType: file.type });
+    .upload(storagePath, createPhotoUploadBlob(processedBuffer, file.type), { contentType: file.type });
 
   if (uploadError) {
     throw new Error("사진 업로드에 실패했습니다.");
@@ -355,7 +355,7 @@ export async function uploadReviewPhoto(restaurantId: string, formData: FormData
   const storagePath = buildPhotoStoragePath(review.id, file.type, crypto.randomUUID());
   const { error: uploadError } = await supabase.storage
     .from(REVIEW_PHOTOS_BUCKET)
-    .upload(storagePath, processedBuffer, { contentType: file.type });
+    .upload(storagePath, createPhotoUploadBlob(processedBuffer, file.type), { contentType: file.type });
 
   if (uploadError) {
     throw new Error("사진 업로드에 실패했습니다.");
