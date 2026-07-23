@@ -266,25 +266,34 @@ export async function upsertReview(
     redirectToForm(restaurantId, "invalid_input");
   }
 
-  const { data: savedReview, error } = await supabase.from("reviews").upsert(
-    {
-      employee_id: employee.id,
-      restaurant_id: restaurantId,
-      taste_rating: parsed.data.tasteRating,
-      speed_rating: parsed.data.speedRating,
-      price_rating: parsed.data.priceRating,
-      solo_fit_rating: parsed.data.soloFitRating,
-      revisit_intent: parsed.data.revisitIntent,
-      portion_rating: parsed.data.portionRating ?? null,
-      crowdedness_rating: parsed.data.crowdednessRating ?? null,
-      group_fit_rating: parsed.data.groupFitRating ?? null,
-      cleanliness_rating: parsed.data.cleanlinessRating ?? null,
-      tags: parsed.data.tags && parsed.data.tags.length > 0 ? parsed.data.tags : null,
-      one_line_review: parsed.data.oneLineReview ?? null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "employee_id,restaurant_id" }
-  ).select("id").maybeSingle();
+  const values = {
+    taste_rating: parsed.data.tasteRating,
+    speed_rating: parsed.data.speedRating,
+    price_rating: parsed.data.priceRating,
+    solo_fit_rating: parsed.data.soloFitRating,
+    revisit_intent: parsed.data.revisitIntent,
+    portion_rating: parsed.data.portionRating ?? null,
+    crowdedness_rating: parsed.data.crowdednessRating ?? null,
+    group_fit_rating: parsed.data.groupFitRating ?? null,
+    cleanliness_rating: parsed.data.cleanlinessRating ?? null,
+    tags: parsed.data.tags && parsed.data.tags.length > 0 ? parsed.data.tags : null,
+    one_line_review: parsed.data.oneLineReview ?? null,
+    updated_at: new Date().toISOString(),
+  };
+  const { data: existingReview, error: existingError } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("employee_id", employee.id)
+    .eq("restaurant_id", restaurantId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error("리뷰 저장에 실패했습니다.");
+  }
+
+  const { data: savedReview, error } = existingReview
+    ? await supabase.from("reviews").update(values).eq("id", existingReview.id).eq("employee_id", employee.id).select("id").maybeSingle()
+    : await supabase.from("reviews").insert({ ...values, employee_id: employee.id, restaurant_id: restaurantId }).select("id").maybeSingle();
 
   if (error || !savedReview) {
     throw new Error("리뷰 저장에 실패했습니다.");
