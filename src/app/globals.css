@@ -36,6 +36,13 @@ body {
   font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
 }
 
+button:not(:disabled),
+a[href],
+[role="button"],
+summary {
+  cursor: pointer;
+}
+
 :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-brand) 38%, transparent);
   outline-offset: 2px;
