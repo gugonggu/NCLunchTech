@@ -11,6 +11,7 @@ describe("RouletteResult", () => {
     expect(screen.getByTestId("roulette-wheel")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "룰렛 돌리기" }));
+    expect(screen.getByTestId("roulette-wheel")).toHaveStyle({ transform: "rotate(1800deg)" });
     act(() => vi.advanceTimersByTime(1200));
 
     expect(screen.getAllByText("중식당")).toHaveLength(2);

@@ -40,7 +40,7 @@ export function RouletteResult({
     if (spinning) return;
     setDone(false);
     setSpinning(true);
-    setRotation((current) => current + 1800 + (360 - winnerIndex * sector - sector / 2));
+    setRotation((current) => current + 1800 + (270 - winnerIndex * sector - sector / 2));
   }
 
   return (
@@ -55,7 +55,7 @@ export function RouletteResult({
           style={{ background, transform: `rotate(${rotation}deg)` }}
         >
           {wheelCandidates.map((candidate, index) => (
-            <span key={candidate} className="absolute left-1/2 top-1/2 w-[42%] origin-left -translate-y-1/2 text-left text-xs font-extrabold leading-tight text-ink" style={{ transform: `rotate(${index * sector + sector / 2}deg) translateX(20%)` }}>
+            <span key={candidate} className="absolute left-1/2 top-1/2 w-16 origin-left -translate-y-1/2 text-center text-[11px] font-extrabold leading-tight text-ink" style={{ transform: `rotate(${index * sector + sector / 2}deg) translateX(68px)` }}>
               {candidate}
             </span>
           ))}
