@@ -84,6 +84,7 @@ export function normalizeReviewFormData(formData: FormData) {
 /** 리뷰 화면(?reviewStatus=)에 전달되는 안내 문구. 허용 목록에 없는 값은 화면에 표시하지 않는다. */
 export const REVIEW_STATUS_MESSAGES = {
   saved: "리뷰를 저장했어요.",
+  deleted: "리뷰를 삭제했어요.",
   invalid_input: "입력값을 다시 확인해주세요.",
   not_visited: "방문한 적 있는 식당만 리뷰를 남길 수 있어요.",
   not_found: "존재하지 않는 식당이에요.",

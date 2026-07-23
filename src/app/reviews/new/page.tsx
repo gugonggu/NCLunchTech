@@ -10,7 +10,7 @@ import { getReviewPhotos } from "@/lib/review-photos/queries";
 import { MAX_PHOTOS_PER_REVIEW, REVIEW_PHOTO_MESSAGES, isReviewPhotoStatusCode } from "@/lib/review-photos/validation";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
-import { deleteReviewPhoto, uploadReviewPhoto, upsertReview } from "./actions";
+import { deleteReview, deleteReviewPhoto, uploadReviewPhoto, upsertReview } from "./actions";
 import { MealRecordForm } from "./MealRecordForm";
 
 interface NewReviewSearchParams {
@@ -243,6 +243,14 @@ export default async function NewReviewPage({
           {existing ? "리뷰 수정 저장" : "리뷰 저장"}
         </button>
       </form>
+
+      {existing && (
+        <form action={deleteReview.bind(null, restaurantId)}>
+          <button type="submit" className={buttonStyles({ variant: "danger", block: true })}>
+            리뷰 삭제
+          </button>
+        </form>
+      )}
 
       {existing && (
         <section className="flex flex-col gap-3">

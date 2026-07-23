@@ -23,4 +23,18 @@ describe("mapManagedMealRecord", () => {
       createdAt: "2026-07-23T03:00:00.000Z",
     });
   });
+
+  it("maps the single restaurant object returned by the meal-record relationship", () => {
+    expect(
+      mapManagedMealRecord({
+        id: "record-2",
+        restaurant_id: "restaurant-2",
+        menu_item_id: null,
+        menu_name_snapshot: "비빔밥",
+        paid_price: 9000,
+        created_at: "2026-07-23T03:00:00.000Z",
+        restaurants: { name: "단일 객체 식당" },
+      }),
+    ).toMatchObject({ restaurantName: "단일 객체 식당" });
+  });
 });

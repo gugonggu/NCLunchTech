@@ -81,4 +81,35 @@ describe("NewReviewPage", () => {
 
     expect(container.querySelector('input[type="file"][name="photo"]')).toBeInTheDocument();
   });
+
+  it("offers a delete action when editing the employee's existing review", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "tester" });
+    mockRestaurantMaybeSingle.mockResolvedValue({
+      data: { id: "r-1", name: "Existing Review", category: "Korean" },
+    });
+    vi.mocked(hasCompletedVisit).mockResolvedValue(true);
+    vi.mocked(getMyReview).mockResolvedValue({
+      id: "review-1",
+      tasteRating: 4,
+      speedRating: 4,
+      priceRating: 4,
+      soloFitRating: 4,
+      revisitIntent: "maybe",
+      portionRating: null,
+      crowdednessRating: null,
+      groupFitRating: null,
+      cleanlinessRating: null,
+      tags: null,
+      oneLineReview: null,
+    });
+    vi.mocked(getReviewPhotos).mockResolvedValue([]);
+    vi.mocked(getCompletedMealSource).mockResolvedValue(null);
+
+    const ui = await NewReviewPage({
+      searchParams: Promise.resolve({ restaurantId: "r-1" }),
+    });
+    const { getByRole } = render(ui);
+
+    expect(getByRole("button", { name: "리뷰 삭제" })).toBeInTheDocument();
+  });
 });

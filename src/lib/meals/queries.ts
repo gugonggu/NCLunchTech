@@ -98,14 +98,16 @@ interface ManagedMealRecordRow {
   menu_name_snapshot: string;
   paid_price: number;
   created_at: string;
-  restaurants: { name: string }[] | null;
+  restaurants: { name: string } | { name: string }[] | null;
 }
 
 export function mapManagedMealRecord(row: ManagedMealRecordRow): ManagedMealRecord {
+  const restaurant = Array.isArray(row.restaurants) ? row.restaurants[0] : row.restaurants;
+
   return {
     id: row.id,
     restaurantId: row.restaurant_id,
-    restaurantName: row.restaurants?.[0]?.name ?? "알 수 없는 식당",
+    restaurantName: restaurant?.name ?? "알 수 없는 식당",
     menuItemId: row.menu_item_id,
     menuName: row.menu_name_snapshot,
     paidPrice: row.paid_price,

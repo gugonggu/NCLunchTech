@@ -13,7 +13,7 @@ import {
   normalizeMealRecordFormData,
   type MealStatusCode,
 } from "@/lib/meals/validation";
-import { countReviewPhotos, getPhotoForOwnershipCheck } from "@/lib/review-photos/queries";
+import { countReviewPhotos, getPhotoForOwnershipCheck, getStoragePathsForReviews } from "@/lib/review-photos/queries";
 import { createPhotoUploadBlob, processPhotoBuffer } from "@/lib/review-photos/image-processing";
 import {
   MAX_PHOTOS_PER_REVIEW,
@@ -308,6 +308,48 @@ export async function upsertReview(
   }
 
   redirect(`/restaurants/${restaurantId}?reviewStatus=saved`);
+}
+
+export async function deleteReview(restaurantId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/reviews/new?restaurantId=${restaurantId}`)}`);
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: review, error: reviewError } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("employee_id", employee.id)
+    .eq("restaurant_id", restaurantId)
+    .maybeSingle();
+
+  if (reviewError) {
+    throw new Error("리뷰 조회에 실패했습니다.");
+  }
+  if (!review) {
+    redirectToForm(restaurantId, "not_found");
+  }
+
+  const storagePaths = await getStoragePathsForReviews([review.id]);
+  if (storagePaths.length > 0) {
+    const { error: storageError } = await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove(storagePaths);
+    if (storageError) {
+      throw new Error("리뷰 사진 삭제에 실패했습니다.");
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from("reviews")
+    .delete()
+    .eq("id", review.id)
+    .eq("employee_id", employee.id);
+
+  if (deleteError) {
+    throw new Error("리뷰 삭제에 실패했습니다.");
+  }
+
+  redirectToForm(restaurantId, "deleted");
 }
 
 export async function uploadReviewPhoto(restaurantId: string, formData: FormData) {
