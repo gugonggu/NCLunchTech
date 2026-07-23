@@ -7,6 +7,8 @@ import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
 import { getMonthlySummary } from "@/lib/monthly-summary-queries";
 import { getSeasonalBadges } from "@/lib/seasonal-badges-queries";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getMealRecordsForEmployee } from "@/lib/meals/queries";
+import { MealRecordList } from "@/components/me/MealRecordList";
 import { LogoutButton } from "../LogoutButton";
 import { updateMyProfile } from "./actions";
 
@@ -29,10 +31,16 @@ const PROFILE_STATUS_MESSAGES = {
   nickname_taken: "이미 사용 중인 닉네임입니다.",
 } as const;
 
+const MEAL_STATUS_MESSAGES = {
+  saved: "식사 기록을 저장했어요.",
+  deleted: "식사 기록을 삭제했어요.",
+  not_found: "식사 기록을 찾을 수 없어요.",
+} as const;
+
 export default async function MePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ status?: string }>;
+  searchParams?: Promise<{ status?: string; mealStatus?: string }>;
 }) {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/login?returnTo=%2Fme");
@@ -41,6 +49,10 @@ export default async function MePage({
   const profileStatus =
     params?.status && Object.hasOwn(PROFILE_STATUS_MESSAGES, params.status)
       ? PROFILE_STATUS_MESSAGES[params.status as keyof typeof PROFILE_STATUS_MESSAGES]
+      : null;
+  const mealStatus =
+    params?.mealStatus && Object.hasOwn(MEAL_STATUS_MESSAGES, params.mealStatus)
+      ? MEAL_STATUS_MESSAGES[params.mealStatus as keyof typeof MEAL_STATUS_MESSAGES]
       : null;
 
   const supabase = createServiceRoleClient();
@@ -117,10 +129,11 @@ export default async function MePage({
     { label: "즐겨찾기", value: favoritesResult.count ?? 0 },
   ];
 
-  const [leaderboard, monthlySummary, seasonalBadges] = await Promise.all([
+  const [leaderboard, monthlySummary, seasonalBadges, mealRecords] = await Promise.all([
     getMonthlyLeaderboard(employee.id),
     getMonthlySummary(employee.id),
     getSeasonalBadges(employee.id),
+    getMealRecordsForEmployee(employee.id),
   ]);
   const myRanks = (Object.entries(RANK_CATEGORY_LABELS) as [keyof typeof RANK_CATEGORY_LABELS, string][])
     .map(([key, label]) => ({ label, myRank: leaderboard.categories[key].myRank }))
@@ -189,6 +202,11 @@ export default async function MePage({
           </div>
         ))}
       </section>
+
+      {mealStatus && (
+        <p className="rounded-control bg-brand-soft px-4 py-3 text-sm font-semibold text-brand-dark">{mealStatus}</p>
+      )}
+      <MealRecordList records={mealRecords} />
 
       <Link href="/notifications" className={buttonStyles({ variant: "secondary", block: true })}>
         알림 보기
