@@ -356,8 +356,34 @@ export default async function AppointmentDetailPage({
                   <option value={1}>1원</option>
                   <option value={10}>10원</option>
                   <option value={100}>100원</option>
+                  <option value={1000}>1,000원</option>
                 </select>
               </label>
+              <fieldset className="flex flex-col gap-2 text-sm text-ink-muted">
+                <legend>정산 방식</legend>
+                <label className="flex items-center gap-2 text-ink">
+                  <input type="radio" name="splitMode" value="equal" defaultChecked={settlement?.splitMode !== "custom"} /> 균등 분할
+                </label>
+                <label className="flex items-center gap-2 text-ink">
+                  <input type="radio" name="splitMode" value="custom" defaultChecked={settlement?.splitMode === "custom"} /> 인원별 금액 직접 입력
+                </label>
+              </fieldset>
+              <label className="flex flex-col gap-1 text-sm text-ink-muted">
+                반올림 차액 담당자
+                <select name="roundingEmployeeId" defaultValue={settlement?.roundingEmployeeId ?? settlement?.payerEmployeeId ?? employee.id} className="rounded-control border border-line px-4 py-3 text-base text-ink">
+                  {settlementAttendees.map((a) => <option key={a.employeeId} value={a.employeeId}>{a.employeeNickname}</option>)}
+                </select>
+              </label>
+              <div className="flex flex-col gap-2 rounded-control bg-surface-muted p-3">
+                <p className="text-sm font-semibold text-ink">인원별 금액 (직접 입력)</p>
+                {settlementAttendees.map((a) => (
+                  <label key={a.employeeId} className="flex items-center justify-between gap-3 text-sm text-ink-muted">
+                    {a.employeeNickname}
+                    <input type="number" name={`share-${a.employeeId}`} inputMode="numeric" min={0} defaultValue={settlement?.shares.find((share) => share.employeeId === a.employeeId)?.amount} className="w-36 rounded-control border border-line px-3 py-2 text-right text-base text-ink" />
+                  </label>
+                ))}
+                <p className="text-xs text-ink-muted">직접 입력 방식에서는 각 금액의 합계가 총 결제 금액과 같아야 합니다.</p>
+              </div>
               <button type="submit" className="rounded-control bg-surface-muted px-4 py-3 text-sm font-semibold transition active:scale-[0.98]">
                 {settlement ? "정산 다시 계산하기" : "정산하기"}
               </button>

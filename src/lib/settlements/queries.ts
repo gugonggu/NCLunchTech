@@ -51,6 +51,8 @@ export interface SettlementDetail {
   payerEmployeeId: string;
   totalAmount: number;
   roundingUnit: number;
+  splitMode: "equal" | "custom";
+  roundingEmployeeId: string | null;
   updatedAt: string;
   shares: SettlementShareDetail[];
 }
@@ -59,7 +61,7 @@ export async function getSettlementForAppointment(appointmentId: string): Promis
   const supabase = createServiceRoleClient();
   const { data: settlement } = await supabase
     .from("settlements")
-    .select("id, created_by, payer_employee_id, total_amount, rounding_unit, updated_at")
+    .select("id, created_by, payer_employee_id, total_amount, rounding_unit, split_mode, rounding_employee_id, updated_at")
     .eq("appointment_id", appointmentId)
     .maybeSingle();
 
@@ -79,6 +81,8 @@ export async function getSettlementForAppointment(appointmentId: string): Promis
     payerEmployeeId: settlement.payer_employee_id,
     totalAmount: settlement.total_amount,
     roundingUnit: settlement.rounding_unit,
+    splitMode: settlement.split_mode as "equal" | "custom",
+    roundingEmployeeId: settlement.rounding_employee_id,
     updatedAt: settlement.updated_at,
     shares: (shares ?? []).map((s) => {
       const employee = s.employees as unknown as { nickname: string } | null;
@@ -99,6 +103,8 @@ export async function upsertSettlement(params: {
   payerEmployeeId: string;
   totalAmount: number;
   roundingUnit: number;
+  splitMode: "equal" | "custom";
+  roundingEmployeeId: string | null;
   shares: Map<string, number>;
 }): Promise<{ isNew: boolean }> {
   const supabase = createServiceRoleClient();
@@ -120,6 +126,8 @@ export async function upsertSettlement(params: {
         payer_employee_id: params.payerEmployeeId,
         total_amount: params.totalAmount,
         rounding_unit: params.roundingUnit,
+        split_mode: params.splitMode,
+        rounding_employee_id: params.roundingEmployeeId,
         updated_at: now,
       })
       .eq("id", settlementId);
@@ -138,6 +146,8 @@ export async function upsertSettlement(params: {
         payer_employee_id: params.payerEmployeeId,
         total_amount: params.totalAmount,
         rounding_unit: params.roundingUnit,
+        split_mode: params.splitMode,
+        rounding_employee_id: params.roundingEmployeeId,
       })
       .select("id")
       .single();

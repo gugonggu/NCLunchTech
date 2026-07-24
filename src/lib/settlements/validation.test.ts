@@ -77,6 +77,20 @@ describe("calculateSettlementShares", () => {
     expect(shares.size).toBe(2);
     expect(sum(shares)).toBe(10000);
   });
+
+  it("지정한 사람이 1,000원 단위 반올림 차액을 부담한다", () => {
+    const shares = calculateSettlementShares({
+      totalAmount: 38000,
+      participantIds: ["a", "b", "c"],
+      payerEmployeeId: "a",
+      roundingEmployeeId: "c",
+      roundingUnit: 1000,
+    });
+    expect(shares.get("a")).toBe(13000);
+    expect(shares.get("b")).toBe(13000);
+    expect(shares.get("c")).toBe(12000);
+    expect(sum(shares)).toBe(38000);
+  });
 });
 
 describe("buildSettlementClipboardText", () => {

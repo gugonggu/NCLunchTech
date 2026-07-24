@@ -653,6 +653,8 @@ export async function upsertSettlementAction(appointmentId: string, formData: Fo
     payerEmployeeId: formData.get("payerEmployeeId"),
     totalAmount: formData.get("totalAmount"),
     roundingUnit: formData.get("roundingUnit"),
+    splitMode: formData.get("splitMode"),
+    roundingEmployeeId: String(formData.get("roundingEmployeeId") ?? formData.get("payerEmployeeId") ?? "") || undefined,
   });
   if (!parsed.success) {
     redirectWithSettlementStatus(appointmentId, "invalid_input");
@@ -662,12 +664,20 @@ export async function upsertSettlementAction(appointmentId: string, formData: Fo
     redirectWithSettlementStatus(appointmentId, "invalid_payer");
   }
 
-  const shares = calculateSettlementShares({
-    totalAmount: parsed.data.totalAmount,
-    participantIds: attendees.map((a) => a.employeeId),
-    payerEmployeeId: parsed.data.payerEmployeeId,
-    roundingUnit: parsed.data.roundingUnit,
-  });
+  const attendeeIds = attendees.map((a) => a.employeeId);
+  if (parsed.data.splitMode === "equal" && (!parsed.data.roundingEmployeeId || !attendeeIds.includes(parsed.data.roundingEmployeeId))) {
+    redirectWithSettlementStatus(appointmentId, "invalid_input");
+  }
+  const shares = parsed.data.splitMode === "equal"
+    ? calculateSettlementShares({ totalAmount: parsed.data.totalAmount, participantIds: attendeeIds, payerEmployeeId: parsed.data.payerEmployeeId, roundingEmployeeId: parsed.data.roundingEmployeeId, roundingUnit: parsed.data.roundingUnit })
+    : new Map(attendeeIds.map((attendeeId) => [attendeeId, Number(formData.get(`share-${attendeeId}`))]));
+  if (
+    parsed.data.splitMode === "custom" &&
+    [...shares.values()].some((amount) => !Number.isInteger(amount) || amount < 0) ||
+    [...shares.values()].reduce((sum, amount) => sum + amount, 0) !== parsed.data.totalAmount
+  ) {
+    redirectWithSettlementStatus(appointmentId, "invalid_input");
+  }
 
   const { isNew } = await upsertSettlement({
     appointmentId,
@@ -675,6 +685,8 @@ export async function upsertSettlementAction(appointmentId: string, formData: Fo
     payerEmployeeId: parsed.data.payerEmployeeId,
     totalAmount: parsed.data.totalAmount,
     roundingUnit: parsed.data.roundingUnit,
+    splitMode: parsed.data.splitMode,
+    roundingEmployeeId: parsed.data.splitMode === "equal" ? parsed.data.roundingEmployeeId ?? null : null,
     shares,
   });
 

@@ -1,16 +1,18 @@
 import { z } from "zod";
 
-export const ROUNDING_UNITS = [1, 10, 100] as const;
+export const ROUNDING_UNITS = [1, 10, 100, 1000] as const;
 export type RoundingUnit = (typeof ROUNDING_UNITS)[number];
 
 export const MAX_SETTLEMENT_AMOUNT = 10_000_000;
 
-const roundingUnitSchema = z.union([z.literal(1), z.literal(10), z.literal(100)]);
+const roundingUnitSchema = z.union([z.literal(1), z.literal(10), z.literal(100), z.literal(1000)]);
 
 export const settlementInputSchema = z.object({
   payerEmployeeId: z.string().uuid(),
   totalAmount: z.coerce.number().int().min(1, "총 금액을 입력해주세요.").max(MAX_SETTLEMENT_AMOUNT),
   roundingUnit: z.coerce.number().pipe(roundingUnitSchema),
+  splitMode: z.enum(["equal", "custom"]).default("equal"),
+  roundingEmployeeId: z.string().uuid().optional(),
 });
 
 export type SettlementInput = z.infer<typeof settlementInputSchema>;
@@ -29,11 +31,12 @@ export function calculateSettlementShares(params: {
   totalAmount: number;
   participantIds: string[];
   payerEmployeeId: string;
+  roundingEmployeeId?: string;
   roundingUnit: number;
 }): Map<string, number> {
-  const { totalAmount, participantIds, payerEmployeeId, roundingUnit } = params;
+  const { totalAmount, participantIds, payerEmployeeId, roundingEmployeeId = payerEmployeeId, roundingUnit } = params;
   const uniqueIds = [...new Set(participantIds)];
-  const others = uniqueIds.filter((id) => id !== payerEmployeeId);
+  const others = uniqueIds.filter((id) => id !== roundingEmployeeId);
 
   const perPerson = uniqueIds.length > 0 ? roundToUnit(totalAmount / uniqueIds.length, roundingUnit) : 0;
 
@@ -43,7 +46,7 @@ export function calculateSettlementShares(params: {
     shares.set(id, perPerson);
     othersTotal += perPerson;
   }
-  shares.set(payerEmployeeId, totalAmount - othersTotal);
+  shares.set(roundingEmployeeId, totalAmount - othersTotal);
 
   return shares;
 }
