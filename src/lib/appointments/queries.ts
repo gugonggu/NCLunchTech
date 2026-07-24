@@ -235,7 +235,6 @@ export async function getRelevantAppointments(
       .select("id, scheduled_at, host_attendance_status, restaurants(name)")
       .eq("host_employee_id", employeeId)
       .eq("status", "active")
-      .is("host_attendance_status", null)
       .order("scheduled_at"),
     supabase
       .from("appointment_participants")
@@ -247,6 +246,9 @@ export async function getRelevantAppointments(
   const results: RelevantAppointment[] = [];
 
   for (const a of hosted ?? []) {
+    if (a.host_attendance_status === "completed" || a.host_attendance_status === "cancelled") {
+      continue;
+    }
     const restaurant = a.restaurants as unknown as { name: string } | null;
     if (!restaurant) {
       continue;
