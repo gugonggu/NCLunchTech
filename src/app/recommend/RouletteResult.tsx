@@ -17,6 +17,7 @@ import {
 export interface RouletteCandidate {
   id: string;
   name: string;
+  kakaoPlaceId?: string | null;
 }
 
 export function createEntries(candidates: RouletteCandidate[], initialWinnerId: string): RouletteEntry[] {
@@ -87,7 +88,8 @@ export function RouletteResult({
   }
 
   function rebuild() {
-    const nextEntries = createRandomEntries(rebuildCandidates?.length ? rebuildCandidates : candidates);
+    const nextEntries = createRandomEntries(rebuildCandidates ?? candidates);
+    if (nextEntries.length === 0) return;
     setEntries(nextEntries);
     setWinnerId(nextEntries[0]?.id ?? initialWinnerId);
     setDone(false);
@@ -149,6 +151,7 @@ export function RouletteResult({
 
       {done && winner ? <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <form action={decideAction.bind(null, winner.id)}><button type="submit" className="w-full rounded-control bg-brand px-4 py-3 text-sm font-semibold text-black">여기로 결정</button></form>
+        {winner.kakaoPlaceId ? <a href={`https://place.map.kakao.com/${winner.kakaoPlaceId}`} target="_blank" rel="noreferrer" className="rounded-control border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink">카카오맵에서 보기</a> : null}
         <Link href={`/appointments/new?restaurantId=${winner.id}`} className="rounded-control border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink">같이 먹기</Link>
         <Link href={`/polls/new?type=restaurant&selectedRestaurantId=${winner.id}`} className="rounded-control border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink sm:col-span-2">투표로 고르기</Link>
       </div> : null}

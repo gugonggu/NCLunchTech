@@ -12,6 +12,7 @@ vi.mock("@/lib/appointments/restaurant-search", () => ({
 
 import {
   normalizeRouletteRestaurantSearch,
+  searchAllRouletteRestaurants,
   searchRouletteRestaurants,
 } from "./restaurant-search";
 
@@ -32,5 +33,33 @@ describe("roulette restaurant search", () => {
 
     await expect(searchRouletteRestaurants(raw)).resolves.toBe(state);
     expect(mocks.search).toHaveBeenCalledWith(raw);
+  });
+
+  it("collects every page for randomized roulette rebuilding", async () => {
+    mocks.search.mockClear();
+    mocks.search
+      .mockResolvedValueOnce({
+        status: "ready",
+        items: [{ id: "1" }],
+        totalCount: 21,
+        page: 1,
+        totalPages: 2,
+        filters: {},
+      })
+      .mockResolvedValueOnce({
+        status: "ready",
+        items: [{ id: "2" }],
+        totalCount: 21,
+        page: 2,
+        totalPages: 2,
+        filters: {},
+      });
+
+    await expect(searchAllRouletteRestaurants({ q: "국밥" })).resolves.toEqual([
+      { id: "1" },
+      { id: "2" },
+    ]);
+    expect(mocks.search).toHaveBeenNthCalledWith(1, { q: "국밥", page: "1" });
+    expect(mocks.search).toHaveBeenNthCalledWith(2, { q: "국밥", page: "2" });
   });
 });

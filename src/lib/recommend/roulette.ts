@@ -3,6 +3,7 @@ export const MAX_ROULETTE_SLOTS = 10;
 export interface RouletteEntry {
   id: string;
   name: string;
+  kakaoPlaceId?: string | null;
   weight: number;
 }
 

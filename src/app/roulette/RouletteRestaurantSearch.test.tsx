@@ -39,4 +39,28 @@ describe("RouletteRestaurantSearch", () => {
     expect(await screen.findByRole("button", { name: "후보에 있음" })).toBeDisabled();
     expect(screen.getByText(/총 10칸이 모두 찼어요/)).toBeVisible();
   });
+
+  it("loads the next page of matching restaurants", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      const page = new URL(url, "http://localhost").searchParams.get("page");
+      return Promise.resolve(new Response(JSON.stringify({
+        status: "ready",
+        items: page === "2"
+          ? [{ id: "restaurant-2", name: "다음 식당", category: "한식", address: "서울", distanceM: 300, isOpenNow: true }]
+          : [{ id: "restaurant-1", name: "가까운 식당", category: "한식", address: "서울", distanceM: 120, isOpenNow: true }],
+        totalCount: 21,
+        page: Number(page),
+        totalPages: 2,
+      }), { status: 200 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<RouletteRestaurantSearch selectedIds={new Set()} canAdd onAddCandidate={vi.fn()} />);
+
+    expect(await screen.findByText("가까운 식당")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "다음 페이지" }));
+
+    expect(await screen.findByText("다음 식당")).toBeVisible();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("page=2"), expect.any(Object));
+  });
 });

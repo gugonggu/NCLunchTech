@@ -16,6 +16,8 @@ type SearchState =
   | { status: "empty" }
   | { status: "location-missing" | "error" };
 
+type AllCandidatesState = { status: "ready"; items: SearchItem[] };
+
 const initialFilters = { q: "", category: "", radius: "800", openNow: false, sort: "distance", page: 1 };
 
 export function RouletteRestaurantSearch({
@@ -32,7 +34,15 @@ export function RouletteRestaurantSearch({
   const [filters, setFilters] = useState(initialFilters);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState | null>(null);
+  const [allCandidates, setAllCandidates] = useState({ filterKey: "", items: [] as SearchItem[] });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
+  const rebuildFilterKey = JSON.stringify({
+    q: filters.q,
+    category: filters.category,
+    radius: filters.radius,
+    openNow: filters.openNow,
+    sort: filters.sort,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,10 +69,34 @@ export function RouletteRestaurantSearch({
   }, [filters]);
 
   useEffect(() => {
-    if (state?.status === "ready") {
-      onSearchCandidatesChange(state.items.filter((restaurant) => !excludedCategories.has(restaurant.category)));
-    }
-  }, [excludedCategories, onSearchCandidatesChange, state]);
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      radius: filters.radius,
+      sort: filters.sort,
+      page: "1",
+      all: "true",
+    });
+    if (filters.q) params.set("q", filters.q);
+    if (filters.category) params.set("category", filters.category);
+    if (filters.openNow) params.set("openNow", "on");
+
+    void fetch(`/api/roulette/restaurants?${params.toString()}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("roulette_rebuild_candidates_failed");
+        return response.json() as Promise<AllCandidatesState>;
+      })
+      .then((result) => setAllCandidates({ filterKey: rebuildFilterKey, items: result.items }))
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name !== "AbortError") setAllCandidates({ filterKey: rebuildFilterKey, items: [] });
+      });
+
+    return () => controller.abort();
+  }, [filters.category, filters.openNow, filters.q, filters.radius, filters.sort, rebuildFilterKey]);
+
+  useEffect(() => {
+    const matchingCandidates = allCandidates.filterKey === rebuildFilterKey ? allCandidates.items : [];
+    onSearchCandidatesChange(matchingCandidates.filter((restaurant) => !excludedCategories.has(restaurant.category)));
+  }, [allCandidates, excludedCategories, onSearchCandidatesChange, rebuildFilterKey]);
 
   return (
     <section className="rounded-card bg-surface p-4 shadow-card" aria-label="식당 검색 및 추가">
@@ -131,6 +165,11 @@ export function RouletteRestaurantSearch({
             </button>
           </div>;
         }) : null}
+        {state?.status === "ready" && state.totalPages > 1 ? <div className="flex items-center justify-between gap-2 pt-2">
+          <button type="button" onClick={() => setFilters((current) => ({ ...current, page: current.page - 1 }))} disabled={state.page === 1} className="rounded-control border border-line px-3 py-2 text-sm font-semibold disabled:opacity-40">이전 페이지</button>
+          <p className="text-sm text-ink-muted">{state.page} / {state.totalPages} 페이지</p>
+          <button type="button" onClick={() => setFilters((current) => ({ ...current, page: current.page + 1 }))} disabled={state.page === state.totalPages} className="rounded-control border border-line px-3 py-2 text-sm font-semibold disabled:opacity-40">다음 페이지</button>
+        </div> : null}
         {state?.status === "empty" ? <p className="text-sm text-ink-muted">조건에 맞는 활성 식당이 없어요.</p> : null}
         {state?.status === "location-missing" ? <p className="text-sm text-error">회사 위치 정보가 없어 거리 검색을 할 수 없어요.</p> : null}
         {state?.status === "error" ? <p className="text-sm text-error">식당 검색에 실패했어요. 다시 시도해 주세요.</p> : null}

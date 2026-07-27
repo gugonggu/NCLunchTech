@@ -9,7 +9,7 @@ export default async function RoulettePage() {
   const restaurants = await fetchAllRows((from, to) =>
     supabase
       .from("restaurants")
-      .select("id, name")
+      .select("id, name, kakao_place_id")
       .eq("is_active", true)
       .order("name")
       .range(from, to),
@@ -22,7 +22,14 @@ export default async function RoulettePage() {
         <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">점심 룰렛</h1>
       </header>
       {restaurants.length > 0 ? (
-        <RouletteWorkspace initialCandidates={restaurants} decideAction={decideRestaurant} />
+        <RouletteWorkspace
+          initialCandidates={restaurants.map(({ id, name, kakao_place_id }) => ({
+            id,
+            name,
+            kakaoPlaceId: kakao_place_id,
+          }))}
+          decideAction={decideRestaurant}
+        />
       ) : (
         <FeedbackState
           title="활성 식당이 없어요"
