@@ -32,7 +32,7 @@ import {
   getVisitedRestaurantIds,
 } from "@/lib/collection/queries";
 import { decideRestaurant } from "@/app/visits/actions";
-import { rerollRecommendation, rerollRoulette, resetExclusions } from "./actions";
+import { rerollRecommendation, resetExclusions } from "./actions";
 import { RecommendationFilters } from "./RecommendationFilters";
 import { ResponsiveFilterPanel } from "./ResponsiveFilterPanel";
 import { RouletteResult } from "./RouletteResult";
@@ -272,11 +272,9 @@ export default async function RecommendPage({
 
                 {rouletteMode ? (
                   <RouletteResult
-                    candidates={filtered.map((candidate) => candidate.name)}
-                    restaurantId={result.main.id}
-                    restaurantName={result.main.name}
-                    decideAction={decideRestaurant.bind(null, result.main.id)}
-                    rerollAction={rerollRoulette.bind(null, result.main.id, conditions)}
+                    candidates={filtered.map((candidate) => ({ id: candidate.id, name: candidate.name }))}
+                    initialWinnerId={result.main.id}
+                    decideAction={decideRestaurant}
                   />
                 ) : (
                   <>
