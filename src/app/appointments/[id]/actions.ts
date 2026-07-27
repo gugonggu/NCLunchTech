@@ -80,6 +80,9 @@ export async function respondToInvite(appointmentId: string, response: "accepted
   if (appointment.hostEmployeeId === employee.id) {
     redirectWithStatus(appointmentId, "not_host");
   }
+  if (response !== "accepted" && response !== "declined") {
+    redirectWithStatus(appointmentId, "invalid_input");
+  }
 
   const supabase = createServiceRoleClient();
   const existing = await getMyParticipant(appointmentId, employee.id);
@@ -90,14 +93,19 @@ export async function respondToInvite(appointmentId: string, response: "accepted
       redirectWithStatus(appointmentId, "already_responded");
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("appointment_participants")
       .update({ status: response, responded_at: now, updated_at: now })
       .eq("id", existing.id)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
 
     if (error) {
       throw new Error("응답 처리에 실패했습니다.");
+    }
+    if (!data) {
+      redirectWithStatus(appointmentId, "already_responded");
     }
   } else {
     const { error } = await supabase.from("appointment_participants").insert({
@@ -186,6 +194,9 @@ export async function decidePublicApplicant(
   if (appointment.hostEmployeeId !== employee.id) {
     redirectWithStatus(appointmentId, "not_host");
   }
+  if (decision !== "accepted" && decision !== "declined") {
+    redirectWithStatus(appointmentId, "invalid_input");
+  }
 
   const supabase = createServiceRoleClient();
   const { data: participant } = await supabase
@@ -253,14 +264,19 @@ export async function withdrawParticipation(appointmentId: string) {
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointment_participants")
     .update({ status: "cancelled", updated_at: now })
     .eq("id", existing.id)
-    .eq("status", "accepted");
+    .eq("status", "accepted")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("참여 취소에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "already_responded");
   }
 
   redirectWithStatus(appointmentId, "withdrawn");
@@ -324,15 +340,20 @@ export async function cancelAppointment(appointmentId: string) {
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .update({ status: "cancelled", cancelled_at: now, updated_at: now })
     .eq("id", appointmentId)
     .eq("host_employee_id", employee.id)
-    .eq("status", "active");
+    .eq("status", "active")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("약속 취소에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "cancelled_appointment");
   }
 
   await closeOpenPollsForAppointment(appointmentId);
@@ -363,7 +384,7 @@ export async function updateAppointmentSchedule(appointmentId: string, formData:
   }
 
   const supabase = createServiceRoleClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .update({
       scheduled_at: scheduledAt.toISOString(),
@@ -372,10 +393,15 @@ export async function updateAppointmentSchedule(appointmentId: string, formData:
     })
     .eq("id", appointmentId)
     .eq("host_employee_id", employee.id)
-    .eq("status", "active");
+    .eq("status", "active")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("약속 정보 변경에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "cancelled_appointment");
   }
 
   await notifyActiveParticipants(appointmentId, appointment.restaurantName, "appointment_updated");
@@ -522,15 +548,20 @@ export async function changeAppointmentRestaurant(appointmentId: string, restaur
     redirectWithStatus(appointmentId, "inactive_restaurant");
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .update({ restaurant_id: restaurantId, updated_at: new Date().toISOString() })
     .eq("id", appointmentId)
     .eq("host_employee_id", employee.id)
-    .eq("status", "active");
+    .eq("status", "active")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("식당 변경에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus(appointmentId, "cancelled_appointment");
   }
 
   // 식당이 바뀌면 이전 식당 메뉴 기준으로 만들어둔 메뉴 투표는 더 이상 유효하지 않다.
@@ -607,6 +638,7 @@ export async function createAppointmentMenuPoll(appointmentId: string, formData:
 
   const { error: optionsError } = await supabase.from("poll_options").insert(optionRows);
   if (optionsError) {
+    await supabase.from("polls").delete().eq("id", poll.id);
     throw new Error("투표 생성에 실패했습니다.");
   }
 

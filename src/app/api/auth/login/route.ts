@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkLoginAllowed, recordFailedAttempt, recordSuccessfulAttempt } from "@/lib/auth/lockout";
+import { checkLoginAllowed } from "@/lib/auth/lockout";
 import { verifyPin } from "@/lib/auth/pin";
 import { SESSION_COOKIE_NAME, createSession, sessionCookieOptions } from "@/lib/auth/session";
 import { loginSchema } from "@/lib/auth/validation";
@@ -49,15 +49,21 @@ export async function POST(request: Request) {
   }
 
   const pinMatches = await verifyPin(pin, employee.pin_hash);
-  const nextState = pinMatches ? recordSuccessfulAttempt() : recordFailedAttempt(check.nextState, now);
+  const { data: attemptResult, error: attemptError } = await supabase.rpc("record_employee_login_attempt", {
+    p_employee_id: employee.id,
+    p_succeeded: pinMatches,
+  });
 
-  await supabase
-    .from("employees")
-    .update({
-      failed_login_count: nextState.failedLoginCount,
-      locked_until: nextState.lockedUntil ? nextState.lockedUntil.toISOString() : null,
-    })
-    .eq("id", employee.id);
+  if (attemptError) {
+    return NextResponse.json({ ok: false, message: "로그인 처리 중 오류가 발생했습니다." }, { status: 500 });
+  }
+
+  if (attemptResult === "locked") {
+    return NextResponse.json(
+      { ok: false, message: "로그인 실패 횟수가 초과되어 잠겼습니다. 10분 후 다시 시도해주세요." },
+      { status: 423 }
+    );
+  }
 
   if (!pinMatches) {
     return NextResponse.json({ ok: false, message: INVALID_CREDENTIALS_MESSAGE }, { status: 401 });

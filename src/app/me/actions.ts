@@ -40,6 +40,9 @@ export async function updateMyProfile(formData: FormData) {
     .eq("id", employee.id);
 
   if (error) {
+    if (error.code === "23505") {
+      redirect("/me?status=nickname_taken");
+    }
     throw new Error("프로필 변경에 실패했습니다.");
   }
 

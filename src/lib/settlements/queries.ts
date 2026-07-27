@@ -108,67 +108,24 @@ export async function upsertSettlement(params: {
   shares: Map<string, number>;
 }): Promise<{ isNew: boolean }> {
   const supabase = createServiceRoleClient();
+  const { data, error } = await supabase.rpc("upsert_settlement", {
+    p_appointment_id: params.appointmentId,
+    p_created_by: params.createdBy,
+    p_payer_employee_id: params.payerEmployeeId,
+    p_total_amount: params.totalAmount,
+    p_rounding_unit: params.roundingUnit,
+    p_split_mode: params.splitMode,
+    p_rounding_employee_id: params.roundingEmployeeId,
+    p_shares: [...params.shares.entries()].map(([employeeId, amount]) => ({
+      employee_id: employeeId,
+      amount,
+      is_payer: employeeId === params.payerEmployeeId,
+    })),
+  }).maybeSingle();
 
-  const { data: existing } = await supabase
-    .from("settlements")
-    .select("id")
-    .eq("appointment_id", params.appointmentId)
-    .maybeSingle();
-
-  const now = new Date().toISOString();
-  let settlementId: string;
-
-  if (existing) {
-    settlementId = existing.id;
-    const { error } = await supabase
-      .from("settlements")
-      .update({
-        payer_employee_id: params.payerEmployeeId,
-        total_amount: params.totalAmount,
-        rounding_unit: params.roundingUnit,
-        split_mode: params.splitMode,
-        rounding_employee_id: params.roundingEmployeeId,
-        updated_at: now,
-      })
-      .eq("id", settlementId);
-
-    if (error) {
-      throw new Error("정산 저장에 실패했습니다.");
-    }
-
-    await supabase.from("settlement_shares").delete().eq("settlement_id", settlementId);
-  } else {
-    const { data, error } = await supabase
-      .from("settlements")
-      .insert({
-        appointment_id: params.appointmentId,
-        created_by: params.createdBy,
-        payer_employee_id: params.payerEmployeeId,
-        total_amount: params.totalAmount,
-        rounding_unit: params.roundingUnit,
-        split_mode: params.splitMode,
-        rounding_employee_id: params.roundingEmployeeId,
-      })
-      .select("id")
-      .single();
-
-    if (error || !data) {
-      throw new Error("정산 저장에 실패했습니다.");
-    }
-    settlementId = data.id;
-  }
-
-  const shareRows = [...params.shares.entries()].map(([employeeId, amount]) => ({
-    settlement_id: settlementId,
-    employee_id: employeeId,
-    amount,
-    is_payer: employeeId === params.payerEmployeeId,
-  }));
-
-  const { error: shareError } = await supabase.from("settlement_shares").insert(shareRows);
-  if (shareError) {
+  if (error || !data) {
     throw new Error("정산 저장에 실패했습니다.");
   }
 
-  return { isNew: !existing };
+  return { isNew: (data as { is_new: boolean }).is_new };
 }

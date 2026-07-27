@@ -105,19 +105,25 @@ export async function submitReport(params: {
   const existing = await getMyRecentReport(params.employeeId, params.restaurantId, params.reportType);
 
   if (existing && shouldEditExistingReport(new Date(existing.createdAt), params.now)) {
-    await supabase
+    const { error } = await supabase
       .from("restaurant_status_reports")
       .update({ value: params.value, updated_at: params.now.toISOString() })
       .eq("id", existing.id);
+    if (error) {
+      throw error;
+    }
     return;
   }
 
-  await supabase.from("restaurant_status_reports").insert({
+  const { error } = await supabase.from("restaurant_status_reports").insert({
     restaurant_id: params.restaurantId,
     employee_id: params.employeeId,
     report_type: params.reportType,
     value: params.value,
   });
+  if (error) {
+    throw error;
+  }
 }
 
 interface LatestReportRow {

@@ -217,12 +217,13 @@ export async function deleteReviewPhotoAsAdmin(restaurantId: string, photoId: st
     redirect(`/admin/restaurants/${restaurantId}?status=target_not_found`);
   }
 
-  await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove([photo.storage_path]);
   const { error } = await supabase.from("review_photos").delete().eq("id", photoId);
 
   if (error) {
     throw new Error("사진 삭제에 실패했습니다.");
   }
+
+  await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove([photo.storage_path]);
 
   await logAdminAction(admin.id, "delete_review_photo", {
     targetType: "review_photo",

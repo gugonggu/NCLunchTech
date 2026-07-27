@@ -60,13 +60,16 @@ export async function createNotification(params: {
   relatedRestaurantId?: string;
 }): Promise<void> {
   const supabase = createServiceRoleClient();
-  await supabase.from("notifications").insert({
+  const { error } = await supabase.from("notifications").insert({
     employee_id: params.employeeId,
     type: params.type,
     message: params.message,
     related_appointment_id: params.relatedAppointmentId ?? null,
     related_restaurant_id: params.relatedRestaurantId ?? null,
   });
+  if (error) {
+    throw error;
+  }
 }
 
 /** 초대·변경·취소 알림 대상: 응답 대기/확정 중인 참여자(거절·불참·완료 제외). */

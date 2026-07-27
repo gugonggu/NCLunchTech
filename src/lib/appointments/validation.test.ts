@@ -192,6 +192,7 @@ describe("parseNicknameList", () => {
 describe("isAppointmentStatusCode", () => {
   it("허용 목록에 있는 값만 통과한다", () => {
     expect(isAppointmentStatusCode("created")).toBe(true);
+    expect(isAppointmentStatusCode("invalid_input")).toBe(true);
     expect(isAppointmentStatusCode("아무거나")).toBe(false);
     expect(isAppointmentStatusCode(undefined)).toBe(false);
   });
