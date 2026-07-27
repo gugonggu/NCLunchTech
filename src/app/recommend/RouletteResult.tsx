@@ -110,7 +110,7 @@ export function RouletteResult({
         <div data-testid="roulette-wheel" className="relative h-full w-full overflow-hidden rounded-full border-8 border-surface shadow-[0_12px_28px_rgba(217,111,18,0.24)] transition-transform duration-[1200ms] ease-[cubic-bezier(.12,.7,.12,1)]" style={{ background, transform: `rotate(${rotation}deg)` }}>
           {entries.map((entry, index) => {
             const sector = sectors[index];
-            return <span key={entry.id} data-testid={`roulette-label-${entry.id}`} className="absolute left-1/2 top-1/2 w-16 -translate-x-1/2 -translate-y-1/2 text-center text-[10px] font-extrabold leading-tight text-ink" style={{ transform: `rotate(${sector.midpoint}deg) translateY(-76px) rotate(${-sector.midpoint}deg)` }}>{entry.name}</span>;
+            return <span key={entry.id} data-testid={`roulette-label-${entry.id}`} className="absolute left-1/2 top-1/2 w-16 -translate-x-1/2 -translate-y-1/2 text-center text-[10px] font-extrabold leading-tight text-ink" style={{ transform: `rotate(${sector.midpoint}deg) translateY(-76px) rotate(${-sector.midpoint - rotation}deg)` }}>{entry.name}</span>;
           })}
           <div className="absolute left-1/2 top-1/2 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-brand bg-surface text-xs font-bold text-brand-dark">LUNCH</div>
         </div>
