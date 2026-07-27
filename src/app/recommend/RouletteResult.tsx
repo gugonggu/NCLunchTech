@@ -17,8 +17,13 @@ export interface RouletteCandidate {
   name: string;
 }
 
-function createEntries(candidates: RouletteCandidate[]): RouletteEntry[] {
-  return candidates.map((candidate) => ({ ...candidate, weight: 1 }));
+function createEntries(candidates: RouletteCandidate[], initialWinnerId: string): RouletteEntry[] {
+  const limited = candidates.slice(0, MAX_ROULETTE_SLOTS);
+  const initialWinner = candidates.find((candidate) => candidate.id === initialWinnerId);
+  const entries = initialWinner && !limited.some((candidate) => candidate.id === initialWinner.id)
+    ? [...limited.slice(0, -1), initialWinner]
+    : limited;
+  return entries.map((candidate) => ({ ...candidate, weight: 1 }));
 }
 
 export function RouletteResult({
@@ -30,7 +35,7 @@ export function RouletteResult({
   initialWinnerId: string;
   decideAction: (restaurantId: string) => Promise<void>;
 }) {
-  const [entries, setEntries] = useState(() => createEntries(candidates));
+  const [entries, setEntries] = useState(() => createEntries(candidates, initialWinnerId));
   const [winnerId, setWinnerId] = useState(initialWinnerId);
   const [spinning, setSpinning] = useState(false);
   const [done, setDone] = useState(false);
@@ -72,7 +77,7 @@ export function RouletteResult({
   }
 
   function rebuild() {
-    setEntries(createEntries(candidates));
+    setEntries(createEntries(candidates, initialWinnerId));
     setWinnerId(initialWinnerId);
     setDone(false);
     setSpinning(false);
