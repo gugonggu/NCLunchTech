@@ -4,27 +4,9 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { addExclusion, getExclusionList, setExclusionList, UUID_PATTERN } from "@/lib/recommend/exclusion-cookie";
 import { recommendConditionsSchema, type RecommendConditionsInput } from "@/lib/recommend/validation";
-import { buildRouletteUrl } from "@/lib/recommend/urls";
+import { buildRecommendUrl, buildRouletteUrl } from "@/lib/recommend/urls";
 
 /** 서버에서 재검증한 조건값만으로 /recommend 쿼리 문자열을 다시 구성한다(클라이언트가 넘긴 값은 신뢰하지 않는다). */
-function buildRecommendUrl(conditions: RecommendConditionsInput): string {
-  const params = new URLSearchParams();
-  if (conditions.restaurantName) params.set("q", conditions.restaurantName);
-  if (conditions.menuName) params.set("menuQ", conditions.menuName);
-  if (conditions.category) params.set("category", conditions.category);
-  if (conditions.radius !== undefined) params.set("radius", String(conditions.radius));
-  if (conditions.maxPriceWon !== undefined) params.set("maxPrice", String(conditions.maxPriceWon));
-  if (conditions.excludeRecentVisits) params.set("excludeRecent", "on");
-  if (conditions.excludeCongested) params.set("excludeCongested", "on");
-  if (conditions.preferFavorites) params.set("preferFavorites", "on");
-  if (conditions.preferGoodRating) params.set("preferGoodRating", "on");
-  if (conditions.preferFast) params.set("preferFast", "on");
-  if (conditions.preferUnvisited) params.set("preferUnvisited", "on");
-
-  const qs = params.toString();
-  return qs ? `/recommend?${qs}` : "/recommend";
-}
-
 async function requireEmployee() {
   const employee = await getCurrentEmployee();
   if (!employee) {

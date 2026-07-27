@@ -42,6 +42,7 @@ interface RecommendSearchParams {
   q?: string;
   menuQ?: string;
   category?: string;
+  excludeCategory?: string | string[];
   radius?: string;
   maxPrice?: string;
   excludeRecent?: string;
@@ -65,6 +66,7 @@ export default async function RecommendPage({
     restaurantName: rawParams.q,
     menuName: rawParams.menuQ,
     category: rawParams.category,
+    excludedCategories: rawParams.excludeCategory,
     radius: rawParams.radius,
     maxPriceWon: rawParams.maxPrice,
     excludeRecentVisits: rawParams.excludeRecent,

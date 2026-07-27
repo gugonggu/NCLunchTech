@@ -5,6 +5,7 @@ export const recommendConditionsSchema = z.object({
   restaurantName: z.string().trim().max(50, "검색어는 50자 이하여야 합니다.").optional(),
   menuName: z.string().trim().max(50, "검색어는 50자 이하여야 합니다.").optional(),
   category: z.enum(RESTAURANT_CATEGORIES).optional(),
+  excludedCategories: z.array(z.enum(RESTAURANT_CATEGORIES)).max(RESTAURANT_CATEGORIES.length).optional(),
   radius: z.coerce
     .number()
     .refine(
@@ -31,6 +32,7 @@ export interface RawRecommendParams {
   restaurantName?: string;
   menuName?: string;
   category?: string;
+  excludedCategories?: string | string[];
   radius?: string;
   maxPriceWon?: string;
   excludeRecentVisits?: string;
@@ -45,6 +47,7 @@ export interface NormalizedRecommendParams {
   restaurantName?: string;
   menuName?: string;
   category?: string;
+  excludedCategories?: string[];
   radius?: string;
   maxPriceWon?: string;
   excludeRecentVisits?: boolean;
@@ -59,10 +62,17 @@ export interface NormalizedRecommendParams {
 export function normalizeRecommendParams(input: RawRecommendParams): NormalizedRecommendParams {
   const clean = (v?: string) => (v !== undefined && v.trim() !== "" ? v : undefined);
   const checked = (v?: string) => (v === "on" ? true : undefined);
+  const excludedCategories = Array.from(
+    new Set((Array.isArray(input.excludedCategories) ? input.excludedCategories : [input.excludedCategories]).flatMap((value) => {
+      const cleaned = clean(value);
+      return cleaned ? [cleaned] : [];
+    })),
+  );
   return {
     restaurantName: clean(input.restaurantName),
     menuName: clean(input.menuName),
     category: clean(input.category),
+    excludedCategories: excludedCategories.length > 0 ? excludedCategories : undefined,
     radius: clean(input.radius),
     maxPriceWon: clean(input.maxPriceWon),
     excludeRecentVisits: checked(input.excludeRecentVisits),
