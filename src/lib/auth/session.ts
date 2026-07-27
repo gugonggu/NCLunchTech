@@ -91,8 +91,12 @@ export async function revokeSession(token: string): Promise<void> {
   const supabase = createServiceRoleClient();
   const tokenHash = hashSessionToken(token);
 
-  await supabase
+  const { error } = await supabase
     .from("employee_sessions")
     .update({ revoked_at: new Date().toISOString() })
     .eq("token_hash", tokenHash);
+
+  if (error) {
+    throw new Error(`세션 폐기에 실패했습니다: ${error.message}`);
+  }
 }

@@ -71,6 +71,7 @@ export async function createRestaurantPoll(formData: FormData) {
   );
 
   if (optionsError) {
+    await supabase.from("polls").delete().eq("id", poll.id);
     throw new Error("투표 생성에 실패했습니다.");
   }
 
@@ -153,6 +154,7 @@ export async function createMenuPoll(formData: FormData) {
 
   const { error: optionsError } = await supabase.from("poll_options").insert(optionRows);
   if (optionsError) {
+    await supabase.from("polls").delete().eq("id", poll.id);
     throw new Error("투표 생성에 실패했습니다.");
   }
 

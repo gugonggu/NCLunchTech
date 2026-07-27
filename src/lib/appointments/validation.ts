@@ -164,6 +164,7 @@ export const APPOINTMENT_STATUS_MESSAGES = {
   no_show: "가지 않았어요로 기록했어요.",
   invalid_time: "약속 시각은 현재보다 미래여야 해요.",
   invalid_memo: "메모는 100자 이하로 입력해주세요.",
+  invalid_input: "입력값을 다시 확인해주세요.",
   inactive_restaurant: "운영하지 않는 식당이라 약속을 만들 수 없어요.",
   not_found: "존재하지 않는 약속이에요.",
   expired: "이미 지난 약속이라 응답할 수 없어요.",

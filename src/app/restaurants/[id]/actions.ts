@@ -22,17 +22,13 @@ export async function toggleFavorite(restaurantId: string) {
   }
 
   const supabase = createServiceRoleClient();
-  const { data: existing } = await supabase
-    .from("favorites")
-    .select("id")
-    .eq("employee_id", employee.id)
-    .eq("restaurant_id", restaurantId)
-    .maybeSingle();
+  const { error } = await supabase.rpc("toggle_favorite", {
+    p_employee_id: employee.id,
+    p_restaurant_id: restaurantId,
+  });
 
-  if (existing) {
-    await supabase.from("favorites").delete().eq("id", existing.id);
-  } else {
-    await supabase.from("favorites").insert({ employee_id: employee.id, restaurant_id: restaurantId });
+  if (error) {
+    throw new Error("즐겨찾기 변경에 실패했습니다.");
   }
 
   revalidatePath(`/restaurants/${restaurantId}`);

@@ -332,12 +332,6 @@ export async function deleteReview(restaurantId: string) {
   }
 
   const storagePaths = await getStoragePathsForReviews([review.id]);
-  if (storagePaths.length > 0) {
-    const { error: storageError } = await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove(storagePaths);
-    if (storageError) {
-      throw new Error("리뷰 사진 삭제에 실패했습니다.");
-    }
-  }
 
   const { error: deleteError } = await supabase
     .from("reviews")
@@ -347,6 +341,10 @@ export async function deleteReview(restaurantId: string) {
 
   if (deleteError) {
     throw new Error("리뷰 삭제에 실패했습니다.");
+  }
+
+  if (storagePaths.length > 0) {
+    await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove(storagePaths);
   }
 
   redirectToForm(restaurantId, "deleted");
@@ -432,8 +430,17 @@ export async function deleteReviewPhoto(photoId: string, restaurantId: string) {
   }
 
   const supabase = createServiceRoleClient();
+  const { error } = await supabase
+    .from("review_photos")
+    .delete()
+    .eq("id", photoId)
+    .eq("employee_id", employee.id);
+
+  if (error) {
+    throw new Error("리뷰 사진 삭제에 실패했습니다.");
+  }
+
   await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove([photo.storagePath]);
-  await supabase.from("review_photos").delete().eq("id", photoId);
 
   redirectToPhotoForm(restaurantId, "deleted");
 }

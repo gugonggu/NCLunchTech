@@ -37,7 +37,7 @@ export async function updateMealRecord(recordId: string, formData: FormData) {
     menuName = menuNameResult.data;
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("meal_records")
     .update({
       menu_item_id: menuItemId,
@@ -46,8 +46,11 @@ export async function updateMealRecord(recordId: string, formData: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", record.id)
-    .eq("employee_id", employee.id);
+    .eq("employee_id", employee.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error("식사 기록 수정에 실패했습니다.");
+  if (!data) redirect("/me?mealStatus=not_found");
 
   redirect("/me?mealStatus=saved");
 }
@@ -59,12 +62,15 @@ export async function deleteMealRecord(recordId: string) {
   const record = await getMealRecordForEmployee(employee.id, recordId);
   if (!record) redirect("/me?mealStatus=not_found");
 
-  const { error } = await createServiceRoleClient()
+  const { data, error } = await createServiceRoleClient()
     .from("meal_records")
     .delete()
     .eq("id", record.id)
-    .eq("employee_id", employee.id);
+    .eq("employee_id", employee.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error("식사 기록 삭제에 실패했습니다.");
+  if (!data) redirect("/me?mealStatus=not_found");
 
   redirect("/me?mealStatus=deleted");
 }

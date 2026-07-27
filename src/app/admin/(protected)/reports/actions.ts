@@ -149,12 +149,7 @@ export async function deleteReportedReview(reportId: string) {
     .eq("status", "pending")
     .maybeSingle();
 
-  if (report?.review_id) {
-    const storagePaths = await getStoragePathsForReviews([report.review_id]);
-    if (storagePaths.length > 0) {
-      await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove(storagePaths);
-    }
-  }
+  const storagePaths = report?.review_id ? await getStoragePathsForReviews([report.review_id]) : [];
 
   const { data, error } = await supabase.rpc("admin_delete_reported_review", {
     p_admin_id: admin.id,
@@ -166,6 +161,9 @@ export async function deleteReportedReview(reportId: string) {
   const status = parseAdminRpcObjectStatus(data, ["review_deleted", "target_not_found"]);
 
   if (status === "review_deleted") {
+    if (storagePaths.length > 0) {
+      await supabase.storage.from(REVIEW_PHOTOS_BUCKET).remove(storagePaths);
+    }
     await notifyReporter(context, "deleted");
   }
 

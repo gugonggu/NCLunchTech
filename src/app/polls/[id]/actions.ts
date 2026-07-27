@@ -34,22 +34,21 @@ export async function voteInPoll(pollId: string, optionId: string) {
   }
 
   const supabase = createServiceRoleClient();
-  const wasAlreadyVoted = poll.myOptionId !== null;
-  const { error } = await supabase.from("poll_votes").upsert(
-    {
-      poll_id: pollId,
-      option_id: optionId,
-      employee_id: employee.id,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "poll_id,employee_id" }
-  );
+  const { data, error } = await supabase.rpc("cast_poll_vote", {
+    p_poll_id: pollId,
+    p_option_id: optionId,
+    p_employee_id: employee.id,
+  });
 
   if (error) {
     throw new Error("투표에 실패했습니다.");
   }
 
-  redirectWithStatus(pollId, wasAlreadyVoted ? "vote_changed" : "voted");
+  const result = data as "voted" | "vote_changed" | "not_found" | "closed" | "invalid_option";
+  if (result === "not_found") redirectWithStatus(pollId, "not_found");
+  if (result === "closed") redirectWithStatus(pollId, "already_closed");
+  if (result === "invalid_option") redirectWithStatus(pollId, "invalid_option");
+  redirectWithStatus(pollId, result);
 }
 
 export async function cancelVote(pollId: string) {
@@ -94,14 +93,20 @@ export async function closePoll(pollId: string) {
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("polls")
     .update({ status: "closed", closed_at: now })
     .eq("id", poll.id)
-    .eq("status", "open");
+    .eq("status", "open")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("투표 마감에 실패했습니다.");
+  }
+
+  if (!data) {
+    redirectWithStatus(pollId, "already_closed");
   }
 
   if (poll.appointmentId && poll.restaurantName) {
@@ -145,22 +150,30 @@ export async function decidePoll(pollId: string, optionId: string) {
     redirectWithStatus(pollId, "invalid_option");
   }
 
-  await finalizePollDecision(poll, optionId);
+  if (!(await finalizePollDecision(poll, optionId))) {
+    redirectWithStatus(pollId, "already_decided");
+  }
 
   redirectWithStatus(pollId, "decided");
 }
 
-async function finalizePollDecision(poll: PollDetail, optionId: string): Promise<void> {
+async function finalizePollDecision(poll: PollDetail, optionId: string): Promise<boolean> {
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("polls")
     .update({ status: "decided", decided_option_id: optionId, decided_at: now })
     .eq("id", poll.id)
-    .eq("status", "closed");
+    .eq("status", "closed")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("결과 확정에 실패했습니다.");
+  }
+
+  if (!data) {
+    return false;
   }
 
   if (poll.appointmentId && poll.restaurantName) {
@@ -178,6 +191,8 @@ async function finalizePollDecision(poll: PollDetail, optionId: string): Promise
       )
     );
   }
+
+  return true;
 }
 
 export async function resolvePollTie(pollId: string, method: string) {
@@ -218,7 +233,9 @@ export async function resolvePollTie(pollId: string, method: string) {
     redirectWithStatus(pollId, "invalid_input");
   }
 
-  await finalizePollDecision(poll, optionId);
+  if (!(await finalizePollDecision(poll, optionId))) {
+    redirectWithStatus(pollId, "already_decided");
+  }
   redirectWithStatus(pollId, "decided");
 }
 
@@ -229,7 +246,9 @@ export async function resolvePollTieWithOption(pollId: string, optionId: string)
   if (!poll || poll.createdBy !== employee.id || poll.status !== "closed") redirectWithStatus(pollId, "not_creator");
   const winningIds = new Set(getWinningIds(poll.options));
   if (!winningIds.has(optionId)) redirectWithStatus(pollId, "invalid_input");
-  await finalizePollDecision(poll, optionId);
+  if (!(await finalizePollDecision(poll, optionId))) {
+    redirectWithStatus(pollId, "already_decided");
+  }
   redirectWithStatus(pollId, "decided");
 }
 

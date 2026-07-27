@@ -51,15 +51,23 @@ export async function decideRestaurant(restaurantId: string) {
   }
 
   if (outcome.action === "update_restaurant") {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("visits")
       .update({ restaurant_id: restaurantId, updated_at: new Date().toISOString() })
       .eq("id", outcome.visitId)
       .eq("employee_id", employee.id)
-      .eq("status", "planned");
+      .eq("status", "planned")
+      .select("id")
+      .maybeSingle();
 
     if (error) {
       throw new Error("결정 변경에 실패했습니다.");
+    }
+    if (!data) {
+      const current = await getActiveVisitToday(employee.id, today);
+      redirectWithStatus(
+        current?.status === "completed" ? "already_completed" : current?.status === "planned" ? "already_decided" : "no_active_visit"
+      );
     }
 
     redirectWithStatus("changed");
@@ -87,15 +95,23 @@ export async function decideRestaurant(restaurantId: string) {
           redirectWithStatus("already_decided");
         }
 
-        const { error: retryError } = await supabase
+        const { data: retryData, error: retryError } = await supabase
           .from("visits")
           .update({ restaurant_id: restaurantId, updated_at: new Date().toISOString() })
           .eq("id", retryActive.id)
           .eq("employee_id", employee.id)
-          .eq("status", "planned");
+          .eq("status", "planned")
+          .select("id")
+          .maybeSingle();
 
         if (retryError) {
           throw new Error("결정 변경에 실패했습니다.");
+        }
+        if (!retryData) {
+          const current = await getActiveVisitToday(employee.id, today);
+          redirectWithStatus(
+            current?.status === "completed" ? "already_completed" : current?.status === "planned" ? "already_decided" : "no_active_visit"
+          );
         }
 
         redirectWithStatus("changed");
@@ -123,15 +139,20 @@ export async function cancelTodayVisit() {
 
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("visits")
     .update(getCancelledVisitUpdate(now))
     .eq("id", active.id)
     .eq("employee_id", employee.id)
-    .in("status", ["planned", "completed"]);
+    .in("status", ["planned", "completed"])
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw new Error("취소에 실패했습니다.");
+  }
+  if (!data) {
+    redirectWithStatus("no_active_visit");
   }
 
   redirectWithStatus("cancelled");

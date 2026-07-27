@@ -95,24 +95,43 @@ export async function createAppointment(restaurantId: string, formData: FormData
   }
 
   if (fromPollId) {
-    await supabase
+    const { data: linkedPoll, error: linkError } = await supabase
       .from("polls")
       .update({ appointment_id: appointment.id })
       .eq("id", fromPollId)
-      .is("appointment_id", null);
+      .is("appointment_id", null)
+      .select("id")
+      .maybeSingle();
+
+    if (linkError || !linkedPoll) {
+      await supabase.from("appointments").delete().eq("id", appointment.id);
+      redirectToNewForm(restaurantId, "invalid_poll_link");
+    }
   }
 
   const nicknames = publicInput.isPublic ? [] : parseNicknameList(String(formData.get("participantNicknames") ?? ""));
   if (nicknames.length > 0) {
     const matchedEmployees = await resolveEmployeesByNickname(nicknames, employee.id);
     if (matchedEmployees.length > 0) {
-      await supabase.from("appointment_participants").insert(
+      const { error: participantError } = await supabase.from("appointment_participants").insert(
         matchedEmployees.map((e) => ({
           appointment_id: appointment.id,
           employee_id: e.id,
           status: "pending",
         }))
       );
+
+      if (participantError) {
+        if (fromPollId) {
+          await supabase
+            .from("polls")
+            .update({ appointment_id: null })
+            .eq("id", fromPollId)
+            .eq("appointment_id", appointment.id);
+        }
+        await supabase.from("appointments").delete().eq("id", appointment.id);
+        throw new Error("약속 초대에 실패했습니다.");
+      }
 
       const message = buildAppointmentInvitedMessage(restaurant.name);
       await Promise.all(

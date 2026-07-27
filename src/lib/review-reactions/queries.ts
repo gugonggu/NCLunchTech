@@ -26,16 +26,12 @@ export async function hasReacted(employeeId: string, reviewId: string): Promise<
 /** 도움돼요 토글: 이미 눌렀으면 취소, 아니면 추가. */
 export async function toggleReaction(employeeId: string, reviewId: string): Promise<void> {
   const supabase = createServiceRoleClient();
-  const { data: existing } = await supabase
-    .from("review_reactions")
-    .select("id")
-    .eq("employee_id", employeeId)
-    .eq("review_id", reviewId)
-    .maybeSingle();
+  const { error } = await supabase.rpc("toggle_review_reaction", {
+    p_employee_id: employeeId,
+    p_review_id: reviewId,
+  });
 
-  if (existing) {
-    await supabase.from("review_reactions").delete().eq("id", existing.id);
-  } else {
-    await supabase.from("review_reactions").insert({ employee_id: employeeId, review_id: reviewId });
+  if (error) {
+    throw new Error("리뷰 도움됨 변경에 실패했습니다.");
   }
 }
