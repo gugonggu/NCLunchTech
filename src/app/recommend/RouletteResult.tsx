@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   MAX_ROULETTE_SLOTS,
   addEntry,
@@ -17,7 +17,7 @@ export interface RouletteCandidate {
   name: string;
 }
 
-function createEntries(candidates: RouletteCandidate[], initialWinnerId: string): RouletteEntry[] {
+export function createEntries(candidates: RouletteCandidate[], initialWinnerId: string): RouletteEntry[] {
   const limited = candidates.slice(0, MAX_ROULETTE_SLOTS);
   const initialWinner = candidates.find((candidate) => candidate.id === initialWinnerId);
   const entries = initialWinner && !limited.some((candidate) => candidate.id === initialWinner.id)
@@ -30,12 +30,18 @@ export function RouletteResult({
   candidates,
   initialWinnerId,
   decideAction,
+  entries: controlledEntries,
+  onEntriesChange,
 }: {
   candidates: RouletteCandidate[];
   initialWinnerId: string;
   decideAction: (restaurantId: string) => Promise<void>;
+  entries?: RouletteEntry[];
+  onEntriesChange?: Dispatch<SetStateAction<RouletteEntry[]>>;
 }) {
-  const [entries, setEntries] = useState(() => createEntries(candidates, initialWinnerId));
+  const [uncontrolledEntries, setUncontrolledEntries] = useState(() => createEntries(candidates, initialWinnerId));
+  const entries = controlledEntries ?? uncontrolledEntries;
+  const setEntries = onEntriesChange ?? setUncontrolledEntries;
   const [winnerId, setWinnerId] = useState(initialWinnerId);
   const [spinning, setSpinning] = useState(false);
   const [done, setDone] = useState(false);

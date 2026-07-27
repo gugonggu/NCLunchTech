@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   { href: "/appointments/new", label: "함께 먹기", icon: "people" },
   { href: "/notifications", label: "알림", icon: "bell" },
   { href: "/me", label: "내 정보", icon: "profile" },
+  { href: "/roulette", label: "룰렛", icon: "roulette" },
 ] as const satisfies ReadonlyArray<{ href: string; label: string; icon: AppIconName }>;
 
 function isActivePath(pathname: string, href: string) {
@@ -70,7 +71,7 @@ export function AppNavigation() {
       </header>
       <nav
         aria-label="하단 탐색"
-        className="fixed inset-x-0 bottom-0 z-50 grid w-full grid-cols-5 border-t border-line bg-surface/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 grid w-full grid-cols-6 border-t border-line bg-surface/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden"
       >
         <NavigationLinks mobile />
       </nav>
