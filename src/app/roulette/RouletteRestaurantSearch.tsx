@@ -22,14 +22,17 @@ export function RouletteRestaurantSearch({
   selectedIds,
   canAdd,
   onAddCandidate,
+  onSearchCandidatesChange = () => undefined,
 }: {
   selectedIds: Set<string>;
   canAdd: boolean;
   onAddCandidate: (candidate: RouletteCandidate) => void;
+  onSearchCandidatesChange?: (candidates: RouletteCandidate[]) => void;
 }) {
   const [filters, setFilters] = useState(initialFilters);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState | null>(null);
+  const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,6 +57,12 @@ export function RouletteRestaurantSearch({
 
     return () => controller.abort();
   }, [filters]);
+
+  useEffect(() => {
+    if (state?.status === "ready") {
+      onSearchCandidatesChange(state.items.filter((restaurant) => !excludedCategories.has(restaurant.category)));
+    }
+  }, [excludedCategories, onSearchCandidatesChange, state]);
 
   return (
     <section className="rounded-card bg-surface p-4 shadow-card" aria-label="식당 검색 및 추가">
@@ -87,12 +96,31 @@ export function RouletteRestaurantSearch({
           <input type="checkbox" checked={filters.openNow} onChange={(event) => setFilters((current) => ({ ...current, openNow: event.target.checked, page: 1 }))} />
           영업 중만
         </label>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm text-ink">제외할 음식 분류</legend>
+          <div className="flex flex-wrap gap-2">
+            {RESTAURANT_CATEGORIES.map((category) => (
+              <label key={category} className="flex items-center gap-1 text-xs text-ink">
+                <input
+                  type="checkbox"
+                  checked={excludedCategories.has(category)}
+                  onChange={(event) => setExcludedCategories((current) => {
+                    const next = new Set(current);
+                    if (event.target.checked) next.add(category); else next.delete(category);
+                    return next;
+                  })}
+                />
+                {category}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <button type="submit" className="w-full rounded-control border border-line px-3 py-2 text-sm font-semibold">검색</button>
       </form>
 
       <div className="mt-4 space-y-2">
         {state === null ? <p className="text-sm text-ink-muted">식당을 불러오는 중이에요.</p> : null}
-        {state?.status === "ready" ? state.items.map((restaurant) => {
+        {state?.status === "ready" ? state.items.filter((restaurant) => !excludedCategories.has(restaurant.category)).map((restaurant) => {
           const alreadyAdded = selectedIds.has(restaurant.id);
           return <div key={restaurant.id} className="rounded-control bg-surface-muted p-3">
             <p className="font-semibold text-ink">{restaurant.name}</p>
@@ -107,7 +135,7 @@ export function RouletteRestaurantSearch({
         {state?.status === "location-missing" ? <p className="text-sm text-error">회사 위치 정보가 없어 거리 검색을 할 수 없어요.</p> : null}
         {state?.status === "error" ? <p className="text-sm text-error">식당 검색에 실패했어요. 다시 시도해 주세요.</p> : null}
       </div>
-      {!canAdd ? <p className="mt-3 text-sm font-semibold text-brand-dark">총 64칸이 모두 찼어요. 후보를 삭제하거나 칸 수를 줄인 뒤 추가해 주세요.</p> : null}
+      {!canAdd ? <p className="mt-3 text-sm font-semibold text-brand-dark">총 10칸이 모두 찼어요. 후보를 삭제하거나 칸 수를 줄인 뒤 추가해 주세요.</p> : null}
     </section>
   );
 }

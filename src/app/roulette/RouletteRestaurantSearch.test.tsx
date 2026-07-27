@@ -37,6 +37,6 @@ describe("RouletteRestaurantSearch", () => {
     render(<RouletteRestaurantSearch selectedIds={new Set(["restaurant-1"])} canAdd={false} onAddCandidate={vi.fn()} />);
 
     expect(await screen.findByRole("button", { name: "후보에 있음" })).toBeDisabled();
-    expect(screen.getByText(/총 64칸이 모두 찼어요/)).toBeVisible();
+    expect(screen.getByText(/총 10칸이 모두 찼어요/)).toBeVisible();
   });
 });

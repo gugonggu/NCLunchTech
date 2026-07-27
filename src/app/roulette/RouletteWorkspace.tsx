@@ -13,6 +13,7 @@ export function RouletteWorkspace({
   decideAction: (restaurantId: string) => Promise<void>;
 }) {
   const [candidates, setCandidates] = useState(initialCandidates);
+  const [rebuildCandidates, setRebuildCandidates] = useState(initialCandidates);
   const [entries, setEntries] = useState<RouletteEntry[]>(() =>
     createEntries(initialCandidates, initialCandidates[0]?.id ?? ""),
   );
@@ -28,6 +29,7 @@ export function RouletteWorkspace({
         candidates={candidates}
         entries={entries}
         onEntriesChange={setEntries}
+        rebuildCandidates={rebuildCandidates}
         initialWinnerId={entries[0]?.id ?? ""}
         decideAction={decideAction}
       />
@@ -36,6 +38,7 @@ export function RouletteWorkspace({
           selectedIds={new Set(entries.map((entry) => entry.id))}
           canAdd={getTotalSlots(entries) < MAX_ROULETTE_SLOTS}
           onAddCandidate={addCandidate}
+          onSearchCandidatesChange={setRebuildCandidates}
         />
       </aside>
     </div>

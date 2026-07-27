@@ -10,11 +10,11 @@ const candidates = [
 ];
 
 describe("RouletteResult weighted candidates", () => {
-  it("limits the initial candidate list to 64 slots", () => {
+  it("limits the initial candidate list to 10 slots", () => {
     const manyCandidates = Array.from({ length: 65 }, (_, index) => ({ id: String(index), name: `Candidate ${index}` }));
     render(<RouletteResult candidates={manyCandidates} initialWinnerId="64" decideAction={vi.fn()} />);
 
-    expect(screen.getByText("총 64칸 · 후보 64곳")).toBeInTheDocument();
+    expect(screen.getByText("총 10칸 · 후보 10곳")).toBeInTheDocument();
     expect(screen.getByTestId("roulette-wheel")).toHaveTextContent("Candidate 64");
   });
 

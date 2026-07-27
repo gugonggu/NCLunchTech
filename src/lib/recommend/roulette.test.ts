@@ -4,6 +4,7 @@ import {
   addEntry,
   changeEntryWeight,
   getTotalSlots,
+  getRotationToPointer,
   pickWeightedEntry,
   removeEntry,
 } from "./roulette";
@@ -15,6 +16,12 @@ describe("weighted roulette entries", () => {
 
     const full = [{ id: "a", name: "A", weight: MAX_ROULETTE_SLOTS - 1 }, { id: "b", name: "B", weight: 1 }];
     expect(changeEntryWeight(full, "a", 1)).toEqual(full);
+  });
+
+  it("rotates a selected sector midpoint to the 12 o'clock pointer", () => {
+    expect(getRotationToPointer(90)).toBe(270);
+    expect(getRotationToPointer(270)).toBe(90);
+    expect(getRotationToPointer(90, 270)).toBe(0);
   });
 
   it("adds and removes candidates without allowing an empty list", () => {

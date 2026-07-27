@@ -1,4 +1,4 @@
-export const MAX_ROULETTE_SLOTS = 64;
+export const MAX_ROULETTE_SLOTS = 10;
 
 export interface RouletteEntry {
   id: string;
@@ -8,6 +8,22 @@ export interface RouletteEntry {
 
 export function getTotalSlots(entries: RouletteEntry[]): number {
   return entries.reduce((total, entry) => total + entry.weight, 0);
+}
+
+export function getRotationToPointer(midpoint: number, currentRotation = 0): number {
+  return (360 - ((midpoint + currentRotation) % 360)) % 360;
+}
+
+export function createRandomEntries<T extends { id: string; name: string }>(
+  candidates: T[],
+  random: () => number = Math.random,
+): RouletteEntry[] {
+  const shuffled = [...candidates];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled.slice(0, MAX_ROULETTE_SLOTS).map((candidate) => ({ ...candidate, weight: 1 }));
 }
 
 export function changeEntryWeight(

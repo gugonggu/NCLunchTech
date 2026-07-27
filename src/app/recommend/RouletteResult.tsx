@@ -6,7 +6,9 @@ import {
   MAX_ROULETTE_SLOTS,
   addEntry,
   changeEntryWeight,
+  createRandomEntries,
   getTotalSlots,
+  getRotationToPointer,
   pickWeightedEntry,
   removeEntry,
   type RouletteEntry,
@@ -32,12 +34,14 @@ export function RouletteResult({
   decideAction,
   entries: controlledEntries,
   onEntriesChange,
+  rebuildCandidates,
 }: {
   candidates: RouletteCandidate[];
   initialWinnerId: string;
   decideAction: (restaurantId: string) => Promise<void>;
   entries?: RouletteEntry[];
   onEntriesChange?: Dispatch<SetStateAction<RouletteEntry[]>>;
+  rebuildCandidates?: RouletteCandidate[];
 }) {
   const [uncontrolledEntries, setUncontrolledEntries] = useState(() => createEntries(candidates, initialWinnerId));
   const entries = controlledEntries ?? uncontrolledEntries;
@@ -79,12 +83,13 @@ export function RouletteResult({
     setWinnerId(selected.id);
     setDone(false);
     setSpinning(true);
-    setRotation((current) => current + 1800 + (270 - (sector?.midpoint ?? 0)));
+    setRotation((current) => current + 1800 + getRotationToPointer(sector?.midpoint ?? 0, current % 360));
   }
 
   function rebuild() {
-    setEntries(createEntries(candidates, initialWinnerId));
-    setWinnerId(initialWinnerId);
+    const nextEntries = createRandomEntries(rebuildCandidates?.length ? rebuildCandidates : candidates);
+    setEntries(nextEntries);
+    setWinnerId(nextEntries[0]?.id ?? initialWinnerId);
     setDone(false);
     setSpinning(false);
     setCandidateToAdd("");
@@ -95,6 +100,10 @@ export function RouletteResult({
       <p className="text-sm font-semibold text-brand-dark">점심 룰렛</p>
       <h2 className="mt-1 text-xl font-bold text-ink">{done ? "오늘의 점심은" : "후보와 확률을 정해볼까요?"}</h2>
       <p className="mt-2 text-sm text-ink-muted">총 {totalSlots}칸 · 후보 {entries.length}곳</p>
+
+      <button type="button" onClick={spin} disabled={spinning} className="mt-5 w-full rounded-control bg-brand px-4 py-3 text-sm font-semibold text-black disabled:opacity-60">
+        {spinning ? "돌리는 중..." : done ? "현재 목록으로 다시 돌리기" : "룰렛 돌리기"}
+      </button>
 
       <div className="relative mx-auto my-7 h-64 w-64">
         <div className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 border-x-10 border-t-[22px] border-x-transparent border-t-ink" aria-hidden="true" />
@@ -138,9 +147,6 @@ export function RouletteResult({
         </div> : null}
       </div>
 
-      <button type="button" onClick={spin} disabled={spinning} className="w-full rounded-control bg-brand px-4 py-3 text-sm font-semibold text-black disabled:opacity-60">
-        {spinning ? "돌리는 중..." : done ? "현재 목록으로 다시 돌리기" : "룰렛 돌리기"}
-      </button>
       {done && winner ? <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <form action={decideAction.bind(null, winner.id)}><button type="submit" className="w-full rounded-control bg-brand px-4 py-3 text-sm font-semibold text-black">여기로 결정</button></form>
         <Link href={`/appointments/new?restaurantId=${winner.id}`} className="rounded-control border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink">같이 먹기</Link>
