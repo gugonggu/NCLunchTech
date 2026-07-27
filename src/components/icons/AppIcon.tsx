@@ -10,7 +10,8 @@ export type AppIconName =
   | "spark"
   | "map"
   | "check"
-  | "refresh";
+  | "refresh"
+  | "roulette";
 
 export function AppIcon({
   name,
@@ -50,6 +51,13 @@ export function AppIcon({
       <>
         <path d="M20 7v5h-5" />
         <path d="M4 17v-5h5M6.1 7a8 8 0 0 1 13.2 3M17.9 17A8 8 0 0 1 4.7 14" />
+      </>
+    ),
+    roulette: (
+      <>
+        <circle cx="12" cy="12" r="8.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <path d="M12 3.5v3M20.5 12h-3M12 20.5v-3M3.5 12h3M17.8 6.2l-2.1 2.1M17.8 17.8l-2.1-2.1M6.2 17.8l2.1-2.1M6.2 6.2l2.1 2.1" />
       </>
     ),
   };

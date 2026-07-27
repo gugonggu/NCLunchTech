@@ -33,6 +33,15 @@ describe("AppNavigation", () => {
     expect(desktopHeader).toHaveClass("md:flex");
   });
 
+  it("links the sixth roulette destination", () => {
+    render(<AppNavigation />);
+
+    expect(screen.getAllByRole("link", { name: "룰렛" })).toHaveLength(2);
+    for (const link of screen.getAllByRole("link", { name: "룰렛" })) {
+      expect(link).toHaveAttribute("href", "/roulette");
+    }
+  });
+
   it("uses the canonical visible service name", () => {
     render(<AppNavigation />);
 
