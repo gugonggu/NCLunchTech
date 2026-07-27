@@ -113,6 +113,24 @@ export function RecommendationFilters({
       </FormField>
 
       <fieldset className="space-y-2 border-t border-line pt-5">
+        <legend className="mb-3 text-sm font-semibold text-ink">제외할 음식 분류</legend>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+          {RESTAURANT_CATEGORIES.map((category) => (
+            <label key={category} className="flex min-h-11 items-center gap-2 text-sm text-ink-muted">
+              <input
+                type="checkbox"
+                name="excludeCategory"
+                value={category}
+                defaultChecked={conditions.excludedCategories?.includes(category) ?? false}
+                className="size-5 shrink-0 accent-brand"
+              />
+              <span>{category}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-2 border-t border-line pt-5">
         <legend className="mb-3 text-sm font-semibold text-ink">제외 조건</legend>
         <CheckboxField
           name="excludeRecent"

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { RecommendationFilters } from "./RecommendationFilters";
 import { ResponsiveFilterPanel } from "./ResponsiveFilterPanel";
 
@@ -205,6 +206,7 @@ describe("RecommendationFilters", () => {
       "category",
       "radius",
       "maxPrice",
+      ...Array(RESTAURANT_CATEGORIES.length).fill("excludeCategory"),
       "excludeRecent",
       "excludeCongested",
       "preferFavorites",

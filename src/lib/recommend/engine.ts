@@ -36,6 +36,7 @@ export interface RecommendConditions {
   restaurantName?: string;
   menuName?: string;
   category?: string;
+  excludedCategories?: string[];
   maxPriceWon?: number;
   excludeRecentVisits?: boolean;
   excludeCongested?: boolean;
@@ -90,6 +91,10 @@ export function filterCandidates(
     }
 
     if (conditions.category && c.category !== conditions.category) {
+      return false;
+    }
+
+    if (conditions.excludedCategories?.includes(c.category)) {
       return false;
     }
 

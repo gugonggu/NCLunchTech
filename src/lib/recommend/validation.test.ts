@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { RESTAURANT_CATEGORIES } from "@/lib/restaurants/constants";
 import { normalizeRecommendParams, recommendConditionsSchema } from "./validation";
 
 describe("normalizeRecommendParams", () => {
@@ -42,6 +43,14 @@ describe("normalizeRecommendParams", () => {
     expect(result.preferUnvisited).toBe(true);
     expect(normalizeRecommendParams({}).preferFavorites).toBeUndefined();
   });
+
+  it("normalizes repeated excluded categories by removing blanks and duplicates", () => {
+    expect(
+      normalizeRecommendParams({
+        excludedCategories: [RESTAURANT_CATEGORIES[0], "", RESTAURANT_CATEGORIES[1], RESTAURANT_CATEGORIES[0]],
+      }),
+    ).toMatchObject({ excludedCategories: [RESTAURANT_CATEGORIES[0], RESTAURANT_CATEGORIES[1]] });
+  });
 });
 
 describe("recommendConditionsSchema", () => {
@@ -83,5 +92,13 @@ describe("recommendConditionsSchema", () => {
   it("정수가 아닌 가격은 거부한다", () => {
     const result = recommendConditionsSchema.safeParse({ maxPriceWon: "1000.5" });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts valid excluded categories and rejects unknown ones", () => {
+    expect(
+      recommendConditionsSchema.safeParse({ excludedCategories: [RESTAURANT_CATEGORIES[0], RESTAURANT_CATEGORIES[1]] })
+        .success,
+    ).toBe(true);
+    expect(recommendConditionsSchema.safeParse({ excludedCategories: ["unknown-category"] }).success).toBe(false);
   });
 });

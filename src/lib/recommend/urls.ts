@@ -5,6 +5,7 @@ export function buildRecommendQuery(conditions: RecommendConditionsInput): strin
   if (conditions.restaurantName) params.set("q", conditions.restaurantName);
   if (conditions.menuName) params.set("menuQ", conditions.menuName);
   if (conditions.category) params.set("category", conditions.category);
+  for (const category of conditions.excludedCategories ?? []) params.append("excludeCategory", category);
   if (conditions.radius !== undefined) params.set("radius", String(conditions.radius));
   if (conditions.maxPriceWon !== undefined) params.set("maxPrice", String(conditions.maxPriceWon));
   if (conditions.excludeRecentVisits) params.set("excludeRecent", "on");
