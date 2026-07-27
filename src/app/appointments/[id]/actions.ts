@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { recordAchievementEvent } from "@/lib/achievements/events";
 import {
   getActiveParticipantEmployeeIds,
   getAcceptedParticipantEmployeeIds,
@@ -15,7 +16,7 @@ import {
   buildSettlementCreatedMessage,
   buildSettlementUpdatedMessage,
 } from "@/lib/notifications/validation";
-import { getAppointmentDetail, getMyParticipant } from "@/lib/appointments/queries";
+import { getAppointmentDetail, getAppointmentHeadcount, getMyParticipant } from "@/lib/appointments/queries";
 import { canAcceptPublicApplicant, canParticipantTransition, memoSchema, parseSeoulDateTimeLocal } from "@/lib/appointments/validation";
 import { closeOpenPollsForAppointment } from "@/lib/polls/queries";
 import { MAX_POLL_OPTIONS, dedupeIds, sanitizeCustomLabels } from "@/lib/polls/validation";
@@ -446,6 +447,26 @@ export async function confirmAttendance(appointmentId: string) {
     redirectWithStatus(appointmentId, "already_responded");
   }
 
+  await recordAchievementEvent({
+    employeeId: employee.id,
+    eventType: "MEAL_GROUP_COMPLETED",
+    eventKey: `MEAL_GROUP_COMPLETED:participant:${data.id}`,
+    referenceType: "appointment",
+    referenceId: appointmentId,
+  });
+
+  // "오늘은 다 같이": 본인 포함 4명 이상이 모인 약속만 인정한다.
+  const headcount = await getAppointmentHeadcount(appointmentId);
+  if (headcount >= 4) {
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "MEAL_GROUP_LARGE_COMPLETED",
+      eventKey: `MEAL_GROUP_LARGE_COMPLETED:participant:${data.id}`,
+      referenceType: "appointment",
+      referenceId: appointmentId,
+    });
+  }
+
   redirectWithStatus(appointmentId, "attended");
 }
 
@@ -491,6 +512,39 @@ export async function confirmHostAttendance(appointmentId: string) {
   }
   if (!data) {
     redirectWithStatus(appointmentId, "already_confirmed");
+  }
+
+  // 인원이 모이지 않은(참여자 전원 거절/무응답) 약속은 함께 먹기 업적으로 인정하지 않는다.
+  const headcount = await getAppointmentHeadcount(appointmentId);
+
+  if (headcount > 1) {
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "MEAL_GROUP_COMPLETED",
+      eventKey: `MEAL_GROUP_COMPLETED:host:${appointmentId}`,
+      referenceType: "appointment",
+      referenceId: appointmentId,
+    });
+
+    // "사람을 모으는 자"는 본인이 만든 약속이 완료된 경우만 세므로 별도 이벤트 타입으로 기록한다.
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "MEAL_GROUP_HOSTED_COMPLETED",
+      eventKey: `MEAL_GROUP_HOSTED_COMPLETED:${appointmentId}`,
+      referenceType: "appointment",
+      referenceId: appointmentId,
+    });
+
+    // "오늘은 다 같이": 본인 포함 4명 이상이 모인 약속만 인정한다.
+    if (headcount >= 4) {
+      await recordAchievementEvent({
+        employeeId: employee.id,
+        eventType: "MEAL_GROUP_LARGE_COMPLETED",
+        eventKey: `MEAL_GROUP_LARGE_COMPLETED:host:${appointmentId}`,
+        referenceType: "appointment",
+        referenceId: appointmentId,
+      });
+    }
   }
 
   redirectWithStatus(appointmentId, "attended");

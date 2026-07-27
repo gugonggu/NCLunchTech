@@ -2,6 +2,7 @@ import Link from "next/link";
 import { RecommendationCard } from "@/components/lunch/RecommendationCard";
 import { Button, buttonStyles } from "@/components/ui/Button";
 import { FeedbackState } from "@/components/ui/FeedbackState";
+import { recordAchievementEvent } from "@/lib/achievements/events";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { distanceInMeters } from "@/lib/geo";
 import {
@@ -154,6 +155,13 @@ export default async function RecommendPage({
         recentVisitDays.set(visit.restaurantId, daysAgo);
       }
     }
+
+    // 하루 1건으로만 이벤트를 기록한다(재요청/새로고침마다 쓰기를 반복하지 않도록).
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "RECOMMENDATION_CREATED",
+      eventKey: `RECOMMENDATION_CREATED:${employee.id}:${today}`,
+    });
   }
 
   const withinRadiusBase = filterByRadius(candidates, radius);

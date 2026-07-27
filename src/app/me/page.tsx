@@ -269,6 +269,10 @@ export default async function MePage({
         월간 배지·리더보드
       </Link>
 
+      <Link href="/achievements" className={buttonStyles({ variant: "secondary", block: true })}>
+        업적 보기
+      </Link>
+
       <LogoutButton />
     </main>
   );

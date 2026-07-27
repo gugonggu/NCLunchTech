@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { recordAchievementEvent } from "@/lib/achievements/events";
 import { hasCompletedVisit, hasReviewAccessForSource } from "@/lib/reviews/queries";
 import { normalizeReviewFormData, reviewSchema } from "@/lib/reviews/validation";
 import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/queries";
@@ -297,6 +298,17 @@ export async function upsertReview(
 
   if (error || !savedReview) {
     throw new Error("리뷰 저장에 실패했습니다.");
+  }
+
+  if (!existingReview) {
+    // 리뷰 수정은 추가 카운트하지 않는다 — 최초 작성(insert)일 때만 업적 이벤트를 남긴다.
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "REVIEW_CREATED",
+      eventKey: `REVIEW_CREATED:${savedReview.id}`,
+      referenceType: "review",
+      referenceId: savedReview.id,
+    });
   }
 
   const selectedPhoto = getSelectedPhotoFile(formData);

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { recordAchievementEvent } from "@/lib/achievements/events";
 import { decideOutcome } from "@/lib/visits/decision";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { UUID_PATTERN, getCancelledVisitUpdate, getSeoulDateString, type VisitFeedbackCode } from "@/lib/visits/validation";
@@ -193,6 +194,14 @@ export async function completeTodayVisit() {
   if (!data) {
     redirectWithStatus("already_completed");
   }
+
+  await recordAchievementEvent({
+    employeeId: employee.id,
+    eventType: "VISIT_COMPLETED",
+    eventKey: `VISIT_COMPLETED:${data.id}`,
+    referenceType: "visit",
+    referenceId: data.id,
+  });
 
   redirectWithStatus("completed");
 }

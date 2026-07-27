@@ -122,6 +122,18 @@ export async function getParticipants(appointmentId: string): Promise<Participan
   });
 }
 
+/** 방장 본인(1명)을 포함한 실제 참여 인원. accepted/completed 참여자만 센다(대기·거절·불참 제외). */
+export async function getAppointmentHeadcount(appointmentId: string): Promise<number> {
+  const supabase = createServiceRoleClient();
+  const { count } = await supabase
+    .from("appointment_participants")
+    .select("id", { count: "exact", head: true })
+    .eq("appointment_id", appointmentId)
+    .in("status", ["accepted", "completed"]);
+
+  return 1 + (count ?? 0);
+}
+
 export interface MyParticipant {
   id: string;
   status: ParticipantStatus;
