@@ -6,6 +6,31 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { getRepresentativeRestaurantPhotoMap } from "@/lib/review-photos/queries";
 import { dedupeMenuPool, normalizeMenuName, type MenuPoolEntry, type WorldcupCandidate } from "./candidates";
 
+/** 이 식당이 파는 메뉴 중 하나가, 이 직원이 완료한 어떤 월드컵의 우승 메뉴와 이름이 일치하는지 확인한다. */
+export async function restaurantSellsAnyOfEmployeesWorldcupWinners(
+  employeeId: string,
+  restaurantId: string
+): Promise<boolean> {
+  const supabase = createServiceRoleClient();
+
+  const [{ data: winners }, { data: restaurant }] = await Promise.all([
+    supabase
+      .from("menu_worldcup_sessions")
+      .select("winner_menu_key")
+      .eq("employee_id", employeeId)
+      .eq("status", "COMPLETED")
+      .not("winner_menu_key", "is", null),
+    supabase.from("restaurants").select("menu_items(name, is_sold_out)").eq("id", restaurantId).maybeSingle(),
+  ]);
+
+  const winnerKeys = new Set((winners ?? []).map((w) => w.winner_menu_key as string));
+  if (winnerKeys.size === 0 || !restaurant) return false;
+
+  return (restaurant.menu_items ?? []).some(
+    (m: { name: string; is_sold_out: boolean }) => !m.is_sold_out && winnerKeys.has(normalizeMenuName(m.name))
+  );
+}
+
 async function getCompanyLocation(supabase: ReturnType<typeof createServiceRoleClient>) {
   const { data: settings } = await supabase
     .from("app_settings")

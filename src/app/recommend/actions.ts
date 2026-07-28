@@ -71,14 +71,14 @@ export async function resetExclusions(rawConditions: RecommendConditionsInput) {
 }
 
 /** 추천 결과 카드의 "여기로 결정" 전용 래퍼. 선택 시점을 기록한 뒤 기존 결정 로직을 그대로 재사용한다. */
-export async function decideRecommendedRestaurant(restaurantId: string) {
+export async function decideRecommendedRestaurant(restaurantId: string, isMainPick: boolean) {
   const employee = await getCurrentEmployee();
   if (!employee) {
     redirect("/login");
   }
 
   if (typeof restaurantId === "string" && UUID_PATTERN.test(restaurantId)) {
-    await recordRecommendationSelection(employee.id, restaurantId);
+    await recordRecommendationSelection(employee.id, restaurantId, isMainPick);
   }
 
   await decideRestaurant(restaurantId);

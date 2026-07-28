@@ -279,7 +279,7 @@ export default async function RecommendPage({
                   reasons={buildRecommendReasons(result.main, conditions, recentVisitDays)}
                   reviewCount={reviewCounts.get(result.main.id) ?? 0}
                   variant="hero"
-                  decideAction={decideRecommendedRestaurant.bind(null, result.main.id)}
+                  decideAction={decideRecommendedRestaurant.bind(null, result.main.id, true)}
                 />
 
                 {result.alternatives.length > 0 && (
@@ -295,7 +295,7 @@ export default async function RecommendPage({
                           photoUrl={photoUrls.get(alt.id) ?? null}
                           reviewCount={reviewCounts.get(alt.id) ?? 0}
                           variant="alternative"
-                          decideAction={decideRecommendedRestaurant.bind(null, alt.id)}
+                          decideAction={decideRecommendedRestaurant.bind(null, alt.id, false)}
                         />
                       ))}
                     </div>

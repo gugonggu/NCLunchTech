@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { recordAchievementEvent } from "@/lib/achievements/events";
-import { hasRecommendationSelection } from "@/lib/recommend/selection";
+import { hasMainRecommendationSelection, hasRecommendationSelection } from "@/lib/recommend/selection";
 import { hasValidWorldcupWinnerSelection } from "@/lib/worldcup/winner-selection";
+import { restaurantSellsAnyOfEmployeesWorldcupWinners } from "@/lib/worldcup/pool-queries";
 import { decideOutcome } from "@/lib/visits/decision";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { UUID_PATTERN, getCancelledVisitUpdate, getSeoulDateString, type VisitFeedbackCode } from "@/lib/visits/validation";
@@ -221,6 +222,19 @@ export async function completeTodayVisit() {
       employeeId: employee.id,
       eventType: "RECOMMENDATION_VISIT_COMPLETED",
       eventKey: `RECOMMENDATION_VISIT_COMPLETED:${data.id}`,
+      referenceType: "visit",
+      referenceId: data.id,
+    });
+  }
+
+  if (
+    (await hasMainRecommendationSelection(employee.id, active.restaurantId, today)) &&
+    (await restaurantSellsAnyOfEmployeesWorldcupWinners(employee.id, active.restaurantId))
+  ) {
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "RECOMMENDATION_MATCHES_WORLDCUP_VISIT_COMPLETED",
+      eventKey: `RECOMMENDATION_MATCHES_WORLDCUP_VISIT_COMPLETED:${data.id}`,
       referenceType: "visit",
       referenceId: data.id,
     });
