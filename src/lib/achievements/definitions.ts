@@ -28,7 +28,7 @@ export const EVENT_ACHIEVEMENT_CODES: Record<string, readonly string[]> = {
   MEAL_GROUP_LARGE_COMPLETED: ["GROUP_SIZE_4"],
   // 중간에 포기한 세션은 이 이벤트가 발생하지 않는다(최종 우승 결정 시점에만 기록).
   // 메뉴 월드컵과 식당 월드컵 모두 이 이벤트로 처리한다(둘을 구분해 세지 않음).
-  WORLDCUP_COMPLETED: ["FIRST_WORLDCUP", "WORLDCUP_5", "WORLDCUP_20"],
+  WORLDCUP_COMPLETED: ["FIRST_WORLDCUP", "WORLDCUP_5", "WORLDCUP_20", "WORLDCUP_SAME_MENU_WIN_5"],
   // 월드컵 결과 화면에서 당일 17시 이전에 결정한 식당을 그날 방문 완료했을 때만 발생한다.
   WORLDCUP_WINNER_VISIT_COMPLETED: ["WORLDCUP_WINNER_VISIT_5"],
   // 추천 결과 카드에서 결정한 식당을 그날 방문 완료했을 때만 발생한다.
