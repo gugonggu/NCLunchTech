@@ -1,3 +1,5 @@
+import { daysBetweenDateStrings } from "@/lib/visits/validation";
+
 export interface CompletedVisitRecord {
   restaurantId: string;
   visitDate: string;
@@ -17,4 +19,18 @@ export function isSameRestaurantStreakOfThree(recentVisitsDescending: CompletedV
   const distinctDates = new Set([first.visitDate, second.visitDate, third.visitDate]).size === 3;
 
   return sameRestaurant && distinctDates;
+}
+
+/**
+ * 오늘 이전의 완료 방문 날짜(최근순, 오늘 제외) 중 가장 최근 것과 오늘 사이의 간격이
+ * minGapDays 이상인지 판정한다(숨겨진 업적 "다시 만난 맛"). 이전 방문이 없으면(첫 방문) false다.
+ */
+export function hasRevisitedAfterGap(
+  previousVisitDatesDescendingExcludingToday: string[],
+  todayVisitDate: string,
+  minGapDays: number
+): boolean {
+  const [mostRecentPrevious] = previousVisitDatesDescendingExcludingToday;
+  if (!mostRecentPrevious) return false;
+  return daysBetweenDateStrings(todayVisitDate, mostRecentPrevious) >= minGapDays;
 }

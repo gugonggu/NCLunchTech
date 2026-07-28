@@ -76,6 +76,25 @@ export async function getRecentCompletedVisits(
   return (data ?? []).map((row) => ({ restaurantId: row.restaurant_id, visitDate: row.visit_date }));
 }
 
+/** 특정 식당에 대한, todayVisitDate 이전(제외)의 완료 방문 날짜를 최근순으로 조회한다("다시 만난 맛"용). */
+export async function getPreviousCompletedVisitDatesForRestaurant(
+  employeeId: string,
+  restaurantId: string,
+  todayVisitDate: string
+): Promise<string[]> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("visits")
+    .select("visit_date")
+    .eq("employee_id", employeeId)
+    .eq("restaurant_id", restaurantId)
+    .eq("status", "completed")
+    .lt("visit_date", todayVisitDate)
+    .order("visit_date", { ascending: false });
+
+  return (data ?? []).map((row) => row.visit_date);
+}
+
 /** 개인 방문(visits) 기준으로 완료 방문을 최근순으로 limit개만 조회한다(숨겨진 업적 "오늘도 그곳"용). */
 export async function getLastCompletedVisits(employeeId: string, limit: number): Promise<CompletedVisit[]> {
   const supabase = createServiceRoleClient();

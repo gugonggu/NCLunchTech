@@ -203,6 +203,7 @@ export async function completeTodayVisit() {
     eventKey: `VISIT_COMPLETED:${data.id}`,
     referenceType: "visit",
     referenceId: data.id,
+    payload: { restaurantId: active.restaurantId, visitDate: today },
   });
 
   if (await hasValidWorldcupWinnerSelection(employee.id, active.restaurantId, today)) {

@@ -4,6 +4,10 @@ import { EVENT_ACHIEVEMENT_CODES, type AchievementEventType } from "./definition
 import { applyProgressIncrement, applyProgressRecompute } from "./engine";
 import { computeRecomputeMetric, RECOMPUTE_METRIC_BY_CODE, type RecomputeMetric } from "./recompute";
 import { extractTitleName, type TitlesRelation } from "./title-relation";
+import { hasRevisitedAfterGap } from "./streak";
+import { getPreviousCompletedVisitDatesForRestaurant } from "@/lib/visits/queries";
+
+const REVISIT_GAP_DAYS = 60;
 
 export interface EarnedAchievementResult {
   code: string;
@@ -98,6 +102,33 @@ export async function recordAchievementEvent(params: {
 
   for (const achievement of achievements) {
     if (earnedAchievementIds.has(achievement.id)) {
+      continue;
+    }
+
+    if (achievement.code === "HIDDEN_REVISIT_AFTER_60_DAYS") {
+      const restaurantId = params.payload?.restaurantId;
+      const visitDate = params.payload?.visitDate;
+      if (typeof restaurantId === "string" && typeof visitDate === "string") {
+        const previousDates = await getPreviousCompletedVisitDatesForRestaurant(params.employeeId, restaurantId, visitDate);
+        if (hasRevisitedAfterGap(previousDates, visitDate, REVISIT_GAP_DAYS)) {
+          const { error: earnedError } = await supabase.from("user_achievements").insert({
+            employee_id: params.employeeId,
+            achievement_id: achievement.id,
+            is_new: true,
+          });
+          if (!earnedError) {
+            newlyEarned.push({
+              code: achievement.code,
+              name: achievement.name,
+              description: achievement.description,
+              pointReward: achievement.point_reward,
+              titleName: extractTitleName(achievement.titles),
+            });
+          } else if (earnedError.code !== "23505") {
+            throw new Error(`업적 달성 저장 실패: ${earnedError.message}`);
+          }
+        }
+      }
       continue;
     }
 
