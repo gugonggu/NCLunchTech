@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getSeoulDateString } from "@/lib/visits/validation";
 import { isCompletedMealSource, type MealSource } from "./validation";
 
 export async function getCompletedMealSource(
@@ -76,6 +77,27 @@ export async function getCompletedMealSource(
   }
 
   return { appointmentId: appointment.id };
+}
+
+/** 먹은 메뉴 기록의 출처(개인 방문 또는 약속)가 실제로 발생한 Asia/Seoul 날짜를 구한다. */
+export async function getMealSourceSeoulDate(source: MealSource): Promise<string | null> {
+  const supabase = createServiceRoleClient();
+
+  if (source.visitId) {
+    const { data } = await supabase.from("visits").select("visit_date").eq("id", source.visitId).maybeSingle();
+    return data?.visit_date ?? null;
+  }
+
+  if (source.appointmentId) {
+    const { data } = await supabase
+      .from("appointments")
+      .select("scheduled_at")
+      .eq("id", source.appointmentId)
+      .maybeSingle();
+    return data ? getSeoulDateString(new Date(data.scheduled_at)) : null;
+  }
+
+  return null;
 }
 
 export interface MealRecord {

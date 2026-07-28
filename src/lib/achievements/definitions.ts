@@ -33,6 +33,7 @@ export const EVENT_ACHIEVEMENT_CODES: Record<string, readonly string[]> = {
   // 이 프로젝트에는 승인 단계가 없어 저장 성공 시점에 바로 발생한다.
   MENU_CREATED: ["MENU_APPROVED_5"],
   RESTAURANT_INFO_UPDATED: ["INFO_UPDATE_APPROVED_5"],
+  MEAL_RECORD_MONDAY_SOUP: ["HIDDEN_MONDAY_SOUP"],
 };
 
 export type AchievementEventType = keyof typeof EVENT_ACHIEVEMENT_CODES;

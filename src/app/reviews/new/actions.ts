@@ -6,7 +6,8 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { recordAchievementEvent } from "@/lib/achievements/events";
 import { hasCompletedVisit, hasReviewAccessForSource } from "@/lib/reviews/queries";
 import { normalizeReviewFormData, reviewSchema } from "@/lib/reviews/validation";
-import { getCompletedMealSource, getMealRecordForSource } from "@/lib/meals/queries";
+import { getCompletedMealSource, getMealRecordForSource, getMealSourceSeoulDate } from "@/lib/meals/queries";
+import { isMondaySoupMenuName, isSeoulMonday } from "@/lib/achievements/monday-soup";
 import {
   mealRecordSchema,
   mealMenuNameSchema,
@@ -227,6 +228,19 @@ export async function upsertMealRecord(
 
   if (result.error || !result.data) {
     throw new Error("먹은 메뉴 기록 저장에 실패했습니다.");
+  }
+
+  if (!existing) {
+    const seoulDate = await getMealSourceSeoulDate(completedSource);
+    if (seoulDate && isSeoulMonday(seoulDate) && isMondaySoupMenuName(menuName!)) {
+      await recordAchievementEvent({
+        employeeId: employee.id,
+        eventType: "MEAL_RECORD_MONDAY_SOUP",
+        eventKey: `MEAL_RECORD_MONDAY_SOUP:${result.data.id}`,
+        referenceType: "meal_record",
+        referenceId: result.data.id,
+      });
+    }
   }
 
   redirectToMealForm(restaurantId, visitId, appointmentId, "saved");
