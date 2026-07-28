@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getVisitedRestaurantIds } from "@/lib/collection/queries";
 import { getUniqueDiningPartnerCount } from "@/lib/appointments/dining-partners";
 import { getMaxSingleRestaurantVisitCount } from "@/lib/collection/restaurant-visit-counts";
+import { hasVisitedLowTrafficRestaurant } from "@/lib/collection/low-traffic-restaurants";
 import { getLastCompletedVisits } from "@/lib/visits/queries";
 import { getMaxWorldcupMenuWinCount } from "@/lib/worldcup/menu-win-counts";
 import { isSameRestaurantStreakOfThree } from "./streak";
@@ -13,7 +14,8 @@ export type RecomputeMetric =
   | "same_restaurant_streak_3"
   | "max_single_restaurant_visit_count"
   | "max_worldcup_menu_win_count"
-  | "unique_dining_partner_count";
+  | "unique_dining_partner_count"
+  | "has_visited_low_traffic_restaurant";
 
 /** 재계산형 업적 코드 → 어떤 지표를 써야 하는지. 같은 지표를 쓰는 업적끼리는 계산을 한 번만 한다. */
 export const RECOMPUTE_METRIC_BY_CODE: Record<string, RecomputeMetric> = {
@@ -27,6 +29,7 @@ export const RECOMPUTE_METRIC_BY_CODE: Record<string, RecomputeMetric> = {
   RESTAURANT_VISIT_20: "max_single_restaurant_visit_count",
   WORLDCUP_SAME_MENU_WIN_5: "max_worldcup_menu_win_count",
   SOCIAL_UNIQUE_PARTNERS_15: "unique_dining_partner_count",
+  LOW_TRAFFIC_RESTAURANT_VISIT: "has_visited_low_traffic_restaurant",
 };
 
 async function computeUniqueCategoryCount(employeeId: string): Promise<number> {
@@ -62,6 +65,9 @@ export async function computeRecomputeMetric(employeeId: string, metric: Recompu
   }
   if (metric === "unique_dining_partner_count") {
     return getUniqueDiningPartnerCount(employeeId);
+  }
+  if (metric === "has_visited_low_traffic_restaurant") {
+    return (await hasVisitedLowTrafficRestaurant(employeeId)) ? 1 : 0;
   }
   return computeSameRestaurantStreak(employeeId);
 }
