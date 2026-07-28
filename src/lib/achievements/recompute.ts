@@ -11,6 +11,7 @@ export const RECOMPUTE_METRIC_BY_CODE: Record<string, RecomputeMetric> = {
   UNIQUE_RESTAURANT_3: "unique_restaurant_count",
   UNIQUE_RESTAURANT_10: "unique_restaurant_count",
   UNIQUE_RESTAURANT_20: "unique_restaurant_count",
+  UNIQUE_RESTAURANT_40: "unique_restaurant_count",
   UNIQUE_CATEGORY_3: "unique_category_count",
   UNIQUE_CATEGORY_6: "unique_category_count",
   HIDDEN_SAME_RESTAURANT_3_CONSECUTIVE: "same_restaurant_streak_3",
