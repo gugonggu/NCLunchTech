@@ -32,8 +32,7 @@ import {
   getGloballyVisitedRestaurantIds,
   getVisitedRestaurantIds,
 } from "@/lib/collection/queries";
-import { decideRestaurant } from "@/app/visits/actions";
-import { rerollRecommendation, resetExclusions } from "./actions";
+import { decideRecommendedRestaurant, rerollRecommendation, resetExclusions } from "./actions";
 import { RecommendationFilters } from "./RecommendationFilters";
 import { ResponsiveFilterPanel } from "./ResponsiveFilterPanel";
 
@@ -280,7 +279,7 @@ export default async function RecommendPage({
                   reasons={buildRecommendReasons(result.main, conditions, recentVisitDays)}
                   reviewCount={reviewCounts.get(result.main.id) ?? 0}
                   variant="hero"
-                  decideAction={decideRestaurant.bind(null, result.main.id)}
+                  decideAction={decideRecommendedRestaurant.bind(null, result.main.id)}
                 />
 
                 {result.alternatives.length > 0 && (
@@ -296,7 +295,7 @@ export default async function RecommendPage({
                           photoUrl={photoUrls.get(alt.id) ?? null}
                           reviewCount={reviewCounts.get(alt.id) ?? 0}
                           variant="alternative"
-                          decideAction={decideRestaurant.bind(null, alt.id)}
+                          decideAction={decideRecommendedRestaurant.bind(null, alt.id)}
                         />
                       ))}
                     </div>

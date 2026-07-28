@@ -1,9 +1,16 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { decideRestaurant } from "@/app/visits/actions";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { abandonWorldcupSession, createWorldcupSession, selectWorldcupMatch } from "@/lib/worldcup/service";
+import {
+  abandonWorldcupSession,
+  createWorldcupSession,
+  getWorldcupSessionDetail,
+  selectWorldcupMatch,
+} from "@/lib/worldcup/service";
 import { isWorldcupGameType, UUID_PATTERN, type WorldcupGameType } from "@/lib/worldcup/validation";
+import { recordWorldcupWinnerSelection } from "@/lib/worldcup/winner-selection";
 
 function redirectWithStatus(status: string): never {
   redirect(`/worldcup?status=${status}`);
@@ -44,6 +51,28 @@ export async function selectWorldcupMatchAction(sessionId: string, matchId: stri
   }
 
   redirect(`/worldcup/${sessionId}`);
+}
+
+/**
+ * 월드컵 결과 화면의 "이 식당으로 결정" 전용 래퍼. 우승 후보가 실제로 이 세션의 결과에
+ * 속하는 식당인지 확인한 뒤 연동 기록을 남기고, 기존 결정 로직(decideRestaurant)을 그대로 재사용한다.
+ */
+export async function decideWorldcupWinnerRestaurant(sessionId: string, restaurantId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect(`/login?returnTo=${encodeURIComponent(`/worldcup/${sessionId}`)}`);
+  }
+
+  if (UUID_PATTERN.test(sessionId) && UUID_PATTERN.test(restaurantId)) {
+    const session = await getWorldcupSessionDetail(sessionId, employee.id);
+    const winner = session?.status === "COMPLETED" ? session.candidates.find((c) => c.menuKey === session.winnerMenuKey) : null;
+
+    if (winner?.restaurantIds.includes(restaurantId)) {
+      await recordWorldcupWinnerSelection(employee.id, sessionId, restaurantId);
+    }
+  }
+
+  await decideRestaurant(restaurantId);
 }
 
 export async function abandonWorldcupAction(sessionId: string) {

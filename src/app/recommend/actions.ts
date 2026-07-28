@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { decideRestaurant } from "@/app/visits/actions";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { addExclusion, getExclusionList, setExclusionList, UUID_PATTERN } from "@/lib/recommend/exclusion-cookie";
 import { recommendConditionsSchema, type RecommendConditionsInput } from "@/lib/recommend/validation";
 import { buildRecommendUrl, buildRouletteUrl } from "@/lib/recommend/urls";
+import { recordRecommendationSelection } from "@/lib/recommend/selection";
 
 /** 서버에서 재검증한 조건값만으로 /recommend 쿼리 문자열을 다시 구성한다(클라이언트가 넘긴 값은 신뢰하지 않는다). */
 async function requireEmployee() {
@@ -44,6 +46,20 @@ export async function resetExclusions(rawConditions: RecommendConditionsInput) {
 
   await setExclusionList([]);
   redirect(buildRecommendUrl(parsed.data));
+}
+
+/** 추천 결과 카드의 "여기로 결정" 전용 래퍼. 선택 시점을 기록한 뒤 기존 결정 로직을 그대로 재사용한다. */
+export async function decideRecommendedRestaurant(restaurantId: string) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect("/login");
+  }
+
+  if (typeof restaurantId === "string" && UUID_PATTERN.test(restaurantId)) {
+    await recordRecommendationSelection(employee.id, restaurantId);
+  }
+
+  await decideRestaurant(restaurantId);
 }
 
 export async function rerollRoulette(mainRestaurantId: string, rawConditions: RecommendConditionsInput) {

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { recordAchievementEvent } from "@/lib/achievements/events";
+import { hasRecommendationSelection } from "@/lib/recommend/selection";
+import { hasValidWorldcupWinnerSelection } from "@/lib/worldcup/winner-selection";
 import { decideOutcome } from "@/lib/visits/decision";
 import { getActiveVisitToday } from "@/lib/visits/queries";
 import { UUID_PATTERN, getCancelledVisitUpdate, getSeoulDateString, type VisitFeedbackCode } from "@/lib/visits/validation";
@@ -202,6 +204,26 @@ export async function completeTodayVisit() {
     referenceType: "visit",
     referenceId: data.id,
   });
+
+  if (await hasValidWorldcupWinnerSelection(employee.id, active.restaurantId, today)) {
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "WORLDCUP_WINNER_VISIT_COMPLETED",
+      eventKey: `WORLDCUP_WINNER_VISIT_COMPLETED:${data.id}`,
+      referenceType: "visit",
+      referenceId: data.id,
+    });
+  }
+
+  if (await hasRecommendationSelection(employee.id, active.restaurantId, today)) {
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "RECOMMENDATION_VISIT_COMPLETED",
+      eventKey: `RECOMMENDATION_VISIT_COMPLETED:${data.id}`,
+      referenceType: "visit",
+      referenceId: data.id,
+    });
+  }
 
   redirectWithStatus("completed");
 }

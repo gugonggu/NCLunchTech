@@ -3,14 +3,13 @@ import { redirect } from "next/navigation";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { RestaurantVisual } from "@/components/lunch/RestaurantVisual";
-import { decideRestaurant } from "@/app/visits/actions";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getRoundLabel } from "@/lib/worldcup/bracket";
 import type { WorldcupCandidate } from "@/lib/worldcup/candidates";
 import { getWorldcupResultRestaurants } from "@/lib/worldcup/pool-queries";
 import { getWorldcupSessionDetail } from "@/lib/worldcup/service";
 import { isWorldcupStatusCode, UUID_PATTERN, WORLDCUP_STATUS_MESSAGES } from "@/lib/worldcup/validation";
-import { abandonWorldcupAction, selectWorldcupMatchAction, startWorldcup } from "../actions";
+import { abandonWorldcupAction, decideWorldcupWinnerRestaurant, selectWorldcupMatchAction, startWorldcup } from "../actions";
 
 function MatchOptionContent({ candidate, isRestaurantMode }: { candidate: WorldcupCandidate; isRestaurantMode: boolean }) {
   if (!isRestaurantMode) {
@@ -93,7 +92,7 @@ export default async function WorldcupSessionPage({
                   ? ` ${winner.representativeMenuPrice.toLocaleString("ko-KR")}원`
                   : ""}
               </p>
-              <form action={decideRestaurant.bind(null, winner.restaurantIds[0])} className="mt-3">
+              <form action={decideWorldcupWinnerRestaurant.bind(null, sessionId, winner.restaurantIds[0])} className="mt-3">
                 <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
                   이 식당으로 결정
                 </button>
@@ -118,7 +117,7 @@ export default async function WorldcupSessionPage({
                     </p>
                   </div>
                 </div>
-                <form action={decideRestaurant.bind(null, restaurant.id)} className="mt-3">
+                <form action={decideWorldcupWinnerRestaurant.bind(null, sessionId, restaurant.id)} className="mt-3">
                   <button type="submit" className={buttonStyles({ variant: "secondary", size: "compact", block: true })}>
                     이 식당으로 결정
                   </button>
@@ -174,14 +173,14 @@ export default async function WorldcupSessionPage({
         <p className="rounded-control bg-brand-soft px-4 py-3 text-sm font-semibold text-brand-dark">{statusMessage}</p>
       )}
 
-      <section className="flex flex-col gap-3">
+      <section className="relative grid grid-cols-2 gap-3">
         <form action={selectWorldcupMatchAction.bind(null, sessionId, currentMatch.id, currentMatch.leftMenuKey)}>
           <button
             type="submit"
-            className="w-full rounded-card bg-surface p-0 text-center shadow-card transition active:scale-[0.98]"
+            className="flex h-full w-full items-center justify-center rounded-card bg-surface p-0 text-center shadow-card transition active:scale-[0.98]"
           >
             {leftCandidate ? (
-              <div className={isRestaurantMode ? "" : "px-6 py-8"}>
+              <div className={isRestaurantMode ? "w-full" : "px-3 py-10"}>
                 <MatchOptionContent candidate={leftCandidate} isRestaurantMode={isRestaurantMode} />
               </div>
             ) : (
@@ -189,14 +188,13 @@ export default async function WorldcupSessionPage({
             )}
           </button>
         </form>
-        <p className="text-center text-sm font-semibold text-ink-muted">VS</p>
         <form action={selectWorldcupMatchAction.bind(null, sessionId, currentMatch.id, currentMatch.rightMenuKey)}>
           <button
             type="submit"
-            className="w-full rounded-card bg-surface p-0 text-center shadow-card transition active:scale-[0.98]"
+            className="flex h-full w-full items-center justify-center rounded-card bg-surface p-0 text-center shadow-card transition active:scale-[0.98]"
           >
             {rightCandidate ? (
-              <div className={isRestaurantMode ? "" : "px-6 py-8"}>
+              <div className={isRestaurantMode ? "w-full" : "px-3 py-10"}>
                 <MatchOptionContent candidate={rightCandidate} isRestaurantMode={isRestaurantMode} />
               </div>
             ) : (
@@ -204,6 +202,12 @@ export default async function WorldcupSessionPage({
             )}
           </button>
         </form>
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-canvas text-xs font-extrabold text-ink-muted shadow-card"
+        >
+          VS
+        </span>
       </section>
 
       <form action={abandonWorldcupAction.bind(null, sessionId)}>
