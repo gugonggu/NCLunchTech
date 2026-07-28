@@ -30,6 +30,9 @@ export const EVENT_ACHIEVEMENT_CODES: Record<string, readonly string[]> = {
   WORLDCUP_WINNER_VISIT_COMPLETED: ["WORLDCUP_WINNER_VISIT_5"],
   // 추천 결과 카드에서 결정한 식당을 그날 방문 완료했을 때만 발생한다.
   RECOMMENDATION_VISIT_COMPLETED: ["FIRST_RECOMMENDATION_VISIT"],
+  // 이 프로젝트에는 승인 단계가 없어 저장 성공 시점에 바로 발생한다.
+  MENU_CREATED: ["MENU_APPROVED_5"],
+  RESTAURANT_INFO_UPDATED: ["INFO_UPDATE_APPROVED_5"],
 };
 
 export type AchievementEventType = keyof typeof EVENT_ACHIEVEMENT_CODES;

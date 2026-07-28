@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentEmployee } from "@/lib/auth/session";
+import { recordAchievementEvent } from "@/lib/achievements/events";
 import { logChange } from "@/lib/restaurants/change-history";
 import { restaurantHoursSchema } from "@/lib/restaurants/hours-validation";
 import { getMenuItemInRestaurant } from "@/lib/restaurants/menu-items";
@@ -73,6 +74,14 @@ export async function addMenuItem(restaurantId: string, formData: FormData) {
     action: "create",
     changedBy: employee.id,
     after: data,
+  });
+
+  await recordAchievementEvent({
+    employeeId: employee.id,
+    eventType: "MENU_CREATED",
+    eventKey: `MENU_CREATED:${data.id}`,
+    referenceType: "menu_item",
+    referenceId: data.id,
   });
 
   revalidatePath(`/restaurants/${restaurantId}`);
