@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { recordAchievementEvent } from "@/lib/achievements/events";
+import { hasMenuPriceChanged, hasRestaurantHoursChanged } from "@/lib/restaurants/info-change";
 import { logChange } from "@/lib/restaurants/change-history";
 import { restaurantHoursSchema } from "@/lib/restaurants/hours-validation";
 import { getMenuItemInRestaurant } from "@/lib/restaurants/menu-items";
@@ -125,6 +126,16 @@ export async function updateMenuPrice(menuItemId: string, restaurantId: string, 
     after,
   });
 
+  if (hasMenuPriceChanged(before, after)) {
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "RESTAURANT_INFO_UPDATED",
+      eventKey: `RESTAURANT_INFO_UPDATED:menu_item:${menuItemId}:${after.updated_at}`,
+      referenceType: "menu_item",
+      referenceId: menuItemId,
+    });
+  }
+
   revalidatePath(`/restaurants/${restaurantId}`);
 }
 
@@ -222,6 +233,16 @@ export async function updateRestaurantHours(restaurantId: string, formData: Form
     before,
     after,
   });
+
+  if (hasRestaurantHoursChanged(before, after)) {
+    await recordAchievementEvent({
+      employeeId: employee.id,
+      eventType: "RESTAURANT_INFO_UPDATED",
+      eventKey: `RESTAURANT_INFO_UPDATED:restaurant_hours:${restaurantId}:${now}`,
+      referenceType: "restaurant",
+      referenceId: restaurantId,
+    });
+  }
 
   revalidatePath(`/restaurants/${restaurantId}`);
 }
