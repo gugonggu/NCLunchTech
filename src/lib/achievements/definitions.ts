@@ -21,7 +21,7 @@ export const EVENT_ACHIEVEMENT_CODES: Record<string, readonly string[]> = {
   ],
   RECOMMENDATION_CREATED: ["FIRST_RECOMMENDATION"],
   REVIEW_CREATED: ["FIRST_REVIEW", "REVIEW_5", "REVIEW_20"],
-  MEAL_GROUP_COMPLETED: ["FIRST_GROUP_MEAL", "GROUP_MEAL_5"],
+  MEAL_GROUP_COMPLETED: ["FIRST_GROUP_MEAL", "GROUP_MEAL_5", "SOCIAL_UNIQUE_PARTNERS_15"],
   // 방장 본인이 만든 약속이 완료됐을 때만 별도로 발생한다(참여자로 완료한 건 세지 않음).
   MEAL_GROUP_HOSTED_COMPLETED: ["HOSTED_GROUP_MEAL_5"],
   // 완료 시점에 본인 포함 4명 이상이 모였을 때만 발생한다(방장/참여자 모두).
