@@ -3,10 +3,18 @@
 import { redirect } from "next/navigation";
 import { decideRestaurant } from "@/app/visits/actions";
 import { getCurrentEmployee } from "@/lib/auth/session";
-import { addExclusion, getExclusionList, setExclusionList, UUID_PATTERN } from "@/lib/recommend/exclusion-cookie";
+import { recordAchievementEvent } from "@/lib/achievements/events";
+import {
+  addExclusion,
+  getExclusionList,
+  hasReachedRerollThreshold,
+  setExclusionList,
+  UUID_PATTERN,
+} from "@/lib/recommend/exclusion-cookie";
 import { recommendConditionsSchema, type RecommendConditionsInput } from "@/lib/recommend/validation";
 import { buildRecommendUrl, buildRouletteUrl } from "@/lib/recommend/urls";
 import { recordRecommendationSelection } from "@/lib/recommend/selection";
+import { getSeoulDateString } from "@/lib/visits/validation";
 
 /** 서버에서 재검증한 조건값만으로 /recommend 쿼리 문자열을 다시 구성한다(클라이언트가 넘긴 값은 신뢰하지 않는다). */
 async function requireEmployee() {
@@ -21,7 +29,10 @@ export async function rerollRecommendation(
   mainRestaurantId: string,
   rawConditions: RecommendConditionsInput
 ) {
-  await requireEmployee();
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    throw new Error("로그인이 필요합니다.");
+  }
 
   const parsed = recommendConditionsSchema.safeParse(rawConditions);
   if (!parsed.success) {
@@ -30,7 +41,18 @@ export async function rerollRecommendation(
 
   if (typeof mainRestaurantId === "string" && UUID_PATTERN.test(mainRestaurantId)) {
     const current = await getExclusionList();
-    await setExclusionList(addExclusion(current, mainRestaurantId));
+    const updated = addExclusion(current, mainRestaurantId);
+    await setExclusionList(updated);
+
+    if (hasReachedRerollThreshold(updated.length)) {
+      await recordAchievementEvent({
+        employeeId: employee.id,
+        eventType: "RECOMMENDATION_REROLLED_10",
+        eventKey: `RECOMMENDATION_REROLLED_10:${employee.id}:${getSeoulDateString(new Date())}`,
+        referenceType: "employee",
+        referenceId: employee.id,
+      });
+    }
   }
 
   redirect(buildRecommendUrl(parsed.data));

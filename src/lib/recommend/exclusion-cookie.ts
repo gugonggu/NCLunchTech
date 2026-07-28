@@ -84,6 +84,13 @@ export function nextSeoulMidnight(now: Date): Date {
   return new Date(seoulNextMidnight - SEOUL_OFFSET_MS);
 }
 
+export const REROLL_ACHIEVEMENT_THRESHOLD = 10;
+
+/** 오늘의 제외 목록 길이가 임계값(기본 10) 이상인지 판정한다(숨겨진 업적 "선택의 늪"). */
+export function hasReachedRerollThreshold(excludedCount: number, threshold = REROLL_ACHIEVEMENT_THRESHOLD): boolean {
+  return excludedCount >= threshold;
+}
+
 export async function getExclusionList(): Promise<string[]> {
   const cookieStore = await cookies();
   return parseExclusionList(cookieStore.get(EXCLUSION_COOKIE_NAME)?.value);

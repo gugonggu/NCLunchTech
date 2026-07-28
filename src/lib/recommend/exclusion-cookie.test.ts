@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_EXCLUSION_ENTRIES,
   addExclusion,
+  hasReachedRerollThreshold,
   intersectWithCandidates,
   nextSeoulMidnight,
   parseExclusionList,
@@ -81,5 +82,19 @@ describe("nextSeoulMidnight", () => {
     const now = new Date("2026-07-16T14:59:00.000Z");
     const result = nextSeoulMidnight(now);
     expect(result.toISOString()).toBe("2026-07-16T15:00:00.000Z");
+  });
+});
+
+describe("hasReachedRerollThreshold", () => {
+  it("10개 미만이면 false다", () => {
+    expect(hasReachedRerollThreshold(9)).toBe(false);
+  });
+
+  it("정확히 10개면 true다", () => {
+    expect(hasReachedRerollThreshold(10)).toBe(true);
+  });
+
+  it("10개를 넘어도 true다", () => {
+    expect(hasReachedRerollThreshold(15)).toBe(true);
   });
 });
