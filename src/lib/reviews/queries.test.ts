@@ -14,7 +14,7 @@ describe("mapRecentReviewRows", () => {
           solo_fit_rating: 5,
           one_line_review: "좋았어요",
           tags: ["빨리 나와요"],
-          employees: { nickname: "홍천" },
+          employees: { nickname: "홍천", titles: { name: "센텀 미식가" } },
         },
         {
           id: "review-2",
@@ -25,7 +25,7 @@ describe("mapRecentReviewRows", () => {
           solo_fit_rating: 2,
           one_line_review: null,
           tags: null,
-          employees: { nickname: "나래" },
+          employees: { nickname: "나래", titles: null },
         },
       ],
       [
@@ -46,6 +46,7 @@ describe("mapRecentReviewRows", () => {
     expect(result[0]).toMatchObject({
       id: "review-1",
       employeeNickname: "홍천",
+      employeeTitleName: "센텀 미식가",
       tasteRating: 5,
       mealRecord: { menuName: "제육볶음", paidPrice: 9500 },
       photos: [{ id: "photo-1", url: "https://photos.test/review-1/a.jpg" }],
@@ -53,6 +54,7 @@ describe("mapRecentReviewRows", () => {
     expect(result[1]).toMatchObject({
       id: "review-2",
       employeeNickname: "나래",
+      employeeTitleName: null,
       mealRecord: null,
       photos: [{ id: "photo-2", url: "https://photos.test/review-2/b.jpg" }],
     });

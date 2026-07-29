@@ -290,7 +290,14 @@ export default async function RestaurantDetailPage({
                       <li key={r.id} className="rounded-card bg-surface px-4 py-4 text-sm text-ink shadow-card">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="font-semibold text-ink">{r.employeeNickname}</p>
+                            <p className="font-semibold text-ink">
+                              {r.employeeNickname}
+                              {r.employeeTitleName && (
+                                <span className="ml-1 text-xs font-semibold text-brand-dark">
+                                  『{r.employeeTitleName}』
+                                </span>
+                              )}
+                            </p>
                             {r.mealRecord && (
                               <p className="mt-1 text-xs tabular-nums text-ink-muted">
                                 먹은 메뉴 · {r.mealRecord.menuName} · {r.mealRecord.paidPrice.toLocaleString("ko-KR")}원

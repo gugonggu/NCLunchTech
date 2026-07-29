@@ -4,6 +4,7 @@ import { REVIEW_PHOTOS_BUCKET } from "@/lib/review-photos/validation";
 import { aggregateReviewRows, type ReviewAggregate } from "./validation";
 import type { RevisitIntent } from "./validation";
 import type { MealSource } from "@/lib/meals/validation";
+import { extractTitleName, type TitlesRelation } from "@/lib/achievements/title-relation";
 
 export interface MyReview {
   id: string;
@@ -120,6 +121,7 @@ export interface RecentReview {
   id: string;
   employeeId: string;
   employeeNickname: string;
+  employeeTitleName: string | null;
   tasteRating: number;
   speedRating: number;
   priceRating: number;
@@ -139,7 +141,7 @@ interface RecentReviewRow {
   solo_fit_rating: number;
   one_line_review: string | null;
   tags: string[] | null;
-  employees: { nickname: string } | null;
+  employees: { nickname: string; titles: TitlesRelation } | null;
 }
 
 interface RecentReviewPhotoRow {
@@ -183,6 +185,7 @@ export function mapRecentReviewRows(
     id: r.id,
     employeeId: r.employee_id,
     employeeNickname: r.employees?.nickname ?? "(알 수 없음)",
+    employeeTitleName: extractTitleName(r.employees?.titles ?? null),
     tasteRating: r.taste_rating,
     speedRating: r.speed_rating,
     priceRating: r.price_rating,
@@ -199,7 +202,9 @@ export async function getRecentReviews(restaurantId: string): Promise<RecentRevi
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("reviews")
-    .select("id, employee_id, taste_rating, speed_rating, price_rating, solo_fit_rating, one_line_review, tags, employees(nickname)")
+    .select(
+      "id, employee_id, taste_rating, speed_rating, price_rating, solo_fit_rating, one_line_review, tags, employees(nickname, titles(name))"
+    )
     .eq("restaurant_id", restaurantId)
     .order("created_at", { ascending: false })
     .limit(10);
@@ -234,23 +239,6 @@ export async function getRecentReviews(restaurantId: string): Promise<RecentRevi
     (mealRecords ?? []) as RecentReviewMealRow[],
     toPublicUrl
   );
-
-  return (data ?? []).map((r) => {
-    const employee = r.employees as unknown as { nickname: string } | null;
-    return {
-      id: r.id,
-      employeeId: r.employee_id,
-      tasteRating: r.taste_rating,
-      speedRating: r.speed_rating,
-      priceRating: r.price_rating,
-      soloFitRating: r.solo_fit_rating,
-      employeeNickname: employee?.nickname ?? "(알 수 없음)",
-      oneLineReview: r.one_line_review,
-      tags: r.tags,
-      mealRecord: null,
-      photos: [],
-    };
-  });
 }
 
 /** 리뷰를 남기려면 그 식당에 완료된 방문(개인 또는 약속 참여/방장 확인) 이력이 있어야 한다. */

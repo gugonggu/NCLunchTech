@@ -8,9 +8,11 @@ import { getMonthlySummary } from "@/lib/monthly-summary-queries";
 import { getSeasonalBadges } from "@/lib/seasonal-badges-queries";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getMealRecordsForEmployee } from "@/lib/meals/queries";
+import { getEarnedTitlesForEmployee } from "@/lib/achievements/titles";
+import { extractTitleName, type TitlesRelation } from "@/lib/achievements/title-relation";
 import { MealRecordList } from "@/components/me/MealRecordList";
 import { LogoutButton } from "../LogoutButton";
-import { updateMyProfile } from "./actions";
+import { updateMyProfile, updateSelectedTitle } from "./actions";
 
 const RANK_CATEGORY_LABELS = {
   review: "리뷰왕",
@@ -37,10 +39,15 @@ const MEAL_STATUS_MESSAGES = {
   not_found: "식사 기록을 찾을 수 없어요.",
 } as const;
 
+const TITLE_STATUS_MESSAGES = {
+  title_updated: "대표 칭호를 저장했어요.",
+  title_invalid: "선택할 수 없는 칭호예요.",
+} as const;
+
 export default async function MePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ status?: string; mealStatus?: string }>;
+  searchParams?: Promise<{ status?: string; mealStatus?: string; titleStatus?: string }>;
 }) {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/login?returnTo=%2Fme");
@@ -54,6 +61,10 @@ export default async function MePage({
     params?.mealStatus && Object.hasOwn(MEAL_STATUS_MESSAGES, params.mealStatus)
       ? MEAL_STATUS_MESSAGES[params.mealStatus as keyof typeof MEAL_STATUS_MESSAGES]
       : null;
+  const titleStatus =
+    params?.titleStatus && Object.hasOwn(TITLE_STATUS_MESSAGES, params.titleStatus)
+      ? TITLE_STATUS_MESSAGES[params.titleStatus as keyof typeof TITLE_STATUS_MESSAGES]
+      : null;
 
   const supabase = createServiceRoleClient();
   const [
@@ -66,7 +77,11 @@ export default async function MePage({
     reviewsResult,
     favoritesResult,
   ] = await Promise.all([
-    supabase.from("employees").select("created_at, real_name").eq("id", employee.id).maybeSingle(),
+    supabase
+      .from("employees")
+      .select("created_at, real_name, selected_title_id, titles(name)")
+      .eq("id", employee.id)
+      .maybeSingle(),
     supabase
       .from("visits")
       .select("*", { count: "exact", head: true })
@@ -129,17 +144,20 @@ export default async function MePage({
     { label: "즐겨찾기", value: favoritesResult.count ?? 0 },
   ];
 
-  const [leaderboard, monthlySummary, seasonalBadges, mealRecords] = await Promise.all([
+  const [leaderboard, monthlySummary, seasonalBadges, mealRecords, earnedTitles] = await Promise.all([
     getMonthlyLeaderboard(employee.id),
     getMonthlySummary(employee.id),
     getSeasonalBadges(employee.id),
     getMealRecordsForEmployee(employee.id),
+    getEarnedTitlesForEmployee(employee.id),
   ]);
   const myRanks = (Object.entries(RANK_CATEGORY_LABELS) as [keyof typeof RANK_CATEGORY_LABELS, string][])
     .map(([key, label]) => ({ label, myRank: leaderboard.categories[key].myRank }))
     .filter((row) => row.myRank !== null);
 
   const realName = profileResult.data.real_name ?? employee.realName ?? "";
+  const selectedTitleId: string | null = profileResult.data.selected_title_id;
+  const selectedTitleName = extractTitleName(profileResult.data.titles as TitlesRelation);
 
   return (
     <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 overflow-hidden px-6 py-8">
@@ -149,6 +167,9 @@ export default async function MePage({
         <h1 className={`mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl ${GRADIENT_TEXT}`}>
           {employee.nickname}
         </h1>
+        {selectedTitleName && (
+          <p className="mt-1 text-sm font-semibold text-brand-dark">『{selectedTitleName}』</p>
+        )}
         <p className="mt-1 text-sm tabular-nums text-ink-muted">
           {joinedAtFormatter.format(new Date(profileResult.data.created_at))} 가입
         </p>
@@ -192,6 +213,46 @@ export default async function MePage({
             프로필 저장
           </button>
         </form>
+      </section>
+
+      <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="대표 칭호">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-ink">대표 칭호</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              달성한 업적으로 얻은 칭호 중 하나를 골라 리뷰와 내 정보에 표시할 수 있어요.
+            </p>
+          </div>
+          {titleStatus && (
+            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-dark">
+              {titleStatus}
+            </span>
+          )}
+        </div>
+        {earnedTitles.length === 0 ? (
+          <p className="mt-4 text-sm text-ink-muted">아직 얻은 칭호가 없어요. 업적을 달성하면 칭호가 생겨요.</p>
+        ) : (
+          <form action={updateSelectedTitle} className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <select
+              name="titleId"
+              defaultValue={selectedTitleId ?? ""}
+              className="min-h-11 flex-1 rounded-control border border-line bg-surface px-3 text-ink"
+            >
+              <option value="">표시 안 함</option>
+              {earnedTitles.map((title) => (
+                <option key={title.id} value={title.id}>
+                  {title.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-control bg-brand px-4 py-3 text-sm font-bold text-white shadow-card"
+            >
+              저장
+            </button>
+          </form>
+        )}
       </section>
 
       <section className="grid grid-cols-2 gap-3" aria-label="활동 통계">

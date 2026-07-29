@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { profileSchema } from "@/lib/auth/validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { setSelectedTitle } from "@/lib/achievements/titles";
 
 export async function updateMyProfile(formData: FormData) {
   const employee = await getCurrentEmployee();
@@ -47,4 +48,17 @@ export async function updateMyProfile(formData: FormData) {
   }
 
   redirect("/me?status=profile_updated");
+}
+
+export async function updateSelectedTitle(formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect("/login?returnTo=%2Fme");
+  }
+
+  const raw = formData.get("titleId");
+  const titleId = typeof raw === "string" && raw.length > 0 ? raw : null;
+
+  const ok = await setSelectedTitle(employee.id, titleId);
+  redirect(ok ? "/me?titleStatus=title_updated" : "/me?titleStatus=title_invalid");
 }
