@@ -2,6 +2,7 @@ export const LUNCH_AVAILABILITY_OPTIONS = [
   { value: "looking_for_company", label: "같이 먹을 사람을 구해요" },
   { value: "has_appointment", label: "이미 약속이 있어요" },
   { value: "eating_alone", label: "오늘은 혼자 먹어요" },
+  { value: "eating_lunchbox", label: "오늘은 도시락을 먹어요" },
   { value: "away_or_skipping", label: "외근 또는 점심을 먹지 않아요" },
 ] as const;
 

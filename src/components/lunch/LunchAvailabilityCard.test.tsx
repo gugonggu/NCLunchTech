@@ -15,6 +15,7 @@ describe("LunchAvailabilityCard", () => {
 
     expect(screen.getByText("아직 오늘의 점심 상태를 공유한 동료가 없어요.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "같이 먹을 사람을 구해요" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "오늘은 도시락을 먹어요" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "외근 또는 점심을 먹지 않아요" })).toBeInTheDocument();
   });
 
