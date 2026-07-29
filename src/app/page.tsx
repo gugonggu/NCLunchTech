@@ -227,6 +227,9 @@ export default async function HomePage({
         <Link href="/worldcup" className={buttonStyles({ variant: "secondary", block: true })}>
           메뉴 월드컵
         </Link>
+        <Link href="/achievements" className={buttonStyles({ variant: "secondary", block: true })}>
+          업적
+        </Link>
       </nav>
 
       <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "280ms" }}>

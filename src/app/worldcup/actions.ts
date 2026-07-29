@@ -5,10 +5,12 @@ import { decideRestaurant } from "@/app/visits/actions";
 import { getCurrentEmployee } from "@/lib/auth/session";
 import {
   abandonWorldcupSession,
+  createCustomWorldcupSession,
   createWorldcupSession,
   getWorldcupSessionDetail,
   selectWorldcupMatch,
 } from "@/lib/worldcup/service";
+import type { WorldcupCandidate } from "@/lib/worldcup/candidates";
 import { isWorldcupGameType, UUID_PATTERN, type WorldcupGameType } from "@/lib/worldcup/validation";
 import { recordWorldcupWinnerSelection } from "@/lib/worldcup/winner-selection";
 
@@ -26,6 +28,27 @@ export async function startWorldcup(gameType: WorldcupGameType) {
   const result = await createWorldcupSession(employee.id, safeGameType);
   if (result.status === "not_enough_candidates") {
     redirectWithStatus("not_enough_candidates");
+  }
+
+  redirect(`/worldcup/${result.session.id}`);
+}
+
+export async function startCustomWorldcupAction(gameType: WorldcupGameType, candidates: WorldcupCandidate[]) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect("/login?returnTo=%2Fworldcup");
+  }
+
+  const safeGameType = isWorldcupGameType(gameType) ? gameType : "MENU";
+  const requested = Array.isArray(candidates)
+    ? candidates
+        .filter((c): c is WorldcupCandidate => typeof c?.menuKey === "string" && c.menuKey.length > 0)
+        .map((c) => ({ menuKey: c.menuKey }))
+    : [];
+
+  const result = await createCustomWorldcupSession(employee.id, safeGameType, requested);
+  if (result.status === "invalid_candidates") {
+    redirect(`/worldcup/custom?gameType=${safeGameType}&status=invalid_candidates`);
   }
 
   redirect(`/worldcup/${result.session.id}`);

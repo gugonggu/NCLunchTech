@@ -134,33 +134,34 @@ export type CreateWorldcupSessionResult =
   | { status: "created"; session: WorldcupSessionDetail }
   | { status: "not_enough_candidates" };
 
-export async function createWorldcupSession(
-  employeeId: string,
-  gameType: WorldcupGameType = "MENU"
-): Promise<CreateWorldcupSessionResult> {
-  const supabase = createServiceRoleClient();
+/** 게임 타입에 맞는 후보 풀을 가져와 상한을 적용해 섞는다. 커스텀 담기 화면의 "추천 후보" 목록에도 재사용한다. */
+export async function getWorldcupRecommendedCandidates(
+  gameType: WorldcupGameType,
+  limit: number
+): Promise<WorldcupCandidate[]> {
+  const pool = gameType === "RESTAURANT" ? await fetchWorldcupRestaurantPool() : await fetchWorldcupMenuPool();
+  return selectCandidatesWithCaps(shuffle(pool), {
+    targetSize: limit,
+    // 식당 월드컵은 후보 자체가 식당 1개당 1개라 이 상한이 사실상 항상 만족된다.
+    maxPerRestaurant: gameType === "RESTAURANT" ? 1 : MAX_MENUS_PER_RESTAURANT,
+    maxPerCategory: MAX_MENUS_PER_CATEGORY,
+  });
+}
 
+/** 세션·대진 행을 실제로 insert하는 공용 로직(자동 추천 시작과 커스텀 담기 시작이 함께 쓴다). */
+async function insertWorldcupSession(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  employeeId: string,
+  gameType: WorldcupGameType,
+  tournamentSize: WorldcupTournamentSize,
+  candidates: WorldcupCandidate[]
+): Promise<{ status: "created"; session: WorldcupSessionDetail }> {
   // 새로 시작하면 기존 진행 중 세션은 포기 처리한다.
   await supabase
     .from("menu_worldcup_sessions")
     .update({ status: "ABANDONED", abandoned_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq("employee_id", employeeId)
     .eq("status", "IN_PROGRESS");
-
-  const pool = gameType === "RESTAURANT" ? await fetchWorldcupRestaurantPool() : await fetchWorldcupMenuPool();
-  const selected = selectCandidatesWithCaps(shuffle(pool), {
-    targetSize: 8,
-    // 식당 월드컵은 후보 자체가 식당 1개당 1개라 이 상한이 사실상 항상 만족된다.
-    maxPerRestaurant: gameType === "RESTAURANT" ? 1 : MAX_MENUS_PER_RESTAURANT,
-    maxPerCategory: MAX_MENUS_PER_CATEGORY,
-  });
-
-  const tournamentSize = resolveTournamentSize(selected.length);
-  if (tournamentSize === null) {
-    return { status: "not_enough_candidates" };
-  }
-
-  const candidates = selected.slice(0, tournamentSize);
 
   const { data: sessionRow, error: sessionError } = await supabase
     .from("menu_worldcup_sessions")
@@ -200,6 +201,55 @@ export async function createWorldcupSession(
   }
 
   return { status: "created", session: detail };
+}
+
+export async function createWorldcupSession(
+  employeeId: string,
+  gameType: WorldcupGameType = "MENU"
+): Promise<CreateWorldcupSessionResult> {
+  const supabase = createServiceRoleClient();
+
+  const selected = await getWorldcupRecommendedCandidates(gameType, 8);
+  const tournamentSize = resolveTournamentSize(selected.length);
+  if (tournamentSize === null) {
+    return { status: "not_enough_candidates" };
+  }
+
+  const candidates = selected.slice(0, tournamentSize);
+  return insertWorldcupSession(supabase, employeeId, gameType, tournamentSize, candidates);
+}
+
+export type CreateCustomWorldcupSessionResult =
+  | { status: "created"; session: WorldcupSessionDetail }
+  | { status: "invalid_candidates" };
+
+/**
+ * 커스텀 담기(검색/추천으로 직접 고른 후보)로 월드컵을 시작한다. 클라이언트가 보낸 후보 정보(이름·분류 등)는
+ * 신뢰하지 않고, 현재 실제 풀에 존재하는 menuKey인지만 서버에서 다시 확인한 뒤 그 풀의 데이터로 대체한다.
+ * 정확히 4개 또는 8개일 때만 시작할 수 있다(8강/4강만 지원하므로 임의 개수를 자르지 않는다).
+ */
+export async function createCustomWorldcupSession(
+  employeeId: string,
+  gameType: WorldcupGameType,
+  requestedCandidates: { menuKey: string }[]
+): Promise<CreateCustomWorldcupSessionResult> {
+  const requestedKeys = [...new Set(requestedCandidates.map((c) => c.menuKey))];
+  if (requestedKeys.length !== 4 && requestedKeys.length !== 8) {
+    return { status: "invalid_candidates" };
+  }
+
+  const pool = gameType === "RESTAURANT" ? await fetchWorldcupRestaurantPool() : await fetchWorldcupMenuPool();
+  const poolByKey = new Map(pool.map((c) => [c.menuKey, c]));
+  const validated = requestedKeys
+    .map((key) => poolByKey.get(key))
+    .filter((c): c is WorldcupCandidate => c !== undefined);
+
+  if (validated.length !== requestedKeys.length) {
+    return { status: "invalid_candidates" };
+  }
+
+  const supabase = createServiceRoleClient();
+  return insertWorldcupSession(supabase, employeeId, gameType, validated.length as WorldcupTournamentSize, validated);
 }
 
 export type SelectWorldcupMatchResult =

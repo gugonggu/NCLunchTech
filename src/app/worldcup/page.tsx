@@ -63,11 +63,17 @@ export default async function WorldcupPage({
             메뉴 월드컵 {activeSession ? "새로 시작하기" : "시작"}
           </button>
         </form>
+        <Link href="/worldcup/custom?gameType=MENU" className={buttonStyles({ variant: "secondary", block: true })}>
+          메뉴 직접 담기
+        </Link>
         <form action={startWorldcup.bind(null, "RESTAURANT")}>
           <button type="submit" className={buttonStyles({ variant: "secondary", block: true })}>
             식당 월드컵 {activeSession ? "새로 시작하기" : "시작"}
           </button>
         </form>
+        <Link href="/worldcup/custom?gameType=RESTAURANT" className={buttonStyles({ variant: "secondary", block: true })}>
+          식당 직접 담기
+        </Link>
       </section>
     </main>
   );
