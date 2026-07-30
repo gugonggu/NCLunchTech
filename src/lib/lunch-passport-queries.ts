@@ -1,6 +1,7 @@
 import "server-only";
 import { buildLunchPassport, type LunchPassport } from "@/lib/lunch-passport";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 function seoulDate(value: string) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" })
@@ -9,8 +10,10 @@ function seoulDate(value: string) {
 
 export async function getLunchPassport(employeeId: string): Promise<LunchPassport> {
   const supabase = createServiceRoleClient();
-  const [{ data: restaurants }, { data: visits }, { data: hosted }, { data: participants }] = await Promise.all([
-    supabase.from("restaurants").select("id, name, category, is_active").eq("is_active", true),
+  const [restaurants, { data: visits }, { data: hosted }, { data: participants }] = await Promise.all([
+    fetchAllRows((from, to) =>
+      supabase.from("restaurants").select("id, name, category, is_active").eq("is_active", true).range(from, to)
+    ),
     supabase.from("visits").select("restaurant_id, visit_date").eq("employee_id", employeeId).eq("status", "completed"),
     supabase.from("appointments").select("restaurant_id, scheduled_at").eq("host_employee_id", employeeId).eq("host_attendance_status", "completed"),
     supabase.from("appointment_participants").select("appointments(restaurant_id, scheduled_at)").eq("employee_id", employeeId).eq("status", "completed"),
