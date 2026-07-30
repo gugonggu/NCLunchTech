@@ -14,6 +14,7 @@ import { getMyAvatar } from "@/lib/avatars/queries";
 import { AVATAR_STATUS_MESSAGES, isAvatarStatusCode } from "@/lib/avatars/validation";
 import { AvatarEditor2D } from "@/components/me/AvatarEditor2D";
 import { AvatarImage } from "@/components/AvatarImage";
+import { CollapsibleSection } from "@/components/me/CollapsibleSection";
 import { MealRecordList } from "@/components/me/MealRecordList";
 import { LogoutButton } from "../LogoutButton";
 import { updateMyProfile, updateSelectedTitle } from "./actions";
@@ -184,19 +185,14 @@ export default async function MePage({
         </p>
       </div>
 
-      <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="프로필 수정">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-ink">프로필</h2>
-            <p className="mt-1 text-sm text-ink-muted">리뷰에는 닉네임만 보이고, 초대 검색에는 실명도 사용할 수 있어요.</p>
-          </div>
-          {profileStatus && (
-            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-dark">
-              {profileStatus}
-            </span>
-          )}
-        </div>
-        <form action={updateMyProfile} className="mt-4 grid gap-3">
+      <CollapsibleSection
+        storageKey="profile"
+        ariaLabel="프로필 수정"
+        title="프로필"
+        description="리뷰에는 닉네임만 보이고, 초대 검색에는 실명도 사용할 수 있어요."
+        statusMessage={profileStatus}
+      >
+        <form action={updateMyProfile} className="grid gap-3">
           <label className="grid gap-1 text-sm font-semibold text-ink">
             실명
             <input
@@ -222,24 +218,17 @@ export default async function MePage({
             프로필 저장
           </button>
         </form>
-      </section>
+      </CollapsibleSection>
 
-      <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="아바타">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-ink">아바타</h2>
-            <p className="mt-1 text-sm text-ink-muted">파트를 골라 나만의 2D 아바타를 만들어보세요.</p>
-          </div>
-          {avatarStatus && (
-            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-dark">
-              {avatarStatus}
-            </span>
-          )}
-        </div>
-        <div className="mt-4">
-          <AvatarEditor2D initialOptions={myAvatar.options} />
-        </div>
-      </section>
+      <CollapsibleSection
+        storageKey="avatar"
+        ariaLabel="아바타"
+        title="아바타"
+        description="파트를 골라 나만의 2D 아바타를 만들어보세요."
+        statusMessage={avatarStatus}
+      >
+        <AvatarEditor2D initialOptions={myAvatar.options} />
+      </CollapsibleSection>
 
       <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="대표 칭호">
         <div className="flex items-start justify-between gap-3">
