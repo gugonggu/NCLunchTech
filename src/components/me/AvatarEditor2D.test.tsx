@@ -27,6 +27,6 @@ describe("AvatarEditor2D", () => {
 
     fireEvent.change(screen.getByLabelText("옷 색"), { target: { value: "ff5c5c" } });
 
-    expect(screen.getByAltText("아바타 미리보기").src).not.toBe(before);
+    expect((screen.getByAltText("아바타 미리보기") as HTMLImageElement).src).not.toBe(before);
   });
 });
