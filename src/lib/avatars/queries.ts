@@ -10,7 +10,7 @@ function buildAvatarStoragePath(employeeId: string): string {
   return `${employeeId}.png`;
 }
 
-function toPublicUrl(storagePath: string, supabase = createServiceRoleClient()): string {
+function toPublicUrl(storagePath: string, supabase: ReturnType<typeof createServiceRoleClient>): string {
   return supabase.storage.from(AVATAR_BUCKET).getPublicUrl(storagePath).data.publicUrl;
 }
 
@@ -36,6 +36,7 @@ export async function saveAvatarOptions(employeeId: string, options: AvatarOptio
       .upload(storagePath, new Blob([new Uint8Array(png)], { type: "image/png" }), {
         contentType: "image/png",
         upsert: true,
+        cacheControl: "0",
       });
     previewUpdated = !uploadError;
   } catch {
@@ -66,7 +67,8 @@ export async function getMyAvatar(employeeId: string): Promise<MyAvatar> {
     .maybeSingle();
 
   const type = data?.avatar_type === "2d" ? "2d" : null;
-  const options = type === "2d" ? (data!.avatar_options as AvatarOptions) : null;
+  const rawOptions = type === "2d" ? data!.avatar_options : null;
+  const options = rawOptions && isValidAvatarOptions(rawOptions) ? rawOptions : null;
   const previewUrl = data?.avatar_storage_path
     ? toPublicUrl(data.avatar_storage_path, supabase)
     : DEFAULT_AVATAR_IMAGE_PATH;

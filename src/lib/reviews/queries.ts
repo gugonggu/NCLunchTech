@@ -5,7 +5,7 @@ import { aggregateReviewRows, type ReviewAggregate } from "./validation";
 import type { RevisitIntent } from "./validation";
 import type { MealSource } from "@/lib/meals/validation";
 import { extractTitleName, type TitlesRelation } from "@/lib/achievements/title-relation";
-import { getAvatarPreviewUrls } from "@/lib/avatars/queries";
+import { getAvatarPreviewUrls, DEFAULT_AVATAR_IMAGE_PATH } from "@/lib/avatars/queries";
 
 export interface MyReview {
   id: string;
@@ -189,7 +189,7 @@ export function mapRecentReviewRows(
     employeeId: r.employee_id,
     employeeNickname: r.employees?.nickname ?? "(알 수 없음)",
     employeeTitleName: extractTitleName(r.employees?.titles ?? null),
-    avatarUrl: avatarUrls.get(r.employee_id) ?? "/avatar-default.png",
+    avatarUrl: avatarUrls.get(r.employee_id) ?? DEFAULT_AVATAR_IMAGE_PATH,
     tasteRating: r.taste_rating,
     speedRating: r.speed_rating,
     priceRating: r.price_rating,

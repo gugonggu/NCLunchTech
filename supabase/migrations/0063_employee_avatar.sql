@@ -6,10 +6,21 @@ alter table employees add column if not exists avatar_type text;
 alter table employees add column if not exists avatar_options jsonb;
 alter table employees add column if not exists avatar_storage_path text;
 
-alter table employees add constraint employees_avatar_type_check
-  check (avatar_type is null or avatar_type in ('2d'));
-alter table employees add constraint employees_avatar_options_requires_2d_check
-  check (avatar_options is null or avatar_type = '2d');
+do $$
+begin
+  alter table employees add constraint employees_avatar_type_check
+    check (avatar_type is null or avatar_type in ('2d'));
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table employees add constraint employees_avatar_options_requires_2d_check
+    check (avatar_options is null or avatar_type = '2d');
+exception
+  when duplicate_object then null;
+end $$;
 
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)

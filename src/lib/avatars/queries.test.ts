@@ -75,6 +75,33 @@ describe("saveAvatarOptions", () => {
     expect(savedUpdate).toMatchObject({ avatar_type: "2d", avatar_options: AVATAR_DEFAULT_OPTIONS });
     expect(savedUpdate).not.toHaveProperty("avatar_storage_path");
   });
+
+  it("still saves options when the storage upload resolves with an error, but keeps the previous preview path", async () => {
+    mocks.renderAvatarPng.mockResolvedValue(Buffer.from("png"));
+    const { update } = setupClient({ uploadError: new Error("upload failed") });
+
+    const result = await saveAvatarOptions("emp-1", AVATAR_DEFAULT_OPTIONS);
+
+    expect(result).toEqual({ ok: true, previewUpdated: false });
+    const savedUpdate = update.mock.calls[0][0];
+    expect(savedUpdate).toMatchObject({ avatar_type: "2d", avatar_options: AVATAR_DEFAULT_OPTIONS });
+    expect(savedUpdate).not.toHaveProperty("avatar_storage_path");
+  });
+
+  it("reports failure when the employees table update fails, even though the upload succeeded", async () => {
+    mocks.renderAvatarPng.mockResolvedValue(Buffer.from("png"));
+    const { update } = setupClient({ updateError: new Error("update failed") });
+
+    const result = await saveAvatarOptions("emp-1", AVATAR_DEFAULT_OPTIONS);
+
+    expect(result).toEqual({ ok: false, previewUpdated: true });
+    const savedUpdate = update.mock.calls[0][0];
+    expect(savedUpdate).toMatchObject({
+      avatar_type: "2d",
+      avatar_options: AVATAR_DEFAULT_OPTIONS,
+      avatar_storage_path: "emp-1.png",
+    });
+  });
 });
 
 describe("getMyAvatar", () => {
@@ -98,6 +125,21 @@ describe("getMyAvatar", () => {
     await expect(getMyAvatar("emp-1")).resolves.toEqual({
       type: "2d",
       options: AVATAR_DEFAULT_OPTIONS,
+      previewUrl: "https://avatars.test/emp-1.png",
+    });
+  });
+
+  it("self-heals to null options when the stored avatar_options contain a stale/invalid value", async () => {
+    setupClient({
+      selectResult: {
+        avatar_type: "2d",
+        avatar_options: { ...AVATAR_DEFAULT_OPTIONS, top: "no-longer-a-valid-option" },
+        avatar_storage_path: "emp-1.png",
+      },
+    });
+    await expect(getMyAvatar("emp-1")).resolves.toEqual({
+      type: "2d",
+      options: null,
       previewUrl: "https://avatars.test/emp-1.png",
     });
   });
