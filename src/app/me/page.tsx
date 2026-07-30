@@ -10,6 +10,10 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getMealRecordsForEmployee } from "@/lib/meals/queries";
 import { getEarnedTitlesForEmployee } from "@/lib/achievements/titles";
 import { extractTitleName, type TitlesRelation } from "@/lib/achievements/title-relation";
+import { getMyAvatar } from "@/lib/avatars/queries";
+import { AVATAR_STATUS_MESSAGES, isAvatarStatusCode } from "@/lib/avatars/validation";
+import { AvatarEditor2D } from "@/components/me/AvatarEditor2D";
+import { AvatarImage } from "@/components/AvatarImage";
 import { MealRecordList } from "@/components/me/MealRecordList";
 import { LogoutButton } from "../LogoutButton";
 import { updateMyProfile, updateSelectedTitle } from "./actions";
@@ -47,7 +51,7 @@ const TITLE_STATUS_MESSAGES = {
 export default async function MePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ status?: string; mealStatus?: string; titleStatus?: string }>;
+  searchParams?: Promise<{ status?: string; mealStatus?: string; titleStatus?: string; avatarStatus?: string }>;
 }) {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/login?returnTo=%2Fme");
@@ -65,6 +69,7 @@ export default async function MePage({
     params?.titleStatus && Object.hasOwn(TITLE_STATUS_MESSAGES, params.titleStatus)
       ? TITLE_STATUS_MESSAGES[params.titleStatus as keyof typeof TITLE_STATUS_MESSAGES]
       : null;
+  const avatarStatus = isAvatarStatusCode(params?.avatarStatus) ? AVATAR_STATUS_MESSAGES[params.avatarStatus] : null;
 
   const supabase = createServiceRoleClient();
   const [
@@ -144,12 +149,13 @@ export default async function MePage({
     { label: "즐겨찾기", value: favoritesResult.count ?? 0 },
   ];
 
-  const [leaderboard, monthlySummary, seasonalBadges, mealRecords, earnedTitles] = await Promise.all([
+  const [leaderboard, monthlySummary, seasonalBadges, mealRecords, earnedTitles, myAvatar] = await Promise.all([
     getMonthlyLeaderboard(employee.id),
     getMonthlySummary(employee.id),
     getSeasonalBadges(employee.id),
     getMealRecordsForEmployee(employee.id),
     getEarnedTitlesForEmployee(employee.id),
+    getMyAvatar(employee.id),
   ]);
   const myRanks = (Object.entries(RANK_CATEGORY_LABELS) as [keyof typeof RANK_CATEGORY_LABELS, string][])
     .map(([key, label]) => ({ label, myRank: leaderboard.categories[key].myRank }))
@@ -164,9 +170,12 @@ export default async function MePage({
       <GradientBackdrop />
       <div>
         <p className="text-sm text-ink-muted">내 정보</p>
-        <h1 className={`mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl ${GRADIENT_TEXT}`}>
-          {employee.nickname}
-        </h1>
+        <div className="mt-2 flex items-center gap-3">
+          <AvatarImage previewUrl={myAvatar.previewUrl} alt={`${employee.nickname}의 아바타`} size={56} />
+          <h1 className={`text-3xl font-extrabold tracking-tight sm:text-4xl ${GRADIENT_TEXT}`}>
+            {employee.nickname}
+          </h1>
+        </div>
         {selectedTitleName && (
           <p className="mt-1 text-sm font-semibold text-brand-dark">『{selectedTitleName}』</p>
         )}
@@ -213,6 +222,23 @@ export default async function MePage({
             프로필 저장
           </button>
         </form>
+      </section>
+
+      <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="아바타">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-ink">아바타</h2>
+            <p className="mt-1 text-sm text-ink-muted">파트를 골라 나만의 2D 아바타를 만들어보세요.</p>
+          </div>
+          {avatarStatus && (
+            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-dark">
+              {avatarStatus}
+            </span>
+          )}
+        </div>
+        <div className="mt-4">
+          <AvatarEditor2D initialOptions={myAvatar.options} />
+        </div>
       </section>
 
       <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="대표 칭호">
