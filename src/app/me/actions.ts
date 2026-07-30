@@ -73,6 +73,7 @@ export async function updateAvatar(formData: FormData) {
 
   const options: AvatarOptions = {
     top: String(formData.get("top") ?? ""),
+    eyebrows: String(formData.get("eyebrows") ?? ""),
     hairColor: String(formData.get("hairColor") ?? ""),
     skinColor: String(formData.get("skinColor") ?? ""),
     eyes: String(formData.get("eyes") ?? ""),

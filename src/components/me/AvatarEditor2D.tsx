@@ -108,6 +108,14 @@ export function AvatarEditor2D({ initialOptions }: { initialOptions: AvatarOptio
           options={Object.entries(AVATAR_TRAIT_LABELS.top).map(([value, label]) => ({ value, label }))}
         />
 
+        <TraitSelect
+          label="눈썹"
+          name="eyebrows"
+          value={options.eyebrows}
+          onChange={(value) => updateField("eyebrows", value)}
+          options={Object.entries(AVATAR_TRAIT_LABELS.eyebrows).map(([value, label]) => ({ value, label }))}
+        />
+
         <ColorSwatchField
           label="머리색"
           name="hairColor"

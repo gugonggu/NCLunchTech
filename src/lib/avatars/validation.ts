@@ -1,7 +1,16 @@
-export type AvatarTraitKey = "top" | "hairColor" | "skinColor" | "eyes" | "mouth" | "clothing" | "clothesColor";
+export type AvatarTraitKey =
+  | "top"
+  | "eyebrows"
+  | "hairColor"
+  | "skinColor"
+  | "eyes"
+  | "mouth"
+  | "clothing"
+  | "clothesColor";
 
 export interface AvatarOptions {
   top: string;
+  eyebrows: string;
   hairColor: string;
   skinColor: string;
   eyes: string;
@@ -20,6 +29,11 @@ export const AVATAR_TRAIT_VALUES: Record<AvatarTraitKey, readonly string[]> = {
     "dreads02", "frizzle", "shaggy", "shaggyMullet", "shortCurly", "shortFlat", "shortRound",
     "shortWaved", "sides", "theCaesar", "theCaesarAndSidePart", "bigHair",
   ],
+  eyebrows: [
+    "angryNatural", "defaultNatural", "flatNatural", "frownNatural", "raisedExcitedNatural",
+    "sadConcernedNatural", "unibrowNatural", "upDownNatural", "angry", "default",
+    "raisedExcited", "sadConcerned", "upDown",
+  ],
   hairColor: ["a55728", "2c1b18", "b58143", "d6b370", "724133", "4a312c", "f59797", "ecdcbf", "c93305", "e8e1e1"],
   skinColor: ["614335", "d08b5b", "ae5d29", "edb98a", "ffdbb4", "fd9841", "f8d25c"],
   eyes: ["closed", "cry", "default", "eyeRoll", "happy", "hearts", "side", "squint", "surprised", "winkWacky", "wink", "xDizzy"],
@@ -37,7 +51,7 @@ export const AVATAR_FACIAL_HAIR_VALUES: readonly string[] = [
 ];
 
 /** 드롭다운에 DiceBear 원본 값 대신 보여줄 한글 라벨(선택 목록 순서와 무관하게 값으로 조회한다). */
-export const AVATAR_TRAIT_LABELS: Record<"top" | "eyes" | "mouth" | "clothing", Record<string, string>> = {
+export const AVATAR_TRAIT_LABELS: Record<"top" | "eyebrows" | "eyes" | "mouth" | "clothing", Record<string, string>> = {
   top: {
     hat: "모자", hijab: "히잡", turban: "터번", winterHat1: "겨울모자 1", winterHat02: "겨울모자 2",
     winterHat03: "겨울모자 3", winterHat04: "겨울모자 4", bob: "단발", bun: "쪽머리", curly: "곱슬머리",
@@ -47,6 +61,14 @@ export const AVATAR_TRAIT_LABELS: Record<"top" | "eyes" | "mouth" | "clothing", 
     frizzle: "곱슬단발", shaggy: "샤기컷", shaggyMullet: "샤기 멀렛", shortCurly: "짧은 곱슬머리",
     shortFlat: "짧은 생머리", shortRound: "짧은 둥근머리", shortWaved: "짧은 웨이브", sides: "옆머리",
     theCaesar: "시저컷", theCaesarAndSidePart: "시저컷+가르마", bigHair: "볼륨머리",
+  },
+  eyebrows: {
+    angryNatural: "자연스러운 화난 눈썹", defaultNatural: "자연스러운 기본 눈썹",
+    flatNatural: "자연스러운 일자 눈썹", frownNatural: "자연스러운 찌푸린 눈썹",
+    raisedExcitedNatural: "자연스러운 놀란 눈썹", sadConcernedNatural: "자연스러운 걱정스런 눈썹",
+    unibrowNatural: "자연스러운 일자연결눈썹", upDownNatural: "자연스러운 짝짝이 눈썹",
+    angry: "화난 눈썹", default: "기본 눈썹", raisedExcited: "놀란 눈썹",
+    sadConcerned: "걱정스런 눈썹", upDown: "짝짝이 눈썹",
   },
   eyes: {
     closed: "감은 눈", cry: "우는 눈", default: "기본 눈", eyeRoll: "눈 굴림", happy: "웃는 눈",
@@ -93,6 +115,7 @@ export const AVATAR_COLOR_LABELS: Record<"hairColor" | "skinColor" | "clothesCol
 
 export const AVATAR_DEFAULT_OPTIONS: AvatarOptions = {
   top: "shortFlat",
+  eyebrows: "default",
   hairColor: "2c1b18",
   skinColor: "edb98a",
   eyes: "default",
@@ -131,6 +154,7 @@ export function buildDicebearParams(options: AvatarOptions): Record<string, unkn
   return {
     seed: "nclunchtech-avatar",
     top: [options.top],
+    eyebrows: [options.eyebrows],
     hairColor: [options.hairColor],
     skinColor: [options.skinColor],
     eyes: [options.eyes],

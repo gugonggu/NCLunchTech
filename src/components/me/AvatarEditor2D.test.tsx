@@ -15,6 +15,13 @@ describe("AvatarEditor2D", () => {
     expect(screen.getByText(AVATAR_TRAIT_LABELS.top[AVATAR_DEFAULT_OPTIONS.top])).toBeInTheDocument();
   });
 
+  it("renders a select for eyebrows with a Korean label chosen", () => {
+    render(<AvatarEditor2D initialOptions={AVATAR_DEFAULT_OPTIONS} />);
+    const eyebrowsSelect = screen.getByLabelText("눈썹") as HTMLSelectElement;
+    expect(eyebrowsSelect.value).toBe(AVATAR_DEFAULT_OPTIONS.eyebrows);
+    expect(screen.getByText(AVATAR_TRAIT_LABELS.eyebrows[AVATAR_DEFAULT_OPTIONS.eyebrows])).toBeInTheDocument();
+  });
+
   it("falls back to the default options when nothing is saved yet", () => {
     render(<AvatarEditor2D initialOptions={null} />);
     const clothingSelect = screen.getByLabelText("옷 스타일") as HTMLSelectElement;

@@ -43,6 +43,7 @@ describe("buildDicebearParams", () => {
     const params = buildDicebearParams(AVATAR_DEFAULT_OPTIONS);
     expect(params).toMatchObject({
       top: [AVATAR_DEFAULT_OPTIONS.top],
+      eyebrows: [AVATAR_DEFAULT_OPTIONS.eyebrows],
       hairColor: [AVATAR_DEFAULT_OPTIONS.hairColor],
       skinColor: [AVATAR_DEFAULT_OPTIONS.skinColor],
       eyes: [AVATAR_DEFAULT_OPTIONS.eyes],
@@ -67,8 +68,8 @@ describe("buildDicebearParams", () => {
 });
 
 describe("avatar labels", () => {
-  it("has a Korean label for every top/eyes/mouth/clothing value", () => {
-    for (const key of ["top", "eyes", "mouth", "clothing"] as const) {
+  it("has a Korean label for every top/eyebrows/eyes/mouth/clothing value", () => {
+    for (const key of ["top", "eyebrows", "eyes", "mouth", "clothing"] as const) {
       for (const value of AVATAR_TRAIT_VALUES[key]) {
         expect(AVATAR_TRAIT_LABELS[key][value], `${key}.${value}`).toBeTypeOf("string");
       }
