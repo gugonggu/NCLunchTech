@@ -5,6 +5,8 @@ import { getCurrentEmployee } from "@/lib/auth/session";
 import { profileSchema } from "@/lib/auth/validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { setSelectedTitle } from "@/lib/achievements/titles";
+import { isValidAvatarOptions, type AvatarOptions } from "@/lib/avatars/validation";
+import { saveAvatarOptions } from "@/lib/avatars/queries";
 
 export async function updateMyProfile(formData: FormData) {
   const employee = await getCurrentEmployee();
@@ -61,4 +63,34 @@ export async function updateSelectedTitle(formData: FormData) {
 
   const ok = await setSelectedTitle(employee.id, titleId);
   redirect(ok ? "/me?titleStatus=title_updated" : "/me?titleStatus=title_invalid");
+}
+
+export async function updateAvatar(formData: FormData) {
+  const employee = await getCurrentEmployee();
+  if (!employee) {
+    redirect("/login?returnTo=%2Fme");
+  }
+
+  const options: AvatarOptions = {
+    top: String(formData.get("top") ?? ""),
+    hairColor: String(formData.get("hairColor") ?? ""),
+    skinColor: String(formData.get("skinColor") ?? ""),
+    eyes: String(formData.get("eyes") ?? ""),
+    mouth: String(formData.get("mouth") ?? ""),
+    clothing: String(formData.get("clothing") ?? ""),
+    clothesColor: String(formData.get("clothesColor") ?? ""),
+    accessories: String(formData.get("accessories") ?? "none"),
+    facialHair: String(formData.get("facialHair") ?? "none"),
+  };
+
+  if (!isValidAvatarOptions(options)) {
+    redirect("/me?avatarStatus=avatar_invalid");
+  }
+
+  const result = await saveAvatarOptions(employee.id, options);
+  if (!result.ok) {
+    redirect("/me?avatarStatus=avatar_invalid");
+  }
+
+  redirect(result.previewUpdated ? "/me?avatarStatus=avatar_updated" : "/me?avatarStatus=avatar_preview_pending");
 }
