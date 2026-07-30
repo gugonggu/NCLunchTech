@@ -12,6 +12,7 @@ import { getComments } from "@/lib/review-comments/queries";
 import { getHelpfulCount, hasReacted } from "@/lib/review-reactions/queries";
 import { getRestaurantPhotoGallery } from "@/lib/review-photos/queries";
 import { formatTimeToMinute } from "@/lib/restaurants/hours-validation";
+import { AvatarImage } from "@/components/AvatarImage";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { StatusReportForm } from "../StatusReportForm";
@@ -289,20 +290,23 @@ export default async function RestaurantDetailPage({
                     return (
                       <li key={r.id} className="rounded-card bg-surface px-4 py-4 text-sm text-ink shadow-card">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-ink">
-                              {r.employeeNickname}
-                              {r.employeeTitleName && (
-                                <span className="ml-1 text-xs font-semibold text-brand-dark">
-                                  『{r.employeeTitleName}』
-                                </span>
-                              )}
-                            </p>
-                            {r.mealRecord && (
-                              <p className="mt-1 text-xs tabular-nums text-ink-muted">
-                                먹은 메뉴 · {r.mealRecord.menuName} · {r.mealRecord.paidPrice.toLocaleString("ko-KR")}원
+                          <div className="flex items-start gap-2">
+                            <AvatarImage previewUrl={r.avatarUrl} alt={`${r.employeeNickname}의 아바타`} size={32} />
+                            <div>
+                              <p className="font-semibold text-ink">
+                                {r.employeeNickname}
+                                {r.employeeTitleName && (
+                                  <span className="ml-1 text-xs font-semibold text-brand-dark">
+                                    『{r.employeeTitleName}』
+                                  </span>
+                                )}
                               </p>
-                            )}
+                              {r.mealRecord && (
+                                <p className="mt-1 text-xs tabular-nums text-ink-muted">
+                                  먹은 메뉴 · {r.mealRecord.menuName} · {r.mealRecord.paidPrice.toLocaleString("ko-KR")}원
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <span className="shrink-0 rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold tabular-nums text-brand-dark">
                             맛 {r.tasteRating}점

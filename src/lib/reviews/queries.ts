@@ -5,6 +5,7 @@ import { aggregateReviewRows, type ReviewAggregate } from "./validation";
 import type { RevisitIntent } from "./validation";
 import type { MealSource } from "@/lib/meals/validation";
 import { extractTitleName, type TitlesRelation } from "@/lib/achievements/title-relation";
+import { getAvatarPreviewUrls } from "@/lib/avatars/queries";
 
 export interface MyReview {
   id: string;
@@ -122,6 +123,7 @@ export interface RecentReview {
   employeeId: string;
   employeeNickname: string;
   employeeTitleName: string | null;
+  avatarUrl: string;
   tasteRating: number;
   speedRating: number;
   priceRating: number;
@@ -162,7 +164,8 @@ export function mapRecentReviewRows(
   reviews: RecentReviewRow[],
   photos: RecentReviewPhotoRow[],
   mealRecords: RecentReviewMealRow[],
-  toPublicUrl: (storagePath: string) => string
+  toPublicUrl: (storagePath: string) => string,
+  avatarUrls: Map<string, string>
 ): RecentReview[] {
   const photosByReviewId = new Map<string, { id: string; url: string }[]>();
   for (const photo of photos) {
@@ -186,6 +189,7 @@ export function mapRecentReviewRows(
     employeeId: r.employee_id,
     employeeNickname: r.employees?.nickname ?? "(알 수 없음)",
     employeeTitleName: extractTitleName(r.employees?.titles ?? null),
+    avatarUrl: avatarUrls.get(r.employee_id) ?? "/avatar-default.png",
     tasteRating: r.taste_rating,
     speedRating: r.speed_rating,
     priceRating: r.price_rating,
@@ -232,12 +236,14 @@ export async function getRecentReviews(restaurantId: string): Promise<RecentRevi
 
   const toPublicUrl = (storagePath: string) =>
     supabase.storage.from(REVIEW_PHOTOS_BUCKET).getPublicUrl(storagePath).data.publicUrl;
+  const avatarUrls = await getAvatarPreviewUrls(employeeIds);
 
   return mapRecentReviewRows(
     reviews,
     (photos ?? []) as RecentReviewPhotoRow[],
     (mealRecords ?? []) as RecentReviewMealRow[],
-    toPublicUrl
+    toPublicUrl,
+    avatarUrls
   );
 }
 

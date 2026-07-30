@@ -41,12 +41,17 @@ describe("mapRecentReviewRows", () => {
         },
       ],
       (path) => `https://photos.test/${path}`,
+      new Map([
+        ["emp-1", "https://avatars.test/emp-1.png"],
+        ["emp-2", "/avatar-default.png"],
+      ]),
     );
 
     expect(result[0]).toMatchObject({
       id: "review-1",
       employeeNickname: "홍천",
       employeeTitleName: "센텀 미식가",
+      avatarUrl: "https://avatars.test/emp-1.png",
       tasteRating: 5,
       mealRecord: { menuName: "제육볶음", paidPrice: 9500 },
       photos: [{ id: "photo-1", url: "https://photos.test/review-1/a.jpg" }],
@@ -55,6 +60,7 @@ describe("mapRecentReviewRows", () => {
       id: "review-2",
       employeeNickname: "나래",
       employeeTitleName: null,
+      avatarUrl: "/avatar-default.png",
       mealRecord: null,
       photos: [{ id: "photo-2", url: "https://photos.test/review-2/b.jpg" }],
     });
