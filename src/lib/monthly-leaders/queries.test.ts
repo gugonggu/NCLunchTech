@@ -15,6 +15,7 @@ vi.mock("@/lib/supabase/fetch-all", () => ({
 
 import {
   finalizeMissingMonthlyLeaderboards,
+  getFinalizedMonthlyLeaderboard,
   getLatestMonthlyLeaderBadges,
 } from "./queries";
 
@@ -45,6 +46,63 @@ function arrangeFinalization({
 }
 
 describe("finalizeMissingMonthlyLeaderboards", () => {
+  it("orders every paginated source before requesting its first page", async () => {
+    const ordersByTable = new Map<string, Array<[string, { ascending?: boolean } | undefined]>>();
+    const rangesByTable = new Map<string, Array<[number, number]>>();
+    const createQuery = (table: string) => {
+      ordersByTable.set(table, []);
+      rangesByTable.set(table, []);
+      const query = {
+        select: vi.fn(),
+        eq: vi.fn(),
+        order: vi.fn(),
+        range: vi.fn(async (from: number, to: number) => {
+          rangesByTable.get(table)?.push([from, to]);
+          return { data: [], error: null };
+        }),
+      };
+      query.select.mockReturnValue(query);
+      query.eq.mockReturnValue(query);
+      query.order.mockImplementation((column: string, options?: { ascending?: boolean }) => {
+        ordersByTable.get(table)?.push([column, options]);
+        return query;
+      });
+      return query;
+    };
+    const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
+    mocks.createServiceRoleClient.mockReturnValue({ from: vi.fn(createQuery), rpc });
+    mocks.fetchAllRows.mockReset();
+    mocks.fetchAllRows.mockImplementation(async (fetchPage: (from: number, to: number) => PromiseLike<unknown>) => {
+      await fetchPage(0, 999);
+      return [];
+    });
+
+    await finalizeMissingMonthlyLeaderboards(new Date("2026-07-31T15:00:00.000Z"));
+
+    expect(rangesByTable).toEqual(
+      new Map([
+        ["monthly_leaderboard_periods", [[0, 999]]],
+        ["employees", [[0, 999]]],
+        ["reviews", [[0, 999]]],
+        ["visits", [[0, 999]]],
+        ["appointments", [[0, 999]]],
+        ["appointment_participants", [[0, 999]]],
+        ["meal_records", [[0, 999]]],
+      ])
+    );
+    expect(ordersByTable).toEqual(
+      new Map([
+        ["monthly_leaderboard_periods", [["month_key", { ascending: true }], ["id", { ascending: true }]]],
+        ["employees", [["id", { ascending: true }]]],
+        ["reviews", [["created_at", { ascending: true }], ["id", { ascending: true }]]],
+        ["visits", [["visit_date", { ascending: true }], ["id", { ascending: true }]]],
+        ["appointments", [["scheduled_at", { ascending: true }], ["id", { ascending: true }]]],
+        ["appointment_participants", [["created_at", { ascending: true }], ["id", { ascending: true }]]],
+        ["meal_records", [["created_at", { ascending: true }], ["id", { ascending: true }]]],
+      ])
+    );
+  });
+
   it("backfills unfinalized past months oldest first and treats an existing period as idempotent", async () => {
     const { rpc } = arrangeFinalization({
       reviews: [{ employee_id: "employee-1", created_at: "2026-06-05T03:00:00.000Z" }],
@@ -74,6 +132,42 @@ describe("finalizeMissingMonthlyLeaderboards", () => {
     await finalizeMissingMonthlyLeaderboards(new Date("2026-07-31T15:00:00.000Z"));
 
     expect(rpc.mock.calls.map((call) => call[1].p_month_key)).toEqual(["2026-07-01"]);
+  });
+});
+
+describe("getFinalizedMonthlyLeaderboard", () => {
+  it("orders snapshot entries by rank, score, Korean nickname, then employee", async () => {
+    const entryOrders: Array<[string, { ascending?: boolean } | undefined]> = [];
+    const periodQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: "period-1", month_key: "2026-07-01" }, error: null }),
+    };
+    periodQuery.select.mockReturnValue(periodQuery);
+    periodQuery.eq.mockReturnValue(periodQuery);
+    const entriesQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      order: vi.fn(),
+    };
+    entriesQuery.select.mockReturnValue(entriesQuery);
+    entriesQuery.eq.mockReturnValue(entriesQuery);
+    entriesQuery.order.mockImplementation((column: string, options?: { ascending?: boolean }) => {
+      entryOrders.push([column, options]);
+      return entryOrders.length === 4 ? Promise.resolve({ data: [], error: null }) : entriesQuery;
+    });
+    mocks.createServiceRoleClient.mockReturnValue({
+      from: vi.fn((table: string) => (table === "monthly_leaderboard_periods" ? periodQuery : entriesQuery)),
+    });
+
+    await getFinalizedMonthlyLeaderboard("2026-07", "employee-1");
+
+    expect(entryOrders).toEqual([
+      ["rank", { ascending: true }],
+      ["total_score", { ascending: false }],
+      ["nickname_snapshot", { ascending: true }],
+      ["employee_id", { ascending: true }],
+    ]);
   });
 });
 

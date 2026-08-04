@@ -65,17 +65,31 @@ export async function finalizeMissingMonthlyLeaderboards(now: Date): Promise<voi
   const supabase = createServiceRoleClient();
   const [periods, employees, reviews, visits, hostedAppointments, participantRows, mealRecords] = await Promise.all([
     fetchAllRows((from, to) =>
-      supabase.from("monthly_leaderboard_periods").select("id, month_key").range(from, to)
+      supabase
+        .from("monthly_leaderboard_periods")
+        .select("id, month_key")
+        .order("month_key", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
     ),
     fetchAllRows((from, to) =>
-      supabase.from("employees").select("id, nickname, is_active").range(from, to)
+      supabase.from("employees").select("id, nickname, is_active").order("id", { ascending: true }).range(from, to)
     ),
-    fetchAllRows((from, to) => supabase.from("reviews").select("employee_id, created_at").range(from, to)),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("reviews")
+        .select("employee_id, created_at")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
     fetchAllRows((from, to) =>
       supabase
         .from("visits")
         .select("employee_id, restaurant_id, visit_date")
         .eq("status", "completed")
+        .order("visit_date", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to)
     ),
     fetchAllRows((from, to) =>
@@ -83,6 +97,8 @@ export async function finalizeMissingMonthlyLeaderboards(now: Date): Promise<voi
         .from("appointments")
         .select("host_employee_id, restaurant_id, scheduled_at")
         .eq("host_attendance_status", "completed")
+        .order("scheduled_at", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to)
     ),
     fetchAllRows((from, to) =>
@@ -90,9 +106,18 @@ export async function finalizeMissingMonthlyLeaderboards(now: Date): Promise<voi
         .from("appointment_participants")
         .select("employee_id, appointments(restaurant_id, scheduled_at)")
         .eq("status", "completed")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to)
     ),
-    fetchAllRows((from, to) => supabase.from("meal_records").select("employee_id, created_at").range(from, to)),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("meal_records")
+        .select("employee_id, created_at")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
   ]);
 
   const activities: MonthlyActivities = {
@@ -205,8 +230,10 @@ export async function getFinalizedMonthlyLeaderboard(
       "employee_id, nickname_snapshot, review_score, explorer_score, menu_score, total_score, rank, is_monthly_leader"
     )
     .eq("period_id", period.id)
-    .order("rank")
-    .order("total_score", { ascending: false });
+    .order("rank", { ascending: true })
+    .order("total_score", { ascending: false })
+    .order("nickname_snapshot", { ascending: true })
+    .order("employee_id", { ascending: true });
   if (error) {
     throw new Error(error.message);
   }
