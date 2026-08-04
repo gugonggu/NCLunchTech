@@ -55,5 +55,9 @@ describe("buildMonthlyLeaderboard", () => {
       { nickname: "나", score: 2, rank: 1 },
       { nickname: "가", score: 1, rank: 2 },
     ]);
+    expect(result.categories.total.leaders.map(({ nickname, score, rank }) => ({ nickname, score, rank }))).toEqual([
+      { nickname: "가", score: 5, rank: 1 },
+      { nickname: "나", score: 5, rank: 1 },
+    ]);
   });
 });

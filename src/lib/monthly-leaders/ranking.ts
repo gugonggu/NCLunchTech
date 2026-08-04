@@ -1,5 +1,7 @@
 import { getSeoulMonthRange, type LeaderboardEmployee, type MonthlyActivities } from "../leaderboard";
 
+export const MONTHLY_LEADER_LABEL = "이달의 리더";
+
 export interface MonthlyLeaderEntry {
   employeeId: string;
   nickname: string;

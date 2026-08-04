@@ -109,6 +109,14 @@ export function buildMonthlyLeaderboard(
   for (const record of activities.mealRecords.filter(inMonth)) {
     menuScores.set(record.employeeId, (menuScores.get(record.employeeId) ?? 0) + 1);
   }
+  const totalScores = new Map(
+    employees
+      .filter((employee) => employee.isActive)
+      .map((employee) => [
+        employee.id,
+        (reviewScores.get(employee.id) ?? 0) + (explorerScores.get(employee.id) ?? 0) + (menuScores.get(employee.id) ?? 0),
+      ])
+  );
 
   return {
     label: range.label,
@@ -116,6 +124,7 @@ export function buildMonthlyLeaderboard(
       review: rankScores(employees, reviewScores, currentEmployeeId),
       explorer: rankScores(employees, explorerScores, currentEmployeeId),
       menu: rankScores(employees, menuScores, currentEmployeeId),
+      total: rankScores(employees, totalScores, currentEmployeeId),
     },
   };
 }
