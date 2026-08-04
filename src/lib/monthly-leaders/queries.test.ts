@@ -127,6 +127,17 @@ describe("finalizeMissingMonthlyLeaderboards", () => {
     });
   });
 
+  it("backfills every empty completed month after an existing snapshot", async () => {
+    const { rpc } = arrangeFinalization({
+      periods: [{ id: "period-june", month_key: "2026-06-01" }],
+    });
+
+    await finalizeMissingMonthlyLeaderboards(new Date("2026-08-31T15:00:00.000Z"));
+
+    expect(rpc.mock.calls.map((call) => call[1].p_month_key)).toEqual(["2026-07-01", "2026-08-01"]);
+    expect(rpc.mock.calls.map((call) => call[1].p_entries)).toEqual([[], []]);
+  });
+
   it("finalizes July, but not August, at midnight on August 1 in Seoul", async () => {
     const { rpc } = arrangeFinalization();
 

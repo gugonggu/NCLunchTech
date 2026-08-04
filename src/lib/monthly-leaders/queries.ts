@@ -149,7 +149,10 @@ export async function finalizeMissingMonthlyLeaderboards(now: Date): Promise<voi
     ...activities.visits.map((activity) => getMonthKeyForInstant(activity.occurredAt)),
     ...activities.mealRecords.map((activity) => getMonthKeyForInstant(activity.occurredAt)),
   ].filter((monthKey) => monthKey < currentMonthKey);
-  const firstMonthKey = activityMonthKeys.sort()[0] ?? lastPastMonthKey;
+  const finalizedPastMonthKeys = periods
+    .map((period) => period.month_key)
+    .filter((monthKey) => monthKey < currentMonthKey);
+  const firstMonthKey = [...activityMonthKeys, ...finalizedPastMonthKeys, lastPastMonthKey].sort()[0];
   const finalizedMonthKeys = new Set(periods.map((period) => period.month_key));
   const employeeRows: LeaderboardEmployee[] = employees.map((employee) => ({
     id: employee.id,

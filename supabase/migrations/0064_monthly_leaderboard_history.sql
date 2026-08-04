@@ -122,3 +122,12 @@ $$;
 revoke all on function public.finalize_monthly_leaderboard(date, jsonb) from public;
 grant execute on function public.finalize_monthly_leaderboard(date, jsonb) to service_role;
 revoke all on function public.prevent_monthly_leaderboard_snapshot_mutation() from public;
+
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_periods from public;
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_periods from anon;
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_periods from authenticated;
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_periods from service_role;
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_entries from public;
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_entries from anon;
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_entries from authenticated;
+revoke insert, update, delete, truncate on table public.monthly_leaderboard_entries from service_role;
