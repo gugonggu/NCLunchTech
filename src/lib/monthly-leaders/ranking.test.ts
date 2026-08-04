@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { buildMonthlyLeaderEntries } from "./ranking";
 
 describe("buildMonthlyLeaderEntries", () => {
+  it("uses the Seoul month's first calendar day as the snapshot key", () => {
+    const result = buildMonthlyLeaderEntries(
+      [],
+      { reviews: [], visits: [], mealRecords: [] },
+      new Date("2026-12-31T15:00:00.000Z")
+    );
+
+    expect(result.monthKey).toBe("2027-01-01");
+  });
+
   it("sums the three activity scores and counts each restaurant only once", () => {
     const result = buildMonthlyLeaderEntries(
       [

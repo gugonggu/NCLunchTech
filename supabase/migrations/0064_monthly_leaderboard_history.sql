@@ -2,7 +2,9 @@ create table monthly_leaderboard_periods (
   id uuid primary key default gen_random_uuid(),
   month_key date not null unique,
   finalized_at timestamptz not null default now(),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint monthly_leaderboard_periods_month_key_first_day_check
+    check (month_key = date_trunc('month', month_key::timestamp)::date)
 );
 
 create table monthly_leaderboard_entries (
@@ -36,6 +38,32 @@ create index monthly_leaderboard_entries_period_leaders_idx
 
 alter table monthly_leaderboard_periods enable row level security;
 alter table monthly_leaderboard_entries enable row level security;
+
+create function public.prevent_monthly_leaderboard_snapshot_mutation()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  raise exception 'monthly leaderboard snapshots are immutable' using errcode = '55000';
+end;
+$$;
+
+create trigger monthly_leaderboard_periods_immutable_row
+before update or delete on monthly_leaderboard_periods
+for each row execute function public.prevent_monthly_leaderboard_snapshot_mutation();
+
+create trigger monthly_leaderboard_periods_immutable_truncate
+before truncate on monthly_leaderboard_periods
+for each statement execute function public.prevent_monthly_leaderboard_snapshot_mutation();
+
+create trigger monthly_leaderboard_entries_immutable_row
+before update or delete on monthly_leaderboard_entries
+for each row execute function public.prevent_monthly_leaderboard_snapshot_mutation();
+
+create trigger monthly_leaderboard_entries_immutable_truncate
+before truncate on monthly_leaderboard_entries
+for each statement execute function public.prevent_monthly_leaderboard_snapshot_mutation();
 
 create function public.finalize_monthly_leaderboard(p_month_key date, p_entries jsonb)
 returns boolean
@@ -93,3 +121,4 @@ $$;
 
 revoke all on function public.finalize_monthly_leaderboard(date, jsonb) from public;
 grant execute on function public.finalize_monthly_leaderboard(date, jsonb) to service_role;
+revoke all on function public.prevent_monthly_leaderboard_snapshot_mutation() from public;
