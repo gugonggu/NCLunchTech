@@ -17,6 +17,7 @@ import {
   finalizeMissingMonthlyLeaderboards,
   getFinalizedMonthlyLeaderboard,
   getLatestMonthlyLeaderBadges,
+  getMonthlyLeaderHistory,
 } from "./queries";
 
 function arrangeFinalization({
@@ -200,5 +201,41 @@ describe("getLatestMonthlyLeaderBadges", () => {
         ["employee-2", { monthKey: "2026-06-01" }],
       ])
     );
+  });
+});
+
+describe("getMonthlyLeaderHistory", () => {
+  it("returns every awarded month for one employee without any score fields", async () => {
+    const entriesQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: [
+          { period_id: "period-july", is_monthly_leader: true },
+          { period_id: "period-june", is_monthly_leader: true },
+        ],
+        error: null,
+      }),
+    };
+    const periodsQuery = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: [
+          { id: "period-july", month_key: "2026-07-01" },
+          { id: "period-june", month_key: "2026-06-01" },
+        ],
+        error: null,
+      }),
+    };
+    mocks.createServiceRoleClient.mockReturnValue({
+      from: vi.fn((table: string) => (table === "monthly_leaderboard_entries" ? entriesQuery : periodsQuery)),
+    });
+
+    await expect(getMonthlyLeaderHistory("employee-1")).resolves.toEqual([
+      { monthKey: "2026-07-01" },
+      { monthKey: "2026-06-01" },
+    ]);
+    expect(entriesQuery.select).toHaveBeenCalledWith("period_id");
   });
 });

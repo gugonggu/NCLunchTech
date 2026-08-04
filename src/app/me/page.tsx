@@ -5,6 +5,7 @@ import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdro
 import { getCurrentEmployee } from "@/lib/auth/session";
 import { getMonthlyLeaderboard } from "@/lib/leaderboard-queries";
 import { getMonthlySummary } from "@/lib/monthly-summary-queries";
+import { getMonthlyLeaderHistory } from "@/lib/monthly-leaders/queries";
 import { getSeasonalBadges } from "@/lib/seasonal-badges-queries";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getMealRecordsForEmployee } from "@/lib/meals/queries";
@@ -14,6 +15,7 @@ import { getMyAvatar } from "@/lib/avatars/queries";
 import { AVATAR_STATUS_MESSAGES, isAvatarStatusCode } from "@/lib/avatars/validation";
 import { AvatarEditor2D } from "@/components/me/AvatarEditor2D";
 import { AvatarImage } from "@/components/AvatarImage";
+import { MonthlyLeaderBadge } from "@/components/MonthlyLeaderBadge";
 import { CollapsibleSection } from "@/components/me/CollapsibleSection";
 import { MealRecordList } from "@/components/me/MealRecordList";
 import { LogoutButton } from "../LogoutButton";
@@ -150,13 +152,14 @@ export default async function MePage({
     { label: "즐겨찾기", value: favoritesResult.count ?? 0 },
   ];
 
-  const [leaderboard, monthlySummary, seasonalBadges, mealRecords, earnedTitles, myAvatar] = await Promise.all([
+  const [leaderboard, monthlySummary, seasonalBadges, mealRecords, earnedTitles, myAvatar, monthlyLeaderHistory] = await Promise.all([
     getMonthlyLeaderboard(employee.id),
     getMonthlySummary(employee.id),
     getSeasonalBadges(employee.id),
     getMealRecordsForEmployee(employee.id),
     getEarnedTitlesForEmployee(employee.id),
     getMyAvatar(employee.id),
+    getMonthlyLeaderHistory(employee.id),
   ]);
   const myRanks = (Object.entries(RANK_CATEGORY_LABELS) as [keyof typeof RANK_CATEGORY_LABELS, string][])
     .map(([key, label]) => ({ label, myRank: leaderboard.categories[key].myRank }))
@@ -340,6 +343,21 @@ export default async function MePage({
           <p className="mt-2 text-sm text-ink-muted">{seasonalBadges.badges.join(" · ")}</p>
         </section>
       )}
+
+      <section className="rounded-card bg-surface px-4 py-4 shadow-card" aria-label="월간 리더 수상 이력">
+        <h2 className="text-base font-bold text-ink">월간 리더 수상 이력</h2>
+        {monthlyLeaderHistory.length > 0 ? (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {monthlyLeaderHistory.map((badge) => (
+              <li key={badge.monthKey}>
+                <MonthlyLeaderBadge monthKey={badge.monthKey} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-ink-muted">아직 월간 리더 수상 이력이 없습니다.</p>
+        )}
+      </section>
 
       <Link href="/leaderboard" className={buttonStyles({ variant: "secondary", block: true })}>
         월간 배지·리더보드

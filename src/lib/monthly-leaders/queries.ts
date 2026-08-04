@@ -285,6 +285,35 @@ export async function getLatestMonthlyLeaderBadges(employeeIds: string[]): Promi
   return badges;
 }
 
+export async function getMonthlyLeaderHistory(employeeId: string): Promise<MonthlyLeaderBadge[]> {
+  const supabase = createServiceRoleClient();
+  const { data: entries, error: entriesError } = await supabase
+    .from("monthly_leaderboard_entries")
+    .select("period_id")
+    .eq("employee_id", employeeId)
+    .eq("is_monthly_leader", true)
+    .order("period_id", { ascending: false });
+  if (entriesError) {
+    throw new Error(entriesError.message);
+  }
+
+  const periodIds = [...new Set((entries ?? []).map((entry) => entry.period_id))];
+  if (periodIds.length === 0) {
+    return [];
+  }
+
+  const { data: periods, error: periodsError } = await supabase
+    .from("monthly_leaderboard_periods")
+    .select("id, month_key")
+    .in("id", periodIds)
+    .order("month_key", { ascending: false });
+  if (periodsError) {
+    throw new Error(periodsError.message);
+  }
+
+  return (periods ?? []).map((period) => ({ monthKey: period.month_key }));
+}
+
 function toMonthlyLeaderEntry(entry: FinalizedEntryRow): MonthlyLeaderEntry {
   return {
     employeeId: entry.employee_id,

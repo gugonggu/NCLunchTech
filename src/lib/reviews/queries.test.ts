@@ -45,6 +45,7 @@ describe("mapRecentReviewRows", () => {
         ["emp-1", "https://avatars.test/emp-1.png"],
         ["emp-2", "/avatar-default.png"],
       ]),
+      new Map([["emp-1", { monthKey: "2026-07-01" }]]),
     );
 
     expect(result[0]).toMatchObject({
@@ -64,5 +65,7 @@ describe("mapRecentReviewRows", () => {
       mealRecord: null,
       photos: [{ id: "photo-2", url: "https://photos.test/review-2/b.jpg" }],
     });
+    expect(result[0].monthlyLeaderLabel).toBe("2026년 7월 이달의 리더");
+    expect(result[1].monthlyLeaderLabel).toBeNull();
   });
 });

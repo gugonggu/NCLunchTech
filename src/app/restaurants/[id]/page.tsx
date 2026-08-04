@@ -13,6 +13,7 @@ import { getHelpfulCount, hasReacted } from "@/lib/review-reactions/queries";
 import { getRestaurantPhotoGallery } from "@/lib/review-photos/queries";
 import { formatTimeToMinute } from "@/lib/restaurants/hours-validation";
 import { AvatarImage } from "@/components/AvatarImage";
+import { MonthlyLeaderBadge } from "@/components/MonthlyLeaderBadge";
 import { buttonStyles } from "@/components/ui/Button";
 import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdrop";
 import { StatusReportForm } from "../StatusReportForm";
@@ -293,14 +294,17 @@ export default async function RestaurantDetailPage({
                           <div className="flex items-start gap-2">
                             <AvatarImage previewUrl={r.avatarUrl} alt={`${r.employeeNickname}의 아바타`} size={32} />
                             <div>
-                              <p className="font-semibold text-ink">
-                                {r.employeeNickname}
+                              <p className="flex flex-wrap items-center gap-1 font-semibold text-ink">
+                                <Link href={`/employees/${r.employeeId}`} className="hover:underline">
+                                  {r.employeeNickname}
+                                </Link>
                                 {r.employeeTitleName && (
-                                  <span className="ml-1 text-xs font-semibold text-brand-dark">
+                                  <span className="text-xs font-semibold text-brand-dark">
                                     『{r.employeeTitleName}』
                                   </span>
                                 )}
                               </p>
+                              {r.monthlyLeaderMonthKey && <MonthlyLeaderBadge monthKey={r.monthlyLeaderMonthKey} />}
                               {r.mealRecord && (
                                 <p className="mt-1 text-xs tabular-nums text-ink-muted">
                                   먹은 메뉴 · {r.mealRecord.menuName} · {r.mealRecord.paidPrice.toLocaleString("ko-KR")}원

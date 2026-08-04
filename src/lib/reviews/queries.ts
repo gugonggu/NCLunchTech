@@ -6,6 +6,7 @@ import type { RevisitIntent } from "./validation";
 import type { MealSource } from "@/lib/meals/validation";
 import { extractTitleName, type TitlesRelation } from "@/lib/achievements/title-relation";
 import { getAvatarPreviewUrls, DEFAULT_AVATAR_IMAGE_PATH } from "@/lib/avatars/queries";
+import { getLatestMonthlyLeaderBadges, type MonthlyLeaderBadge } from "@/lib/monthly-leaders/queries";
 
 export interface MyReview {
   id: string;
@@ -124,6 +125,8 @@ export interface RecentReview {
   employeeNickname: string;
   employeeTitleName: string | null;
   avatarUrl: string;
+  monthlyLeaderLabel: string | null;
+  monthlyLeaderMonthKey: string | null;
   tasteRating: number;
   speedRating: number;
   priceRating: number;
@@ -165,7 +168,8 @@ export function mapRecentReviewRows(
   photos: RecentReviewPhotoRow[],
   mealRecords: RecentReviewMealRow[],
   toPublicUrl: (storagePath: string) => string,
-  avatarUrls: Map<string, string>
+  avatarUrls: Map<string, string>,
+  monthlyLeaderBadges: Map<string, MonthlyLeaderBadge>
 ): RecentReview[] {
   const photosByReviewId = new Map<string, { id: string; url: string }[]>();
   for (const photo of photos) {
@@ -190,6 +194,10 @@ export function mapRecentReviewRows(
     employeeNickname: r.employees?.nickname ?? "(알 수 없음)",
     employeeTitleName: extractTitleName(r.employees?.titles ?? null),
     avatarUrl: avatarUrls.get(r.employee_id) ?? DEFAULT_AVATAR_IMAGE_PATH,
+    monthlyLeaderLabel: monthlyLeaderBadges.has(r.employee_id)
+      ? formatMonthlyLeaderLabel(monthlyLeaderBadges.get(r.employee_id)!.monthKey)
+      : null,
+    monthlyLeaderMonthKey: monthlyLeaderBadges.get(r.employee_id)?.monthKey ?? null,
     tasteRating: r.taste_rating,
     speedRating: r.speed_rating,
     priceRating: r.price_rating,
@@ -220,7 +228,7 @@ export async function getRecentReviews(restaurantId: string): Promise<RecentRevi
 
   const reviewIds = reviews.map((review) => review.id);
   const employeeIds = [...new Set(reviews.map((review) => review.employee_id))];
-  const [{ data: photos }, { data: mealRecords }] = await Promise.all([
+  const [{ data: photos }, { data: mealRecords }, avatarUrls, monthlyLeaderBadges] = await Promise.all([
     supabase
       .from("review_photos")
       .select("id, review_id, storage_path, created_at")
@@ -232,19 +240,25 @@ export async function getRecentReviews(restaurantId: string): Promise<RecentRevi
       .eq("restaurant_id", restaurantId)
       .in("employee_id", employeeIds)
       .order("created_at", { ascending: false }),
+    getAvatarPreviewUrls(employeeIds),
+    getLatestMonthlyLeaderBadges(employeeIds),
   ]);
 
   const toPublicUrl = (storagePath: string) =>
     supabase.storage.from(REVIEW_PHOTOS_BUCKET).getPublicUrl(storagePath).data.publicUrl;
-  const avatarUrls = await getAvatarPreviewUrls(employeeIds);
-
   return mapRecentReviewRows(
     reviews,
     (photos ?? []) as RecentReviewPhotoRow[],
     (mealRecords ?? []) as RecentReviewMealRow[],
     toPublicUrl,
-    avatarUrls
+    avatarUrls,
+    monthlyLeaderBadges
   );
+}
+
+function formatMonthlyLeaderLabel(monthKey: string): string {
+  const [year, month] = monthKey.slice(0, 7).split("-");
+  return `${year}년 ${Number(month)}월 이달의 리더`;
 }
 
 /** 리뷰를 남기려면 그 식당에 완료된 방문(개인 또는 약속 참여/방장 확인) 이력이 있어야 한다. */
