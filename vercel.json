@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/monthly-leaderboard",
+      "schedule": "0 15 * * *"
+    }
+  ]
+}
