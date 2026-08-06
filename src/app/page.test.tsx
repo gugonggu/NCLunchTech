@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth/session", () => ({
   getCurrentEmployee: vi.fn(),
@@ -45,6 +45,11 @@ vi.mock("@/lib/restaurant-of-the-month-queries", () => ({
   getRestaurantOfTheMonth: vi.fn(),
 }));
 
+vi.mock("@/lib/restaurants/friday-pizza-party", () => ({
+  getFridayPizzaPartyRestaurant: vi.fn(),
+  isFridayInSeoul: vi.fn(),
+}));
+
 vi.mock("@/lib/reviews/queries", () => ({
   hasMyReview: vi.fn(),
 }));
@@ -73,6 +78,7 @@ import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
 import { getLunchAvailabilities } from "@/lib/lunch-availability/queries";
 import { getRestaurantOfTheMonth } from "@/lib/restaurant-of-the-month-queries";
+import { getFridayPizzaPartyRestaurant, isFridayInSeoul } from "@/lib/restaurants/friday-pizza-party";
 import { hasMyReview } from "@/lib/reviews/queries";
 import HomePage from "./page";
 
@@ -84,16 +90,39 @@ function mockDefaults() {
   vi.mocked(getPublicRecruitingAppointments).mockResolvedValue([]);
   vi.mocked(getRestaurantOfTheMonth).mockResolvedValue(null);
   vi.mocked(hasMyReview).mockResolvedValue(false);
+  vi.mocked(getFridayPizzaPartyRestaurant).mockResolvedValue(null);
+  vi.mocked(isFridayInSeoul).mockReturnValue(false);
   mockSettingsMaybeSingle.mockResolvedValue({
     data: { company_lat: 35.17, company_lng: 129.13, announcement: null },
   });
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function renderHome(searchParams: Record<string, string> = {}) {
   return HomePage({ searchParams: Promise.resolve(searchParams) });
 }
 
 describe("HomePage", () => {
+  it("renders the pizza-party card only when Friday has an active event store", async () => {
+    vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "tester" });
+    mockDefaults();
+    vi.mocked(getActiveVisitToday).mockResolvedValue(null);
+    vi.mocked(getRelevantAppointments).mockResolvedValue([]);
+    vi.mocked(isFridayInSeoul).mockReturnValue(true);
+    vi.mocked(getFridayPizzaPartyRestaurant).mockResolvedValue({ id: "pizza-1" });
+
+    render(await renderHome());
+
+    expect(screen.getByRole("heading", { name: "🍕 금요일 피자 파티" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "포장 약속 만들기" })).toHaveAttribute(
+      "href",
+      "/appointments/new?restaurantId=pizza-1&promo=friday-pizza-party",
+    );
+  });
+
   it("adds breathing room below the home content", async () => {
     vi.mocked(getCurrentEmployee).mockResolvedValue({ id: "emp-1", nickname: "tester" });
     mockDefaults();
