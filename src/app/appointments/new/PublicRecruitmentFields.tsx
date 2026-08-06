@@ -7,8 +7,8 @@ import {
   PUBLIC_APPOINTMENT_CAPACITY_MIN,
 } from "@/lib/appointments/validation";
 
-export function PublicRecruitmentFields() {
-  const [isPublic, setIsPublic] = useState(false);
+export function PublicRecruitmentFields({ defaultIsPublic = false }: { defaultIsPublic?: boolean }) {
+  const [isPublic, setIsPublic] = useState(defaultIsPublic);
 
   return (
     <>

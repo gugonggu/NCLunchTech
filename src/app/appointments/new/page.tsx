@@ -14,9 +14,15 @@ import { GradientBackdrop, GRADIENT_TEXT } from "@/components/ui/GradientBackdro
 import { createAppointment } from "./actions";
 import { RestaurantPicker } from "./RestaurantPicker";
 import { PublicRecruitmentFields } from "./PublicRecruitmentFields";
+import {
+  FRIDAY_PIZZA_PARTY_DEFAULT_MEMO,
+  FRIDAY_PIZZA_PARTY_PROMO,
+  isFridayPizzaPartyPromo,
+} from "@/lib/friday-pizza-party";
 
 interface NewAppointmentSearchParams {
   restaurantId?: string;
+  promo?: string;
   status?: string;
   fromPollId?: string;
   q?: string;
@@ -33,13 +39,16 @@ export default async function NewAppointmentPage({
   searchParams: Promise<NewAppointmentSearchParams>;
 }) {
   const params = await searchParams;
-  const { restaurantId, status, fromPollId } = params;
+  const { restaurantId, status, fromPollId, promo } = params;
+  const isPizzaPartyPreset = isFridayPizzaPartyPromo(promo);
 
   const employee = await getCurrentEmployee();
   if (!employee) {
     redirect(
       restaurantId
-        ? `/login?returnTo=${encodeURIComponent(`/appointments/new?restaurantId=${restaurantId}`)}`
+        ? `/login?returnTo=${encodeURIComponent(
+            `/appointments/new?restaurantId=${restaurantId}${isPizzaPartyPreset ? `&promo=${FRIDAY_PIZZA_PARTY_PROMO}` : ""}`,
+          )}`
         : "/login?returnTo=%2Fappointments%2Fnew",
     );
   }
@@ -115,12 +124,16 @@ export default async function NewAppointmentPage({
         <fieldset className="flex flex-col gap-2 text-sm text-ink-muted">
           <legend>식사 방식</legend>
           <label className="flex items-center gap-2 text-ink">
-            <input type="radio" name="mealType" value="dine_in" defaultChecked />
+            <input type="radio" name="mealType" value="dine_in" defaultChecked={!isPizzaPartyPreset} />
             방문
           </label>
           <label className="flex items-center gap-2 text-ink">
             <input type="radio" name="mealType" value="delivery" />
             배달
+          </label>
+          <label className="flex items-center gap-2 text-ink">
+            <input type="radio" name="mealType" value="pickup" defaultChecked={isPizzaPartyPreset} />
+            포장
           </label>
         </fieldset>
 
@@ -131,11 +144,12 @@ export default async function NewAppointmentPage({
             maxLength={100}
             rows={2}
             placeholder="예: 회의실 앞에서 12시 반에 모여요"
+            defaultValue={isPizzaPartyPreset ? FRIDAY_PIZZA_PARTY_DEFAULT_MEMO : ""}
             className="rounded-control border border-line px-4 py-3 text-base text-ink"
           />
         </label>
 
-        <PublicRecruitmentFields />
+        <PublicRecruitmentFields defaultIsPublic={isPizzaPartyPreset} />
         <p className="text-xs text-ink-muted">
           여기서 직접 지정하지 않아도, 약속을 만든 뒤 링크를 공유해 참여자를 초대할 수 있어요.
         </p>
