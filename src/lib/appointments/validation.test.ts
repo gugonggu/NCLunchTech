@@ -4,6 +4,7 @@ import {
   canParticipantTransition,
   formatSeoulDateTimeLocal,
   getDefaultAppointmentTime,
+  getAppointmentMealTypeLabel,
   isAppointmentStatusCode,
   memoSchema,
   parseAppointmentMealType,
@@ -14,10 +15,17 @@ import {
 } from "./validation";
 
 describe("parseAppointmentMealType", () => {
-  it("accepts only dine-in and delivery", () => {
+  it("accepts dine-in, delivery, and pickup while rejecting unsupported meal types", () => {
     expect(parseAppointmentMealType("dine_in")).toBe("dine_in");
     expect(parseAppointmentMealType("delivery")).toBe("delivery");
+    expect(parseAppointmentMealType("pickup")).toBe("pickup");
     expect(parseAppointmentMealType("takeout")).toBeNull();
+  });
+});
+
+describe("getAppointmentMealTypeLabel", () => {
+  it("labels pickup appointments as 포장", () => {
+    expect(getAppointmentMealTypeLabel("pickup")).toBe("포장");
   });
 });
 

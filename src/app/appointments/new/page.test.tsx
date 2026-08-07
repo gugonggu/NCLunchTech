@@ -116,6 +116,29 @@ describe("NewAppointmentPage", () => {
     expect(mapLink).toHaveAttribute("rel", "noopener noreferrer");
   });
 
+  it("uses pickup, public recruitment, and the event note for the Friday pizza-party preset", async () => {
+    mocks.maybeEmployee.mockResolvedValue({ id: "employee-1" });
+
+    render(
+      await NewAppointmentPage({
+        searchParams: Promise.resolve({ restaurantId: "r1", promo: "friday-pizza-party" }),
+      }),
+    );
+
+    expect(screen.getByRole("radio", { name: "포장" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "공개 모집" })).toBeChecked();
+    expect(screen.getByDisplayValue("1+1 이벤트 · 대표 주문 후 2~3명이 함께 픽업, 함께 식사해요.")).toBeInTheDocument();
+  });
+
+  it("keeps the ordinary appointment form as dine-in and private", async () => {
+    mocks.maybeEmployee.mockResolvedValue({ id: "employee-1" });
+
+    render(await NewAppointmentPage({ searchParams: Promise.resolve({ restaurantId: "r1" }) }));
+
+    expect(screen.getByRole("radio", { name: "방문" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "공개 모집" })).not.toBeChecked();
+  });
+
   it("does not render a Kakao map link when the selected restaurant has no place ID", async () => {
     mocks.maybeEmployee.mockResolvedValue({ id: "employee-1" });
     mockSelectedRestaurantQuery({ id: "r1", kakao_place_id: null, name: "Restaurant", category: "Korean" });

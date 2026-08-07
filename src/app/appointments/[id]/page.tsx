@@ -9,6 +9,7 @@ import { MAX_POLL_OPTIONS } from "@/lib/polls/validation";
 import {
   APPOINTMENT_STATUS_MESSAGES,
   formatSeoulDateTimeLocal,
+  getAppointmentMealTypeLabel,
   isAppointmentStatusCode,
 } from "@/lib/appointments/validation";
 import {
@@ -151,7 +152,7 @@ export default async function AppointmentDetailPage({
           {appointment.restaurantName}
         </Link>
         <p className="text-sm text-ink-muted">{appointment.restaurantCategory}</p>
-        <p className="mt-1 text-sm text-ink-muted">{appointment.mealType === "delivery" ? "배달" : "방문"}</p>
+        <p className="mt-1 text-sm text-ink-muted">{getAppointmentMealTypeLabel(appointment.mealType)}</p>
         {appointment.isPublic && appointment.capacity !== null && (
           <p className="mt-1 text-sm font-semibold text-brand-dark">공개 모집 · 정원 {appointment.capacity}명</p>
         )}

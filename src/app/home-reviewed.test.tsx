@@ -45,6 +45,11 @@ vi.mock("@/lib/restaurant-of-the-month-queries", () => ({
   getRestaurantOfTheMonth: vi.fn(),
 }));
 
+vi.mock("@/lib/restaurants/friday-pizza-party", () => ({
+  getFridayPizzaPartyRestaurant: vi.fn(),
+  isFridayInSeoul: vi.fn(),
+}));
+
 vi.mock("@/lib/reviews/queries", () => ({
   hasMyReview: vi.fn(),
 }));
@@ -73,6 +78,7 @@ import { getMealRecordForSource } from "@/lib/meals/queries";
 import { getRelevantPolls } from "@/lib/polls/queries";
 import { getLunchAvailabilities } from "@/lib/lunch-availability/queries";
 import { getRestaurantOfTheMonth } from "@/lib/restaurant-of-the-month-queries";
+import { getFridayPizzaPartyRestaurant, isFridayInSeoul } from "@/lib/restaurants/friday-pizza-party";
 import { hasMyReview } from "@/lib/reviews/queries";
 import HomePage from "./page";
 
@@ -84,6 +90,8 @@ function mockDefaults() {
   vi.mocked(getLunchAvailabilities).mockResolvedValue([]);
   vi.mocked(getPublicRecruitingAppointments).mockResolvedValue([]);
   vi.mocked(getRestaurantOfTheMonth).mockResolvedValue(null);
+  vi.mocked(getFridayPizzaPartyRestaurant).mockResolvedValue(null);
+  vi.mocked(isFridayInSeoul).mockReturnValue(false);
   mockSettingsMaybeSingle.mockResolvedValue({
     data: { company_lat: 35.17, company_lng: 129.13, announcement: null },
   });

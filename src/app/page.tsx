@@ -11,7 +11,9 @@ import { getRelevantPolls } from "@/lib/polls/queries";
 import { hasMyReview } from "@/lib/reviews/queries";
 import { getLunchAvailabilities } from "@/lib/lunch-availability/queries";
 import { getRestaurantOfTheMonth } from "@/lib/restaurant-of-the-month-queries";
+import { getFridayPizzaPartyRestaurant, isFridayInSeoul } from "@/lib/restaurants/friday-pizza-party";
 import { HomeHero } from "@/components/lunch/HomeHero";
+import { FridayPizzaPartyCard } from "@/components/lunch/FridayPizzaPartyCard";
 import { LunchAvailabilityCard } from "@/components/lunch/LunchAvailabilityCard";
 import { RestaurantOfTheMonthCard } from "@/components/lunch/RestaurantOfTheMonthCard";
 import { TodayTimeline } from "@/components/lunch/TodayTimeline";
@@ -80,6 +82,7 @@ export default async function HomePage({
     relevantPolls,
     lunchAvailabilities,
     restaurantOfTheMonth,
+    fridayPizzaPartyRestaurant,
     settings,
   ] = await Promise.all([
     getActiveVisitToday(employee.id, today),
@@ -89,6 +92,7 @@ export default async function HomePage({
     getRelevantPolls(employee.id),
     getLunchAvailabilities(today),
     getRestaurantOfTheMonth(now),
+    getFridayPizzaPartyRestaurant(),
     getHomeAppSettings(),
   ]);
   const todayMealRecord =
@@ -155,6 +159,12 @@ export default async function HomePage({
         >
           {settings.announcement}
         </p>
+      )}
+
+      {isFridayInSeoul(now) && fridayPizzaPartyRestaurant && (
+        <div className="animate-fade-up mx-auto w-full max-w-2xl" style={{ animationDelay: "120ms" }}>
+          <FridayPizzaPartyCard restaurantId={fridayPizzaPartyRestaurant.id} />
+        </div>
       )}
 
       {feedbackMessage && (
